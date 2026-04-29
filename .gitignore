@@ -62,3 +62,6 @@ target/
 *.tmp
 *.temp
 .cache/
+ruoyi-ai-main/
+new-api-main/
+CLIProxyAPI-main/
