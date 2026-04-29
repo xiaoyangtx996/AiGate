@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AiGate - 网关与渠道</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="master-nav" id="topHeader">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 flex items-center justify-center font-bold text-lg" style="background: var(--brand-main); color: var(--bg-body); border-radius: var(--border-radius-base);">A</div>
+            <span class="text-xl font-bold tracking-tight">AiGate <span class="text-secondary text-sm ml-1 font-normal">Enterprise</span></span>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <!-- 角色切换模拟器 -->
+            <div class="hidden md:flex items-center gap-2 border-r pr-6" style="border-color: var(--border-color)">
+                <span class="text-xs font-bold text-secondary uppercase tracking-widest">模拟身份:</span>
+                <select id="roleSelector" class="input-base py-1 px-2 text-xs w-auto bg-transparent border-none font-bold" onchange="setRole(this.value)">
+                    <option value="sys_admin">系统超管 (SYS)</option>
+                    <option value="tenant_admin">租户管理 (TENANT)</option>
+                    <option value="user">普通成员 (USER)</option>
+                </select>
+            </div>
+
+            <!-- 消息/预警中心 铃铛 (弹窗模式) -->
+            <div class="relative" id="alertDropdownContainer">
+                <button onclick="document.getElementById('alertDropdown').classList.toggle('hidden')" class="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-secondary hover:text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-brand-accent rounded-full border border-bg-body"></span>
+                </button>
+                <!-- 下拉弹窗面板 -->
+                <div id="alertDropdown" class="hidden absolute right-0 mt-2 w-80 card p-0 z-50 shadow-2xl flex flex-col border border-border-color">
+                    <div class="p-4 border-b font-bold flex justify-between items-center" style="border-color: var(--border-color)">
+                        系统预警与通知 <span class="badge badge-warning">2</span>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto">
+                        <div class="p-4 border-b hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors" style="border-color: var(--border-color)">
+                            <div class="text-xs text-brand-accent font-bold mb-1 flex items-center justify-between">
+                                <span>配额水位预警 (90%)</span>
+                                <span class="text-secondary font-normal">10分钟前</span>
+                            </div>
+                            <div class="text-xs text-secondary mt-1 leading-relaxed">租户「北京研发中心」本月配额已消耗 92%，即将触及熔断限制。</div>
+                        </div>
+                        <div class="p-4 border-b hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors" style="border-color: var(--border-color)">
+                            <div class="text-xs text-brand-accent font-bold mb-1 flex items-center justify-between">
+                                <span>员工密钥即将过期</span>
+                                <span class="text-secondary font-normal">2小时前</span>
+                            </div>
+                            <div class="text-xs text-secondary mt-1 leading-relaxed">员工「张三」的 DEV 测试密钥距离过期仅剩 3 天，请通知轮换。</div>
+                        </div>
+                    </div>
+                    <a href="alerts.html" class="p-3 text-center text-xs font-bold text-secondary hover:text-primary transition-colors bg-black/5 dark:bg-white/5">查看全部记录</a>
+                </div>
+            </div>
+
+            <!-- 全局主题切换 TAB -->
+            <div class="theme-switch" id="themeSwitcher">
+                <button class="theme-btn active" data-theme="dark">Dark</button>
+                <button class="theme-btn" data-theme="light">Light</button>
+                <button class="theme-btn" data-theme="apple">Apple</button>
+            </div>
+            <div class="w-8 h-8 border flex items-center justify-center text-sm font-bold bg-brand-main text-white cursor-pointer hover:opacity-80" style="border-radius: var(--border-radius-base); border-color: var(--border-color)" id="avatarInitial">AD</div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="sidebar" id="mainSidebar">
+            <!-- 参照 RuoYi-Vue 的系统管理分类 (中英文名并存，并且可折叠) -->
+            <div class="nav-group py-2" data-roles="sys_admin,tenant_admin,user">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <span>数据中心</span>
+                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-items-container transition-all overflow-hidden">
+                    <a href="dashboard.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3"/></svg>数据大盘</a>
+                </div>
+            </div>
+            
+            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <span>系统管理</span>
+                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-items-container transition-all overflow-hidden">
+                    <div data-roles="sys_admin"><a href="organization.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"/></svg>组织与配额</a></div>
+                    <a href="users.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>用户管理</a>
+                    <div data-roles="sys_admin"><a href="settings.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v4 M12 16h.01"/></svg>参数与预警配置</a></div>
+                </div>
+            </div>
+            
+            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <span>网关路由</span>
+                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-items-container transition-all overflow-hidden">
+                    <div data-roles="sys_admin"><a href="channels.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12"/></svg>网关与渠道</a></div>
+                    <a href="keys.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>密钥管理</a>
+                    <a href="logs.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/></svg>请求日志</a>
+<div data-roles="sys_admin"><a href="models.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>模型资产</a></div>
+<div data-roles="sys_admin,tenant_admin"><a href="billing.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3"/></svg>消耗报表</a></div>
+                </div>
+            </div>
+            
+            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <span>AI 资产</span>
+                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-items-container transition-all overflow-hidden">
+                    <div data-roles="sys_admin,tenant_admin"><a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>知识库 RAG</a></div>
+                    <div data-roles="sys_admin"><a href="mcp.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4 M9 18c-4.51 2-5-2-7-2"/></svg>MCP 市场</a></div>
+                    <a href="agent.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8 M20 14h2 M2 14h2 M15 13v2 M9 13v2 M4 8h16v12H4z"/></svg>Agent 体系</a>
+<a href="skills.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>技能库</a>
+<a href="plugins.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z M7 7h.01"/></svg>插件市场</a>
+<a href="hooks.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Hooks 钩子</a>
+                </div>
+            </div>
+        <div data-roles="sys_admin,tenant_admin,user"><a href="profile.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>个人中心</a></div>
+</aside>
+
+        <main class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
+            <!-- Apple 风格专属的背景光晕 -->
+            <div class="hidden apple:block absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10 mix-blend-multiply"></div>
+            
+            <div class="max-w-7xl mx-auto">
+                
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight">模型渠道配置</h1>
+                        <p class="text-secondary mt-1">配置上游供应商 API 代理（如 OpenAI、Anthropic、智谱等）及高可用负载均衡。</p>
+                    </div>
+                    <button class="btn-primary">+ 新增渠道</button>
+                </div>
+                <div class="card p-0 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-black/5 dark:bg-white/5 border-b" style="border-color: var(--border-color)">
+                            <tr>
+                                <th class="p-4 text-xs font-bold text-secondary uppercase tracking-wider">渠道名称 / 厂商</th>
+                                <th class="p-4 text-xs font-bold text-secondary uppercase tracking-wider">支持模型</th>
+                                <th class="p-4 text-xs font-bold text-secondary uppercase tracking-wider text-center">优先级</th>
+                                <th class="p-4 text-xs font-bold text-secondary uppercase tracking-wider text-center">响应延迟</th>
+                                <th class="p-4 text-xs font-bold text-secondary uppercase tracking-wider text-center">状态</th>
+                                <th class="p-4 text-xs font-bold text-secondary uppercase tracking-wider text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <tr class="border-b transition-colors hover:bg-black/5 dark:hover:bg-white/5" style="border-color: var(--border-color)">
+                                <td class="p-4">
+                                    <div class="font-bold flex items-center gap-2">Azure OpenAI <span class="badge border-gray-500 text-[10px]">微软</span></div>
+                                    <div class="text-xs text-secondary mt-1 font-mono">https://hk-azure.openai.azure.com</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="flex gap-1 flex-wrap w-48">
+                                        <span class="badge border border-gray-600 bg-transparent text-[10px]">gpt-4o</span>
+                                        <span class="badge border border-gray-600 bg-transparent text-[10px]">text-embedding-3</span>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-center font-bold">1</td>
+                                <td class="p-4 text-center font-mono text-emerald-500">24ms</td>
+                                <td class="p-4 text-center"><span class="badge badge-success">启用</span></td>
+                                <td class="p-4 text-right"><button class="text-brand-main font-bold hover:underline text-xs">编辑</button></td>
+                            </tr>
+                            <tr class="transition-colors hover:bg-black/5 dark:hover:bg-white/5">
+                                <td class="p-4">
+                                    <div class="font-bold flex items-center gap-2">智谱 AI 官方 <span class="badge border-gray-500 text-[10px]">Zhipu</span></div>
+                                    <div class="text-xs text-secondary mt-1 font-mono">https://open.bigmodel.cn</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="flex gap-1 flex-wrap w-48">
+                                        <span class="badge border border-gray-600 bg-transparent text-[10px]">glm-4</span>
+                                        <span class="badge border border-gray-600 bg-transparent text-[10px]">glm-4v</span>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-center font-bold">2</td>
+                                <td class="p-4 text-center font-mono text-brand-accent">158ms</td>
+                                <td class="p-4 text-center"><span class="badge badge-success">启用</span></td>
+                                <td class="p-4 text-right"><button class="text-brand-main font-bold hover:underline text-xs">编辑</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+        
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar Menu Toggle Logic
+        function toggleNavGroup(headerEl) {
+            const container = headerEl.nextElementSibling;
+            const svg = headerEl.querySelector('svg');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                svg.style.transform = 'rotate(0deg)';
+            } else {
+                container.classList.add('hidden');
+                svg.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        const html = document.documentElement;
+        const btns = document.querySelectorAll('.theme-btn');
+        
+        function setTheme(theme) {
+            html.classList.remove('dark', 'light', 'apple');
+            html.classList.add(theme);
+            localStorage.setItem('aigate_theme', theme);
+            
+            btns.forEach(btn => {
+                if(btn.dataset.theme === theme) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        const savedTheme = localStorage.getItem('aigate_theme') || 'dark';
+        setTheme(savedTheme);
+
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+        });
+
+        // Role Management Logic
+        function setRole(role) {
+            localStorage.setItem('aigate_role', role);
+            applyRole(role);
+        }
+
+        function applyRole(role) {
+            // Update dropdown
+            const selector = document.getElementById('roleSelector');
+            if(selector) selector.value = role;
+
+            // Update Avatar
+            const avatar = document.getElementById('avatarInitial');
+            if(avatar) {
+                if(role === 'sys_admin') avatar.innerText = 'AD';
+                if(role === 'tenant_admin') avatar.innerText = 'TE';
+                if(role === 'user') avatar.innerText = 'US';
+            }
+
+            // Filter DOM elements based on role
+            document.querySelectorAll('[data-roles]').forEach(el => {
+                const allowedRoles = el.getAttribute('data-roles').split(',');
+                if(allowedRoles.includes(role)) {
+                    el.style.display = '';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+
+            // Toggle specific text views
+            document.querySelectorAll('.view-sys-admin').forEach(el => el.classList.toggle('hidden', role !== 'sys_admin'));
+            document.querySelectorAll('.view-tenant-admin').forEach(el => el.classList.toggle('hidden', role !== 'tenant_admin'));
+            
+            // Hide Sidebar and Header on Login page
+            if(window.location.pathname.includes('login.html')) {
+                if(document.getElementById('topHeader')) document.getElementById('topHeader').style.display = 'none';
+                if(document.getElementById('mainSidebar')) document.getElementById('mainSidebar').style.display = 'none';
+            }
+        }
+
+        const savedRole = localStorage.getItem('aigate_role') || 'sys_admin';
+        applyRole(savedRole);
+    </script>
+
+<!-- 悬浮 AI 对话机器人 -->
+<div id="aiChatBtn" onclick="toggleChat()" style="position:fixed;bottom:32px;right:32px;z-index:1000;width:52px;height:52px;border-radius:50%;background:var(--brand-main);color:var(--bg-body);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.3);transition:transform 0.2s ease;" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">
+  <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+</div>
+<div id="aiChatPanel" style="display:none;position:fixed;bottom:96px;right:32px;z-index:1000;width:380px;height:520px;border-radius:1rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4);background:var(--bg-surface);border:1px solid var(--border-color);display:none;flex-direction:column;">
+  <div style="background:var(--brand-main);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;color:var(--bg-body);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+      <div><div style="font-weight:700;font-size:14px;">AiGate Bot</div><div style="font-size:11px;opacity:0.8;">选择知识库开始对话</div></div>
+    </div>
+    <button onclick="toggleChat()" style="background:transparent;border:none;color:var(--bg-body);cursor:pointer;opacity:0.8;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;">
+    <select style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12px;">
+      <option>全局 (不限知识库)</option>
+      <option>产品设计文档</option>
+      <option>SLA 运维手册</option>
+    </select>
+    <select style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12px;">
+      <option>gpt-4o</option>
+      <option>claude-3-5-sonnet</option>
+    </select>
+  </div>
+  <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;gap:10px;align-items:flex-start;">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--brand-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bg-body)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+      </div>
+      <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;max-width:80%;line-height:1.6;color:var(--text-primary);">
+        你好！我是 AiGate Bot，可以帮你查询配额、调用日志，或根据选定知识库回答问题。
+      </div>
+    </div>
+  </div>
+  <div style="padding:12px 16px;border-top:1px solid var(--border-color);display:flex;gap:8px;">
+    <input id="chatInput" type="text" placeholder="输入问题，按 Enter 发送..." style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()" style="padding:8px 16px;border-radius:10px;background:var(--brand-main);color:var(--bg-body);border:none;font-weight:700;cursor:pointer;font-size:13px;">发送</button>
+  </div>
+</div>
+<script>
+function toggleChat(){{
+  var p=document.getElementById('aiChatPanel');
+  p.style.display=p.style.display==='none'||p.style.display===''?'flex':'none';
+}}
+function sendChat(){{
+  var input=document.getElementById('chatInput');
+  var msg=input.value.trim();
+  if(!msg)return;
+  var messages=document.getElementById('chatMessages');
+  messages.innerHTML+='<div style="display:flex;justify-content:flex-end;"><div style="background:var(--brand-main);color:var(--bg-body);border-radius:12px 0 12px 12px;padding:10px 14px;font-size:13px;max-width:80%;line-height:1.6;">'+msg+'</div></div>';
+  input.value='';
+  setTimeout(function(){{
+    messages.innerHTML+='<div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:28px;height:28px;border-radius:50%;background:var(--brand-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--bg-body)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 8V4H8\"/><rect width=\"16\" height=\"12\" x=\"4\" y=\"8\" rx=\"2\"/></svg></div><div style=\"background:var(--bg-body);border:1px solid var(--border-color);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;max-width:80%;line-height:1.6;color:var(--text-primary);\">[演示] 已收到您的问题，正在检索知识库并生成回答...</div></div>';
+    messages.scrollTop=messages.scrollHeight;
+  }},800);
+  messages.scrollTop=messages.scrollHeight;
+}}
+</script>
+
+</body>
+</html>

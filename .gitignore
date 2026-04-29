@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.exe
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.kiro/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+.codex/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+
+# 虚拟环境
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 项目特定
+data/*.json
+data/locks/*.lock
+*.log
+target/
+*.class
+
+# 保留目录结构
+!data/.gitkeep
+!data/locks/.gitkeep
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
