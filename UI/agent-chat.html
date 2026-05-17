@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiGate - 预警中心</title>
+    <title>AiGate - 智能体对话测试</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
+<body>
+
 <body>
     <header class="master-nav" id="topHeader">
         <div class="flex items-center gap-3">
@@ -158,7 +161,7 @@
                     <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
+                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
                     <div data-roles="sys_admin"><a href="audit.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v4 M12 16h.01"/></svg>操作审计</a></div>
                 </div>
             </div>
@@ -174,46 +177,131 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
-            <!-- Apple 风格专属的背景光晕 -->
-            <div class="hidden apple:block absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10 mix-blend-multiply"></div>
-            
-            <div class="max-w-7xl mx-auto">
-                
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight">预警中心</h1>
-                        <p class="text-secondary mt-1">全局监控额度水位（70%/90%/100%）、密钥过期预警及 MCP 异常状态。</p>
-                    </div>
-                    <button class="btn-secondary">全部标记已读</button>
-                </div>
-                <div class="card p-0 overflow-hidden">
-                    <ul class="divide-y" style="border-color: var(--border-color); divide-color: var(--border-color)">
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">租户配额预警 (90% 水位)</h4>
-                                    <span class="text-xs text-secondary">10 分钟前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">「北京研发中心」本月 Token 配额已消耗 92%，即将触及熔断限制，请提醒租户管理员关注超额审批。</p>
-                            </div>
-                        </li>
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">员工密钥即将过期</h4>
-                                    <span class="text-xs text-secondary">2 小时前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">架构部员工「张三」的 DEV 测试密钥 (ag-dev-3a1b...) 距离过期仅剩 3 天，请通知其轮换密钥。</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
         
-            </div>
-        </main>
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 relative"><div class="max-w-7xl mx-auto">
+
+<div class="flex items-center gap-3 mb-6">
+  <a href="agent.html" class="text-secondary hover:text-primary transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+  </a>
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight" id="chatAgentTitle">SQL 调优助理</h1>
+    <p class="text-secondary text-xs mt-0.5">底座模型: gpt-4o · 状态: 挂载了 Milvus 向量库及数据库 MCP 工具</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[580px] overflow-hidden">
+  <!-- 左侧工具状态面板 -->
+  <div class="lg:col-span-1 card p-5 space-y-4 overflow-y-auto flex flex-col justify-between">
+    <div class="space-y-4">
+      <div class="text-center pb-4 border-b" style="border-color: var(--border-color)">
+        <div class="w-12 h-12 rounded-xl bg-brand-main/10 text-brand-main font-bold flex items-center justify-center text-xl mx-auto mb-2">🤖</div>
+        <div class="font-bold text-sm">数据库调优专家</div>
+        <div class="text-xs text-secondary mt-1">专职生产环境 SQL 慢查询拦截与索引治理。</div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-secondary uppercase block">当前启用的依赖资产</label>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="badge border-gray-500 font-mono text-[10px]">Mysql-MCP</span>
+          <span class="badge badge-success font-mono text-[10px]">Milvus-KB</span>
+          <span class="badge border-gray-500 font-mono text-[10px]">Prompt-AB</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-3 bg-black/5 dark:bg-white/5 rounded-lg border text-xs text-secondary leading-relaxed" style="border-color: var(--border-color)">
+      [网关状态监控]<br>
+      推理成功率: 100%<br>
+      平均 RAG 消耗: 18ms
+    </div>
+  </div>
+
+  <!-- 右侧聊天交互区 -->
+  <div class="lg:col-span-3 card p-0 flex flex-col justify-between h-full relative" style="background: var(--bg-surface)">
+    <!-- 聊天内容体 -->
+    <div id="chatMessages" class="flex-grow p-6 overflow-y-auto space-y-4">
+      <div class="flex gap-3 items-start">
+        <div class="w-7 h-7 rounded-full bg-brand-main flex items-center justify-center text-xs text-white">🤖</div>
+        <div class="bg-black/5 dark:bg-white/5 border p-3 rounded-r-xl rounded-bl-xl text-sm max-w-[80%] leading-relaxed" style="border-color: var(--border-color)">
+          你好！我是您的 SQL 调优助理。请把您的慢查询语句发送给我，我将帮您进行语法调优并测试索引命中。
+        </div>
+      </div>
+    </div>
+
+    <!-- 思考时间线/工具调用进度展示（在对话框底部） -->
+    <div id="thinkingLog" class="hidden px-6 py-2 bg-black/20 dark:bg-white/10 border-t border-b text-xs font-mono text-secondary space-y-1" style="border-color: var(--border-color)">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand-main animate-ping"></span> <span id="thinkProgressText">正在检索知识库文档...</span></div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="p-4 border-t flex gap-3" style="border-color: var(--border-color)">
+      <input type="text" id="chatInput" placeholder="输入您的 SQL 查询语句，例如：SELECT * FROM users WHERE age > 20..." class="input-base flex-grow text-sm py-3 px-4 focus:outline-none" onkeydown="if(event.key==='Enter')sendAgentMessage()">
+      <button onclick="sendAgentMessage()" class="btn-primary px-6 font-bold text-sm">发 送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function sendAgentMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chat = document.getElementById('chatMessages');
+      
+      // User message
+      chat.innerHTML += `
+        <div class="flex gap-3 items-start justify-end">
+          <div class="bg-brand-main/10 border p-3 rounded-l-xl rounded-br-xl text-sm max-w-[80%] leading-relaxed" style="border-color: var(--border-color)">
+            ${text}
+          </div>
+          <div class="w-7 h-7 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-secondary">我</div>
+        </div>
+      `;
+      
+      input.value = '';
+      chat.scrollTop = chat.scrollHeight;
+
+      // Show thinking progress
+      const think = document.getElementById('thinkingLog');
+      const progress = document.getElementById('thinkProgressText');
+      think.classList.remove('hidden');
+      
+      progress.innerText = '正在调起 Milvus 向量库检索相关 SLA 调优标准...';
+      
+      setTimeout(() => {
+          progress.innerText = '成功检索到 2 个相关索引策略。正在通过 Mysql-MCP 工具联查 Explain 结构...';
+          
+          setTimeout(() => {
+              progress.innerText = '大模型 gpt-4o 正在组合推理与改写建议...';
+              
+              setTimeout(() => {
+                  think.classList.add('hidden');
+                  
+                  // Bot Response
+                  chat.innerHTML += `
+                    <div class="flex gap-3 items-start">
+                      <div class="w-7 h-7 rounded-full bg-brand-main flex items-center justify-center text-xs text-white">🤖</div>
+                      <div class="bg-black/5 dark:bg-white/5 border p-3 rounded-r-xl rounded-bl-xl text-sm max-w-[80%] leading-relaxed" style="border-color: var(--border-color)">
+                        [SQL 调优诊断书]<br><br>
+                        <strong>诊断结果：</strong><br>
+                        您的 SQL 存在全局全表扫描风险。<code>age > 20</code> 未命中覆盖索引。<br><br>
+                        <strong>优化建议：</strong><br>
+                        建议为 <code>users</code> 表增加复合索引：<br>
+                        <pre class="bg-black/20 dark:bg-white/5 p-2 rounded text-xs font-mono mt-1">ALTER TABLE users ADD INDEX idx_age_status (age, status);</pre>
+                      </div>
+                    </div>
+                  `;
+                  chat.scrollTop = chat.scrollHeight;
+              }, 800);
+          }, 800);
+      }, 800);
+  }
+</script>
+
+</div></main>
+</main>
     </div>
 
     <script>
@@ -313,6 +401,130 @@
                 }
             }
         });
+
+        // ECharts 初始化与配置
+        let tokenTrendChart, modelTopChart;
+
+        function initCharts() {
+            const isDark = document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('apple');
+            
+            // 获取当前主题下的 CSS 变量真实颜色
+            const style = getComputedStyle(document.documentElement);
+            const brandMain = style.getPropertyValue('--brand-main').trim() || '#10b981';
+            const brandAccent = style.getPropertyValue('--brand-accent').trim() || '#f59e0b';
+            const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#a1a1aa';
+            const borderColor = style.getPropertyValue('--border-color').trim() || '#27272a';
+
+            // 1. Token 折线图配置
+            const tokenDom = document.getElementById('tokenTrendChart');
+            if (tokenDom) {
+                if (!tokenTrendChart) tokenTrendChart = echarts.init(tokenDom);
+                
+                const dates = Array.from({length: 30}, (_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - (29 - i));
+                    return `${d.getMonth() + 1}/${d.getDate()}`;
+                });
+                
+                // 模拟趋势数据
+                const values = [1.2, 1.5, 1.3, 1.7, 2.1, 1.8, 1.6, 2.4, 2.8, 2.5, 3.2, 3.8, 3.5, 3.1, 4.0, 4.5, 4.2, 3.9, 4.8, 5.2, 5.0, 5.6, 6.1, 5.8, 6.4, 7.2, 6.9, 7.5, 8.4, 8.2];
+
+                tokenTrendChart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'axis',
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        borderColor: borderColor,
+                        textStyle: { color: isDark ? '#f4f4f5' : '#111827' }
+                    },
+                    grid: { top: '10%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: dates,
+                        axisLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        splitLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    series: [{
+                        name: 'Token 消耗 (M)',
+                        type: 'line',
+                        smooth: true,
+                        showSymbol: false,
+                        lineStyle: { width: 3, color: brandMain },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: brandMain },
+                                { offset: 1, color: 'transparent' }
+                            ])
+                        },
+                        data: values
+                    }]
+                }, true);
+            }
+
+            // 2. 最受欢迎模型柱状图配置
+            const modelDom = document.getElementById('modelTopChart');
+            if (modelDom) {
+                if (!modelTopChart) modelTopChart = echarts.init(modelDom);
+
+                modelTopChart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        borderColor: borderColor,
+                        textStyle: { color: isDark ? '#f4f4f5' : '#111827' }
+                    },
+                    grid: { top: '10%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: {
+                        type: 'value',
+                        splitLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: ['gpt-4o', 'claude-3-5-sonnet', 'gemini-1.5-pro', 'dall-e-3', 'sora-turbo'].reverse(),
+                        axisLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    series: [{
+                        name: '调用次数 (次)',
+                        type: 'bar',
+                        barWidth: '50%',
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                                { offset: 0, color: brandMain },
+                                { offset: 1, color: brandAccent }
+                            ]),
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        data: [42100, 28400, 15400, 4800, 1200].reverse()
+                    }]
+                }, true);
+            }
+        }
+
+        // 覆盖原 setTheme 并更新图表颜色
+        const originalSetTheme = setTheme;
+        setTheme = function(theme) {
+            originalSetTheme(theme);
+            setTimeout(initCharts, 150);
+        }
+
+        // 窗口 resize 监听
+        window.addEventListener('resize', () => {
+            if (tokenTrendChart) tokenTrendChart.resize();
+            if (modelTopChart) modelTopChart.resize();
+        });
+
+        // 首次加载初始化图表
+        setTimeout(initCharts, 200);
 
     </script>
 

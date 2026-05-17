@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiGate - 预警中心</title>
+    <title>AiGate - 套餐与计费</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<body>
+
 <body>
     <header class="master-nav" id="topHeader">
         <div class="flex items-center gap-3">
@@ -108,7 +110,7 @@
                     <div data-roles="sys_admin"><a href="organization.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"/></svg>组织与配额</a></div>
                     <a href="users.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>用户管理</a>
                     <a href="quota-approval.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>配额审批</a>
-                    <div data-roles="sys_admin"><a href="subscription.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>套餐计费</a></div>
+                    <div data-roles="sys_admin"><a href="subscription.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>套餐计费</a></div>
                 </div>
             </div>
             
@@ -158,7 +160,7 @@
                     <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
+                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
                     <div data-roles="sys_admin"><a href="audit.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v4 M12 16h.01"/></svg>操作审计</a></div>
                 </div>
             </div>
@@ -174,46 +176,51 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
-            <!-- Apple 风格专属的背景光晕 -->
-            <div class="hidden apple:block absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10 mix-blend-multiply"></div>
-            
-            <div class="max-w-7xl mx-auto">
-                
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight">预警中心</h1>
-                        <p class="text-secondary mt-1">全局监控额度水位（70%/90%/100%）、密钥过期预警及 MCP 异常状态。</p>
-                    </div>
-                    <button class="btn-secondary">全部标记已读</button>
-                </div>
-                <div class="card p-0 overflow-hidden">
-                    <ul class="divide-y" style="border-color: var(--border-color); divide-color: var(--border-color)">
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">租户配额预警 (90% 水位)</h4>
-                                    <span class="text-xs text-secondary">10 分钟前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">「北京研发中心」本月 Token 配额已消耗 92%，即将触及熔断限制，请提醒租户管理员关注超额审批。</p>
-                            </div>
-                        </li>
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">员工密钥即将过期</h4>
-                                    <span class="text-xs text-secondary">2 小时前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">架构部员工「张三」的 DEV 测试密钥 (ag-dev-3a1b...) 距离过期仅剩 3 天，请通知其轮换密钥。</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
         
-            </div>
-        </main>
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 relative"><div class="max-w-7xl mx-auto">
+
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">套餐与计费</h1>
+    <p class="text-secondary mt-1">监控企业套餐方案，查看调用成本、到期情况与用量水位。</p>
+  </div>
+  <button class="btn-primary">升级套餐方案</button>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  <div class="card lg:col-span-2 flex flex-col justify-between" style="border-left: 4px solid var(--brand-main)">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <span class="badge badge-success uppercase tracking-wider text-xs px-2 py-1 font-bold">企业专业版 (Enterprise Pro)</span>
+          <h2 class="text-2xl font-bold mt-2">北京研发中心专享方案</h2>
+        </div>
+        <div class="text-right">
+          <div class="text-2xl font-black text-brand-main">¥ 8,800 <span class="text-xs text-secondary font-normal">/ 年</span></div>
+          <div class="text-xs text-secondary mt-1">下次账单日: 2027-05-18</div>
+        </div>
+      </div>
+      <p class="text-secondary text-sm">提供全场景 model 路由管控，最高支持 1,000 名活跃用户，专属 MCP 私有工具网关与 180 天请求审计。</p>
+    </div>
+    <div class="border-t pt-4 mt-6 grid grid-cols-3 gap-4" style="border-color: var(--border-color)">
+      <div><div class="text-secondary text-xs">可用用户数</div><div class="text-lg font-bold mt-1">125 / 1,000</div></div>
+      <div><div class="text-secondary text-xs">私有知识库</div><div class="text-lg font-bold mt-1">3.4 GB / 50 GB</div></div>
+      <div><div class="text-secondary text-xs">并发限速 (QPS)</div><div class="text-lg font-bold mt-1">100 QPS</div></div>
+    </div>
+  </div>
+
+  <div class="card flex flex-col justify-between">
+    <div>
+      <h3 class="font-bold mb-2">服务到期倒计时</h3>
+      <div class="text-4xl font-black text-brand-accent mt-2">365 <span class="text-lg font-normal text-secondary">天</span></div>
+      <p class="text-xs text-secondary mt-2">您的企业专业版套餐方案今天已成功完成年度续费，有效期至 2027 年 5 月 18 日。</p>
+    </div>
+    <button class="btn-secondary w-full text-sm py-2 mt-4">查看历史账单</button>
+  </div>
+</div>
+
+</div></main>
+</main>
     </div>
 
     <script>

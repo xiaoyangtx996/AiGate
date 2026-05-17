@@ -96,7 +96,9 @@
                 <div class="nav-items-container transition-all overflow-hidden">
                     <a href="dashboard.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3"/></svg>数据大盘</a>
                     <a href="my-workspace.html" class="nav-item view-user-only" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>我的工作台</a>
-                </div>
+                
+                    <a href="knowledge.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>知识库</a>
+</div>
             </div>
             
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin">
@@ -126,15 +128,7 @@
                 </div>
             </div>
 
-            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
-                <div class="nav-group-header" onclick="toggleNavGroup(this)">
-                    <span>知识库</span>
-                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="knowledge.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>项目知识库</a></div>
-                </div>
-            </div>
+            
 
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
                 <div class="nav-group-header" onclick="toggleNavGroup(this)">
@@ -189,35 +183,35 @@
   <div><h1 class="text-3xl font-bold tracking-tight">知识库管理</h1>
     <p class="text-secondary mt-1">企业文档文件管理系统，支持文件夹分类、开放/锁定权限控制与 RAG 检索策略配置。</p></div>
   <div class="flex gap-2">
-    <button class="btn-secondary" data-roles="sys_admin,tenant_admin">RAG 策略配置</button>
-    <button class="btn-primary">新建文件夹</button>
+    <button class="btn-secondary" data-roles="sys_admin,tenant_admin" onclick="window.location.href='knowledge-detail.html'">RAG 策略配置</button>
+    <button class="btn-primary" onclick="document.getElementById('newFolderModal').classList.remove('hidden')">新建文件夹</button>
   </div>
 </div>
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
   <div class="col-span-1 card p-0 overflow-hidden">
     <div class="p-4 border-b font-bold text-sm flex justify-between items-center" style="border-color:var(--border-color)">
       <span>文件夹目录</span>
-      <button class="text-xs text-brand-main font-bold hover:underline">+ 新建</button>
+      <button class="text-xs text-brand-main font-bold hover:underline" onclick="document.getElementById('newFolderModal').classList.remove('hidden')">+ 新建</button>
     </div>
     <div class="p-2">
-      <div class="nav-item active rounded-lg py-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>全部文件</div>
+      <div class="nav-item active rounded-lg py-2" onclick="window.location.href='knowledge-detail.html'" style="cursor:pointer;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>全部文件</div>
       <div class="pl-4 space-y-0.5 mt-1">
-        <div class="nav-item rounded-lg py-2 text-sm">
+        <div class="nav-item rounded-lg py-2 text-sm" onclick="window.location.href='knowledge-detail.html'" style="cursor:pointer;">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <span>研发规章手册</span>
           <span class="ml-auto text-xs text-brand-accent">锁定</span>
         </div>
-        <div class="nav-item rounded-lg py-2 text-sm">
+        <div class="nav-item rounded-lg py-2 text-sm" onclick="window.location.href='knowledge-detail.html'" style="cursor:pointer;">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <span>产品设计文档</span>
           <span class="ml-auto text-xs text-brand-main">开放</span>
         </div>
-        <div class="nav-item rounded-lg py-2 text-sm">
+        <div class="nav-item rounded-lg py-2 text-sm" onclick="window.location.href='knowledge-detail.html'" style="cursor:pointer;">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <span>SLA 运维手册</span>
           <span class="ml-auto text-xs text-brand-main">开放</span>
         </div>
-        <div class="nav-item rounded-lg py-2 text-sm">
+        <div class="nav-item rounded-lg py-2 text-sm" onclick="window.location.href='knowledge-detail.html'" style="cursor:pointer;">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <span>财务归档</span>
           <span class="ml-auto text-xs text-brand-accent">锁定</span>
@@ -230,7 +224,7 @@
     <div class="card p-4 flex flex-wrap items-center gap-4 border-l-4" style="border-left-color:var(--brand-main);background:color-mix(in srgb,var(--brand-main) 5%,var(--bg-surface))">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-brand-main shrink-0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input class="input-base flex-1 min-w-48" placeholder="在当前文件夹中搜索文件名...">
-      <button class="btn-secondary text-sm">上传文档</button>
+      <button class="btn-secondary text-sm" onclick="window.location.href='knowledge-detail.html'">上传文档</button>
     </div>
 
     <div class="card p-0 overflow-hidden">
@@ -241,7 +235,7 @@
         </div>
         <div class="flex gap-2" data-roles="sys_admin,tenant_admin">
           <button class="btn-secondary text-xs py-1 px-3" onclick="this.innerText=this.innerText==='锁定文件夹'?'开放文件夹':'锁定文件夹'">锁定文件夹</button>
-          <button class="btn-secondary text-xs py-1 px-3">RAG 策略</button>
+          <button class="btn-secondary text-xs py-1 px-3" onclick="window.location.href='knowledge-detail.html'">RAG 策略</button>
         </div>
       </div>
       <table class="w-full text-left">
@@ -307,11 +301,62 @@
   </div>
 </div>
 
+<!-- 新建文件夹弹窗 -->
+<div id="newFolderModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
+  <div class="card w-[480px] p-0 shadow-2xl overflow-hidden relative border border-border-color">
+    <div class="p-6 border-b" style="border-color: var(--border-color)">
+      <h2 class="text-xl font-bold flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-main)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        新建知识库文件夹
+      </h2>
+      <p class="text-xs text-secondary mt-1">创建逻辑独立的文件夹目录，为不同的 Agent 划定知识隔离边界。</p>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-secondary uppercase mb-2">文件夹名称</label>
+        <input type="text" class="input-base" placeholder="例如：API 接口设计手册" id="newFolderNameInput">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-secondary uppercase mb-2">初始安全权限状态</label>
+        <select class="input-base" id="newFolderPrivacy">
+          <option value="open">开放 (全项目 Agent 可读写)</option>
+          <option value="locked">锁定 (需安全管理员单独授权可见)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-secondary uppercase mb-2">AI 关联读取策略</label>
+        <select class="input-base">
+          <option>自动纳入 RAG 数据联邦检索</option>
+          <option>仅手动勾选指定 Agent 时读取</option>
+        </select>
+      </div>
+    </div>
+    <div class="p-4 border-t flex justify-end gap-3 bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+      <button class="btn-secondary" onclick="document.getElementById('newFolderModal').classList.add('hidden')">取消</button>
+      <button class="btn-primary" onclick="submitNewFolder()">开始创建文件夹</button>
+    </div>
+  </div>
+</div>
+
 </div></main>
 </main>
     </div>
 
     <script>
+        function submitNewFolder() {
+            const input = document.getElementById('newFolderNameInput');
+            const name = input.value.trim();
+            if (!name) {
+                alert('请输入文件夹名称！');
+                return;
+            }
+            const privacy = document.getElementById('newFolderPrivacy').value;
+            const statusLabel = privacy === 'locked' ? '锁定' : '开放';
+            alert(`[演示] 成功创建文件夹 「${name}」！\n权限状态：${statusLabel}\nRAG 引擎：已自动创建专属隔离索引空间。\n\n您现在可以在该文件夹下上传知识库文档或配置专属 RAG 检索策略。`);
+            document.getElementById('newFolderModal').classList.add('hidden');
+            input.value = '';
+        }
+
         // Sidebar Menu Toggle Logic
         function toggleNavGroup(headerEl) {
             const container = headerEl.nextElementSibling;

@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiGate - 预警中心</title>
+    <title>AiGate - 配额审批中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<body>
+
 <body>
     <header class="master-nav" id="topHeader">
         <div class="flex items-center gap-3">
@@ -107,7 +109,7 @@
                 <div class="nav-items-container transition-all overflow-hidden">
                     <div data-roles="sys_admin"><a href="organization.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"/></svg>组织与配额</a></div>
                     <a href="users.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>用户管理</a>
-                    <a href="quota-approval.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>配额审批</a>
+                    <a href="quota-approval.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>配额审批</a>
                     <div data-roles="sys_admin"><a href="subscription.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>套餐计费</a></div>
                 </div>
             </div>
@@ -158,7 +160,7 @@
                     <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
+                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
                     <div data-roles="sys_admin"><a href="audit.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v4 M12 16h.01"/></svg>操作审计</a></div>
                 </div>
             </div>
@@ -174,54 +176,98 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
-            <!-- Apple 风格专属的背景光晕 -->
-            <div class="hidden apple:block absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10 mix-blend-multiply"></div>
-            
-            <div class="max-w-7xl mx-auto">
-                
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight">预警中心</h1>
-                        <p class="text-secondary mt-1">全局监控额度水位（70%/90%/100%）、密钥过期预警及 MCP 异常状态。</p>
-                    </div>
-                    <button class="btn-secondary">全部标记已读</button>
-                </div>
-                <div class="card p-0 overflow-hidden">
-                    <ul class="divide-y" style="border-color: var(--border-color); divide-color: var(--border-color)">
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">租户配额预警 (90% 水位)</h4>
-                                    <span class="text-xs text-secondary">10 分钟前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">「北京研发中心」本月 Token 配额已消耗 92%，即将触及熔断限制，请提醒租户管理员关注超额审批。</p>
-                            </div>
-                        </li>
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">员工密钥即将过期</h4>
-                                    <span class="text-xs text-secondary">2 小时前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">架构部员工「张三」的 DEV 测试密钥 (ag-dev-3a1b...) 距离过期仅剩 3 天，请通知其轮换密钥。</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
         
-            </div>
-        </main>
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 relative"><div class="max-w-7xl mx-auto">
+
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">配额审批中心</h1>
+    <p class="text-secondary mt-1">处理下属部门与项目的配额扩容申请，或发起新的额度调整申请。</p>
+  </div>
+  <div class="flex gap-3">
+    <button class="btn-primary" id="openNewRequestBtn">+ 发起申请</button>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="card flex items-center justify-between p-5">
+    <div>
+      <div class="text-secondary text-xs font-bold uppercase tracking-widest">待我审批</div>
+      <div class="text-3xl font-black text-brand-main mt-1">2 <span class="text-xs text-secondary font-normal">个待处理</span></div>
+    </div>
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-brand-main/10 text-brand-main">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+    </div>
+  </div>
+  <div class="card flex items-center justify-between p-5">
+    <div>
+      <div class="text-secondary text-xs font-bold uppercase tracking-widest">本月已审批</div>
+      <div class="text-3xl font-black mt-1">12 <span class="text-xs text-secondary font-normal">个申请</span></div>
+    </div>
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 text-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+    </div>
+  </div>
+  <div class="card flex items-center justify-between p-5">
+    <div>
+      <div class="text-secondary text-xs font-bold uppercase tracking-widest">平均处理时效</div>
+      <div class="text-3xl font-black text-brand-accent mt-1">1.5 <span class="text-xs text-secondary font-normal">小时</span></div>
+    </div>
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-brand-accent/10 text-brand-accent">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+  </div>
+</div>
+
+<div class="card p-0 overflow-hidden mb-8">
+  <div class="p-4 border-b flex justify-between items-center bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+    <h3 class="font-bold text-sm">待审批申请单列表</h3>
+    <span class="text-xs text-secondary">共有 2 个待处理申请</span>
+  </div>
+  <table class="w-full text-left text-sm">
+    <thead class="text-xs text-secondary bg-black/5 dark:bg-white/5 border-b" style="border-color: var(--border-color)">
+      <tr>
+        <th class="p-4">申请单号</th>
+        <th class="p-4">申请人</th>
+        <th class="p-4">配额调整</th>
+        <th class="p-4">申请原因</th>
+        <th class="p-4">申请时间</th>
+        <th class="p-4 text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y" style="border-color: var(--border-color)" id="approvalTableBody">
+      <tr id="row-QA-2026-0042" class="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+        <td class="p-4 font-mono font-bold">QA-2026-0042</td>
+        <td class="p-4"><div>李四</div><div class="text-xs text-secondary mt-0.5">产品研发中心 · 前端组</div></td>
+        <td class="p-4"><div>¥500.00</div><div class="text-xs text-brand-main font-bold mt-0.5">申请调至 ¥2,000.00</div></td>
+        <td class="p-4 text-secondary">Cursor copilot 深度使用，本月配额已耗尽，需紧急扩充支持开发工作。</td>
+        <td class="p-4 text-secondary">10分钟前</td>
+        <td class="p-4 text-right">
+          <button class="btn-primary text-xs py-1 px-3" onclick="openApprovalModal('QA-2026-0042', '李四', '前端组', '¥500.00', '¥2,000.00', 'Cursor copilot 深度使用，本月配额已耗尽，需紧急扩充支持开发工作。')">审批</button>
+        </td>
+      </tr>
+      <tr id="row-QA-2026-0041" class="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+        <td class="p-4 font-mono font-bold">QA-2026-0041</td>
+        <td class="p-4"><div>王五</div><div class="text-xs text-secondary mt-0.5">产品研发中心 · 后端组</div></td>
+        <td class="p-4"><div>¥2,000.00</div><div class="text-xs text-brand-main font-bold mt-0.5">申请调至 ¥5,000.00</div></td>
+        <td class="p-4 text-secondary">正在进行新版大盘压测，需要大量调用 gpt-4o 接口模拟并发请求。</td>
+        <td class="p-4 text-secondary">1小时前</td>
+        <td class="p-4 text-right">
+          <button class="btn-primary text-xs py-1 px-3" onclick="openApprovalModal('QA-2026-0041', '王五', '后端组', '¥2,000.00', '¥5,000.00', '正在进行新版大盘压测，需要大量调用 gpt-4o 接口模拟并发请求。')">审批</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div></main>
     </div>
 
+    <!-- 审批中心交互逻辑脚本 -->
     <script>
-        // Sidebar Menu Toggle Logic
         function toggleNavGroup(headerEl) {
             const container = headerEl.nextElementSibling;
             const svg = headerEl.querySelector('svg');
-            
             if (container.classList.contains('hidden')) {
                 container.classList.remove('hidden');
                 svg.style.transform = 'rotate(0deg)';
@@ -238,64 +284,118 @@
             html.classList.remove('dark', 'light', 'apple');
             html.classList.add(theme);
             localStorage.setItem('aigate_theme', theme);
-            
             btns.forEach(btn => {
-                if(btn.dataset.theme === theme) btn.classList.add('active');
-                else btn.classList.remove('active');
+                btn.classList.toggle('active', btn.dataset.theme === theme);
             });
         }
 
-        const savedTheme = localStorage.getItem('aigate_theme') || 'dark';
-        setTheme(savedTheme);
+        setTheme(localStorage.getItem('aigate_theme') || 'dark');
+        btns.forEach(btn => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
 
-        btns.forEach(btn => {
-            btn.addEventListener('click', () => setTheme(btn.dataset.theme));
-        });
-
-        // Role Management Logic
         function setRole(role) {
             localStorage.setItem('aigate_role', role);
             applyRole(role);
         }
 
         function applyRole(role) {
-            // Update dropdown
             const selector = document.getElementById('roleSelector');
-            if(selector) selector.value = role;
-
-            // Update Avatar
+            if (selector) selector.value = role;
             const avatar = document.getElementById('avatarInitial');
-            if(avatar) {
-                if(role === 'sys_admin') avatar.innerText = 'AD';
-                if(role === 'tenant_admin') avatar.innerText = 'TE';
-                if(role === 'user') avatar.innerText = 'US';
+            if (avatar) {
+                if (role === 'sys_admin') avatar.innerText = 'AD';
+                if (role === 'tenant_admin') avatar.innerText = 'TE';
+                if (role === 'user') avatar.innerText = 'US';
             }
-
-            // Filter DOM elements based on role
             document.querySelectorAll('[data-roles]').forEach(el => {
                 const allowedRoles = el.getAttribute('data-roles').split(',');
-                if(allowedRoles.includes(role)) {
-                    el.style.display = '';
-                } else {
-                    el.style.display = 'none';
-                }
+                el.style.display = allowedRoles.includes(role) ? '' : 'none';
             });
+        }
+        applyRole(localStorage.getItem('aigate_role') || 'sys_admin');
 
-            // Toggle specific text views
-            document.querySelectorAll('.view-sys-admin').forEach(el => el.classList.toggle('hidden', role !== 'sys_admin'));
-            document.querySelectorAll('.view-tenant-admin').forEach(el => el.classList.toggle('hidden', role !== 'tenant_admin'));
-            
-            // Hide Sidebar and Header on Login page
-            if(window.location.pathname.includes('login.html')) {
-                if(document.getElementById('topHeader')) document.getElementById('topHeader').style.display = 'none';
-                if(document.getElementById('mainSidebar')) document.getElementById('mainSidebar').style.display = 'none';
-            }
+        // 配额审批逻辑
+        let activeApprovalId = null;
+
+        function openApprovalModal(id, applicant, group, current, requested, reason) {
+            activeApprovalId = id;
+            document.getElementById('modalRequestId').innerText = id;
+            document.getElementById('modalApplicant').innerText = `${applicant} (${group})`;
+            document.getElementById('modalCurrentQuota').innerText = current;
+            document.getElementById('modalRequestedQuota').innerText = requested;
+            document.getElementById('modalReason').innerText = reason;
+            document.getElementById('approvalComment').value = '';
+            document.getElementById('approvalQuotaInput').value = requested.replace('¥', '').replace(',', '');
+
+            document.getElementById('approvalModalOverlay').classList.remove('hidden');
         }
 
-        const savedRole = localStorage.getItem('aigate_role') || 'sys_admin';
-        applyRole(savedRole);
-    
-        // 点击外部关闭弹窗
+        function closeApprovalModal() {
+            document.getElementById('approvalModalOverlay').classList.add('hidden');
+        }
+
+        function submitApproval(status) {
+            const comment = document.getElementById('approvalComment').value || '无';
+            const approvedAmount = document.getElementById('approvalQuotaInput').value;
+            
+            alert(`[系统通知] 审批成功！\n单号：${activeApprovalId}\n操作：${status === 'approved' ? '同意' : '驳回'}\n核定额度：¥${approvedAmount}\n审批意见：${comment}`);
+            
+            // 移除该行或更新状态
+            const row = document.getElementById(`row-${activeApprovalId}`);
+            if (row) {
+                row.style.opacity = '0.4';
+                row.querySelector('td:last-child').innerHTML = status === 'approved' ? '<span class="badge badge-success">已通过</span>' : '<span class="badge badge-error">已驳回</span>';
+            }
+            closeApprovalModal();
+        }
+
+        // 新建申请 Drawer
+        const openBtn = document.getElementById('openNewRequestBtn');
+        if (openBtn) {
+            openBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('newRequestDrawer').classList.remove('translate-x-full');
+            });
+        }
+
+        function closeNewRequestDrawer() {
+            document.getElementById('newRequestDrawer').classList.add('translate-x-full');
+        }
+
+        function submitNewRequest() {
+            const groupName = document.getElementById('reqGroupName').value;
+            const currentVal = document.getElementById('reqCurrentVal').value;
+            const targetVal = document.getElementById('reqTargetVal').value;
+            const justification = document.getElementById('reqJustification').value;
+
+            if (!targetVal || !justification) {
+                alert('请填写完整的申请额度与申请理由！');
+                return;
+            }
+
+            const newId = `QA-2026-00${Math.floor(Math.random() * 90) + 10}`;
+            
+            // 插入新行
+            const tbody = document.getElementById('approvalTableBody');
+            const tr = document.createElement('tr');
+            tr.id = `row-${newId}`;
+            tr.className = 'hover:bg-black/5 dark:hover:bg-white/5 transition-colors';
+            tr.innerHTML = `
+                <td class="p-4 font-mono font-bold">${newId}</td>
+                <td class="p-4"><div>演示用户</div><div class="text-xs text-secondary mt-0.5">产品研发中心 · ${groupName}</div></td>
+                <td class="p-4"><div>¥${currentVal}</div><div class="text-xs text-brand-main font-bold mt-0.5">申请调至 ¥${targetVal}</div></td>
+                <td class="p-4 text-secondary">${justification}</td>
+                <td class="p-4 text-secondary">刚刚</td>
+                <td class="p-4 text-right">
+                  <button class="btn-primary text-xs py-1 px-3" onclick="openApprovalModal('${newId}', '演示用户', '${groupName}', '¥${currentVal}', '¥${targetVal}', '${justification}')">审批</button>
+                </td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            alert(`[系统通知] 配额申请发起成功！\n系统已自动为您生成单号：${newId}`);
+            closeNewRequestDrawer();
+        }
+
+        // 点击外部关闭弹窗和抽屉
         document.addEventListener('click', (e) => {
             const avatarBtn = document.getElementById('avatarDropdownContainer');
             if (avatarBtn && !avatarBtn.contains(e.target)) {
@@ -312,89 +412,88 @@
                     alertDrop.classList.add('hidden');
                 }
             }
-        });
 
-    </script>
-
-<!-- 悬浮 AI 对话机器人 -->
-<div id="aiChatBtn" onclick="toggleChat()" style="position:fixed;bottom:32px;right:32px;z-index:1000;width:52px;height:52px;border-radius:50%;background:var(--brand-main);color:var(--bg-body);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.3);transition:transform 0.2s ease;" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">
-  <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-</div>
-<div id="aiChatPanel" style="display:none;position:fixed;bottom:96px;right:32px;z-index:1000;width:380px;height:520px;border-radius:1rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4);background:var(--bg-surface);border:1px solid var(--border-color);display:none;flex-direction:column;">
-  <div style="background:var(--brand-main);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
-    <div style="display:flex;align-items:center;gap:10px;color:var(--bg-body);">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-      <div><div style="font-weight:700;font-size:14px;">AiGate Bot</div><div style="font-size:11px;opacity:0.8;">选择知识库开始对话</div></div>
-    </div>
-    <button onclick="toggleChat()" style="background:transparent;border:none;color:var(--bg-body);cursor:pointer;opacity:0.8;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;">
-    <select style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12px;">
-      <option>全局 (不限知识库)</option>
-      <option>产品设计文档</option>
-      <option>SLA 运维手册</option>
-    </select>
-    <select style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12px;">
-      <option>gpt-4o</option>
-      <option>claude-3-5-sonnet</option>
-    </select>
-  </div>
-  <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
-    <div style="display:flex;gap:10px;align-items:flex-start;">
-      <div style="width:28px;height:28px;border-radius:50%;background:var(--brand-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bg-body)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-      </div>
-      <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;max-width:80%;line-height:1.6;color:var(--text-primary);">
-        你好！我是 AiGate Bot，可以帮你查询配额、调用日志，或根据选定知识库回答问题。
-      </div>
-    </div>
-  </div>
-  <div style="padding:12px 16px;border-top:1px solid var(--border-color);display:flex;gap:8px;">
-    <input id="chatInput" type="text" placeholder="输入问题，按 Enter 发送..." style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sendChat()">
-    <button onclick="sendChat()" style="padding:8px 16px;border-radius:10px;background:var(--brand-main);color:var(--bg-body);border:none;font-weight:700;cursor:pointer;font-size:13px;">发送</button>
-  </div>
-</div>
-<script>
-function toggleChat(){{
-  var p=document.getElementById('aiChatPanel');
-  p.style.display=p.style.display==='none'||p.style.display===''?'flex':'none';
-}}
-function sendChat(){{
-  var input=document.getElementById('chatInput');
-  var msg=input.value.trim();
-  if(!msg)return;
-  var messages=document.getElementById('chatMessages');
-  messages.innerHTML+='<div style="display:flex;justify-content:flex-end;"><div style="background:var(--brand-main);color:var(--bg-body);border-radius:12px 0 12px 12px;padding:10px 14px;font-size:13px;max-width:80%;line-height:1.6;">'+msg+'</div></div>';
-  input.value='';
-  setTimeout(function(){{
-    messages.innerHTML+='<div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:28px;height:28px;border-radius:50%;background:var(--brand-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--bg-body)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 8V4H8\"/><rect width=\"16\" height=\"12\" x=\"4\" y=\"8\" rx=\"2\"/></svg></div><div style=\"background:var(--bg-body);border:1px solid var(--border-color);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;max-width:80%;line-height:1.6;color:var(--text-primary);\">[演示] 已收到您的问题，正在检索知识库并生成回答...</div></div>';
-    messages.scrollTop=messages.scrollHeight;
-  }},800);
-  messages.scrollTop=messages.scrollHeight;
-}}
-
-        // 点击外部关闭弹窗
-        document.addEventListener('click', (e) => {
-            const avatarBtn = document.getElementById('avatarDropdownContainer');
-            if (avatarBtn && !avatarBtn.contains(e.target)) {
-                const dropdown = document.getElementById('avatarDropdown');
-                if (dropdown && !dropdown.classList.contains('hidden')) {
-                    dropdown.classList.add('hidden');
-                }
+            const modal = document.getElementById('approvalModalCard');
+            const modalOverlay = document.getElementById('approvalModalOverlay');
+            if (modalOverlay && !modalOverlay.classList.contains('hidden') && modal && !modal.contains(e.target)) {
+                closeApprovalModal();
             }
-            
-            const alertBtn = document.getElementById('alertDropdownContainer');
-            if (alertBtn && !alertBtn.contains(e.target)) {
-                const alertDrop = document.getElementById('alertDropdown');
-                if (alertDrop && !alertDrop.classList.contains('hidden')) {
-                    alertDrop.classList.add('hidden');
-                }
+
+            const drawer = document.getElementById('newRequestDrawer');
+            if (drawer && !drawer.contains(e.target) && !e.target.closest('#openNewRequestBtn')) {
+                closeNewRequestDrawer();
             }
         });
-
     </script>
 
+    <!-- 审批模态弹窗 (Centered Modal) -->
+    <div id="approvalModalOverlay" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity">
+        <div id="approvalModalCard" class="card w-[480px] max-w-full p-6 shadow-2xl space-y-5 flex flex-col border border-border-color" style="background: var(--bg-surface)">
+            <div class="flex justify-between items-center border-b pb-3" style="border-color: var(--border-color)">
+                <h3 class="font-bold text-lg">配额调整单审批</h3>
+                <span class="badge border-gray-500 font-mono text-xs" id="modalRequestId">QA-2026-0042</span>
+            </div>
+
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between"><span class="text-secondary">申请人员:</span><span class="font-bold" id="modalApplicant">李四 (前端组)</span></div>
+                <div class="flex justify-between"><span class="text-secondary">当前配额:</span><span class="font-mono text-secondary" id="modalCurrentQuota">¥500.00</span></div>
+                <div class="flex justify-between"><span class="text-secondary">期望配额:</span><span class="font-mono font-bold text-brand-main" id="modalRequestedQuota">¥2,000.00</span></div>
+                <div class="flex flex-col gap-1"><span class="text-secondary">申请事由:</span><div class="p-3 rounded bg-black/5 dark:bg-white/5 border text-xs text-secondary leading-relaxed" style="border-color: var(--border-color)" id="modalReason">Cursor copilot 深度使用，本月配额已耗尽，需紧急扩充支持开发工作。</div></div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-secondary uppercase tracking-widest block">核定调整额度 (元)</label>
+                    <input type="number" id="approvalQuotaInput" class="input-base font-mono font-bold text-brand-main" value="2000">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-secondary uppercase tracking-widest block">审批意见</label>
+                    <textarea id="approvalComment" class="input-base text-xs h-16 p-3 resize-none" placeholder="输入审批通过或驳回的详细理由..."></textarea>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button class="btn-secondary text-xs flex-grow py-2.5" onclick="submitApproval('rejected')" style="color: var(--brand-accent); border-color: var(--brand-accent)">驳回申请</button>
+                <button class="btn-primary text-xs flex-grow py-2.5" onclick="submitApproval('approved')">同意并更新配额</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 发起申请滑出抽屉 (Drawer Overlay) -->
+    <div id="newRequestDrawer" class="fixed top-0 right-0 h-full w-[460px] max-w-full z-[120] bg-surface border-l shadow-2xl transition-transform duration-300 transform translate-x-full flex flex-col" style="background: var(--bg-surface); border-color: var(--border-color)">
+        <div class="p-6 border-b flex justify-between items-center bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+            <div>
+                <span class="text-xs text-brand-main font-mono">QUOTA REQUEST</span>
+                <h2 class="text-lg font-bold">发起配额调整申请</h2>
+            </div>
+            <button onclick="closeNewRequestDrawer()" class="text-secondary hover:text-primary transition-colors cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <div class="flex-grow p-6 overflow-y-auto space-y-4">
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-secondary uppercase tracking-widest block">申请组织/小组</label>
+                <select id="reqGroupName" class="input-base"><option>前端组</option><option>后端组</option><option>移动组</option><option>测试组</option></select>
+            </div>
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-secondary uppercase tracking-widest block">当前已分配额度 (元)</label>
+                <input type="text" id="reqCurrentVal" class="input-base font-mono bg-black/5 dark:bg-white/5" value="500.00" readonly>
+            </div>
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-secondary uppercase tracking-widest block">申请调至额度 (元)</label>
+                <input type="number" id="reqTargetVal" class="input-base font-mono font-bold text-brand-main" placeholder="例如：2000">
+            </div>
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-secondary uppercase tracking-widest block">申请理由 (Justification)</label>
+                <textarea id="reqJustification" class="input-base text-xs h-28 p-3 resize-none" placeholder="请详细说明您的额度调大请求的合理商业价值与使用场景..."></textarea>
+            </div>
+        </div>
+
+        <div class="p-4 border-t flex justify-end gap-3 bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+            <button class="btn-secondary text-xs flex-1 py-2.5" onclick="closeNewRequestDrawer()">取消</button>
+            <button class="btn-primary text-xs flex-1 py-2.5" onclick="submitNewRequest()">提交申请</button>
+        </div>
+    </div>
 </body>
 </html>

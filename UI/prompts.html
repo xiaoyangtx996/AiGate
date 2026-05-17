@@ -94,7 +94,9 @@
                 <div class="nav-items-container transition-all overflow-hidden">
                     <a href="dashboard.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3"/></svg>数据大盘</a>
                     <a href="my-workspace.html" class="nav-item view-user-only" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>我的工作台</a>
-                </div>
+                
+                    <a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>知识库</a>
+</div>
             </div>
             
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin">
@@ -124,15 +126,7 @@
                 </div>
             </div>
 
-            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
-                <div class="nav-group-header" onclick="toggleNavGroup(this)">
-                    <span>知识库</span>
-                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>项目知识库</a></div>
-                </div>
-            </div>
+            
 
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
                 <div class="nav-group-header" onclick="toggleNavGroup(this)">
@@ -424,7 +418,7 @@
         }
         applyRole(localStorage.getItem('aigate_role') || 'sys_admin');
 
-        // Tab 切换（占位逻辑，后续接入真实数据）
+        // Tab 切换
         function switchPromptTab(tab) {
             document.querySelectorAll('.prompt-tab').forEach(btn => {
                 const isActive = btn.dataset.tab === tab;
@@ -432,15 +426,121 @@
                 btn.style.color = isActive ? 'var(--text-primary)' : 'var(--text-secondary)';
                 btn.style.borderBottomColor = isActive ? 'var(--brand-main)' : 'transparent';
             });
-            // TODO: 后续根据 tab 切换 promptGrid 内容
         }
 
+        // 提示词详情与填槽渲染测试
+        const promptsDatabase = {
+            'email-rewrite': {
+                title: '商务邮件改写助手',
+                category: '写作 · v2.1.0',
+                template: '请将以下非正式邮件内容：\n"""\n{{content}}\n"""\n改写为一封专业的 {{tone}} 语气商务邮件，并使用 {{lang}} 语言输出。',
+                variables: ['content', 'tone', 'lang'],
+                placeholders: {
+                    content: '嗨老铁，明天那个会我不去了哈，帮我跟老大说声抱歉。',
+                    tone: '极其礼貌且委婉',
+                    lang: '中文'
+                }
+            },
+            'code-review': {
+                title: '代码评审 Prompt',
+                category: '代码 · v3.0.2',
+                template: '作为资深架构师，请对以下 {{language}} 代码进行深度审查，重点关注 {{focus}} 安全性与性能：\n\n```\n{{code}}\n```',
+                variables: ['language', 'focus', 'code'],
+                placeholders: {
+                    language: 'Python',
+                    focus: '内存泄漏与并发安全',
+                    code: 'def get_data():\n    global cache_list\n    cache_list.append(fetch_from_db())\n    return cache_list'
+                }
+            },
+            'ticket-triage': {
+                title: '客户工单分诊',
+                category: '客服 · v1.4.0',
+                template: '请根据下述工单正文：\n"""\n{{ticket}}\n"""\n判定产品类别为 {{product}} 相关的优先级，并生成第一条自动回复草稿。',
+                variables: ['ticket', 'product'],
+                placeholders: {
+                    ticket: '我的订单昨晚支付成功了但是现在还没收到激活邮件，能不能退款啊？',
+                    product: '支付与结算系统'
+                }
+            },
+            'nl2sql': {
+                title: 'SQL 自然语言转换',
+                category: '数据分析 · v1.0.0',
+                template: '根据以下 PostgreSQL 数据库 Schema：\n{{schema}}\n\n请将自然语言提问：“{{question}}” 转换为合规的 SQL 查询语句。',
+                variables: ['schema', 'question'],
+                placeholders: {
+                    schema: 'TABLE users (id SERIAL, name VARCHAR, created_at TIMESTAMP);',
+                    question: '查询过去3天内新注册的用户总数是多少？'
+                }
+            },
+            'tech-translate': {
+                title: '中英技术文档互译',
+                category: '翻译 · v1.2.1',
+                template: '请将以下技术文档原文进行专业互译，保留所有 Markdown 格式：\n"""\n{{text}}\n"""\n翻译方向：{{direction}}，确保专业术语对照无误。',
+                variables: ['text', 'direction'],
+                placeholders: {
+                    text: '# Getting Started\nFirst run `npm install` to setup local dependencies.',
+                    direction: '英文 -> 中文'
+                }
+            }
+        };
+
+        let activePromptId = null;
+
         function openPromptDetail(promptId) {
-            // TODO: 跳转到 prompts-detail.html?id=xxx 或打开右侧 Drawer
-            alert('打开提示词详情：' + promptId + '\n（后续接入 prompts-detail.html 含编辑器 + 沙箱调试 + A/B 对比）');
+            const data = promptsDatabase[promptId];
+            if (!data) return;
+            activePromptId = promptId;
+
+            document.getElementById('drawerPromptTitle').innerText = data.title;
+            document.getElementById('drawerPromptCategory').innerText = data.category;
+            document.getElementById('drawerTemplateRaw').value = data.template;
+
+            // 动态生成填槽表单
+            const formContainer = document.getElementById('drawerVariablesForm');
+            formContainer.innerHTML = '';
+            
+            data.variables.forEach(variable => {
+                const formGroup = document.createElement('div');
+                formGroup.className = 'space-y-1';
+                formGroup.innerHTML = `
+                    <label class="text-[10px] font-bold text-secondary uppercase tracking-widest block">${variable}</label>
+                    <input class="input-base text-xs py-1.5 px-3 variable-input" data-var="${variable}" value="${data.placeholders[variable]}" oninput="renderLivePrompt()">
+                `;
+                formContainer.appendChild(formGroup);
+            });
+
+            // 渲染动态预览
+            renderLivePrompt();
+
+            const drawer = document.getElementById('promptDetailDrawer');
+            drawer.classList.remove('translate-x-full');
+        }
+
+        function closePromptDrawer() {
+            const drawer = document.getElementById('promptDetailDrawer');
+            if (drawer) drawer.classList.add('translate-x-full');
+        }
+
+        function renderLivePrompt() {
+            if (!activePromptId) return;
+            const data = promptsDatabase[activePromptId];
+            let template = data.template;
+
+            const inputs = document.querySelectorAll('.variable-input');
+            inputs.forEach(input => {
+                const varName = input.getAttribute('data-var');
+                const val = input.value || `{{${varName}}}`;
+                template = template.replace(new RegExp(`{{\\s*${varName}\\s*}}`, 'g'), val);
+            });
+
+            document.getElementById('drawerRenderedPreview').innerText = template;
+        }
+
+        function testPromptInvocation() {
+            alert('[演示环境] 正在模拟调用大模型进行 Sandbox 测试，请稍候...\n\n生成结果成功，模型返回 200 OK！');
         }
     
-        // 点击外部关闭弹窗
+        // 点击外部关闭弹窗和抽屉
         document.addEventListener('click', (e) => {
             const avatarBtn = document.getElementById('avatarDropdownContainer');
             if (avatarBtn && !avatarBtn.contains(e.target)) {
@@ -457,8 +557,57 @@
                     alertDrop.classList.add('hidden');
                 }
             }
-        });
 
+            const drawer = document.getElementById('promptDetailDrawer');
+            const isClickInsideCard = e.target.closest('.card');
+            if (drawer && !drawer.contains(e.target) && !isClickInsideCard) {
+                closePromptDrawer();
+            }
+        });
     </script>
+
+    <!-- 提示词沙箱测试详情滑出抽屉 (Drawer Overlay) -->
+    <div id="promptDetailDrawer" class="fixed top-0 right-0 h-full w-[500px] max-w-full z-[120] bg-surface border-l shadow-2xl transition-transform duration-300 transform translate-x-full flex flex-col" style="background: var(--bg-surface); border-color: var(--border-color)">
+        <!-- 抽屉头部 -->
+        <div class="p-6 border-b flex justify-between items-center bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+            <div>
+                <span class="text-xs text-brand-main font-mono" id="drawerPromptCategory">写作 · v2.1.0</span>
+                <h2 class="text-lg font-bold" id="drawerPromptTitle">商务邮件改写助手</h2>
+            </div>
+            <button onclick="closePromptDrawer()" class="text-secondary hover:text-primary transition-colors cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- 抽屉主体 -->
+        <div class="flex-grow p-6 overflow-y-auto space-y-5">
+            <!-- 模板原文展示 -->
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-2">Prompt 模板原文</label>
+                <textarea id="drawerTemplateRaw" class="w-full h-24 p-3 rounded-lg border text-xs font-mono bg-black/10 dark:bg-white/5 leading-relaxed resize-none" style="border-color: var(--border-color)" readonly></textarea>
+            </div>
+
+            <!-- 变量插槽填入表单 -->
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-2">变量填槽测试 (Variables Sandbox)</label>
+                <div id="drawerVariablesForm" class="space-y-3 bg-black/5 dark:bg-white/5 p-4 rounded-lg border" style="border-color: var(--border-color)">
+                    <!-- 动态生成变量输入框 -->
+                </div>
+            </div>
+
+            <!-- 渲染效果实时预览 -->
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-2">渲染组合提示词 (Rendered Prompt Preview)</label>
+                <div id="drawerRenderedPreview" class="w-full min-h-24 p-3 rounded-lg border text-xs font-mono bg-black/20 dark:bg-white/10 leading-relaxed whitespace-pre-wrap" style="border-color: var(--border-color); color: var(--text-primary)"></div>
+            </div>
+        </div>
+
+        <!-- 抽屉脚部 -->
+        <div class="p-4 border-t flex justify-end gap-3 bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+            <button class="btn-secondary text-xs px-4 py-2.5" onclick="closePromptDrawer()">关闭</button>
+            <button class="btn-secondary text-xs px-4 py-2.5" onclick="window.location.href='prompts-detail.html'">高级调试中心</button>
+            <button class="btn-primary text-xs flex-1 py-2.5" onclick="testPromptInvocation()">沙箱调用调试</button>
+        </div>
+    </div>
 </body>
 </html>

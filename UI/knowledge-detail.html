@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiGate - 预警中心</title>
+    <title>AiGate - 知识库详情</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
+<body>
+
 <body>
     <header class="master-nav" id="topHeader">
         <div class="flex items-center gap-3">
@@ -158,7 +161,7 @@
                     <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
+                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
                     <div data-roles="sys_admin"><a href="audit.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v4 M12 16h.01"/></svg>操作审计</a></div>
                 </div>
             </div>
@@ -174,46 +177,156 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
-            <!-- Apple 风格专属的背景光晕 -->
-            <div class="hidden apple:block absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10 mix-blend-multiply"></div>
-            
-            <div class="max-w-7xl mx-auto">
-                
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight">预警中心</h1>
-                        <p class="text-secondary mt-1">全局监控额度水位（70%/90%/100%）、密钥过期预警及 MCP 异常状态。</p>
-                    </div>
-                    <button class="btn-secondary">全部标记已读</button>
-                </div>
-                <div class="card p-0 overflow-hidden">
-                    <ul class="divide-y" style="border-color: var(--border-color); divide-color: var(--border-color)">
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">租户配额预警 (90% 水位)</h4>
-                                    <span class="text-xs text-secondary">10 分钟前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">「北京研发中心」本月 Token 配额已消耗 92%，即将触及熔断限制，请提醒租户管理员关注超额审批。</p>
-                            </div>
-                        </li>
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">员工密钥即将过期</h4>
-                                    <span class="text-xs text-secondary">2 小时前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">架构部员工「张三」的 DEV 测试密钥 (ag-dev-3a1b...) 距离过期仅剩 3 天，请通知其轮换密钥。</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
         
-            </div>
-        </main>
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 relative"><div class="max-w-7xl mx-auto">
+
+<div class="flex items-center gap-3 mb-8">
+  <a href="knowledge.html" class="text-secondary hover:text-primary transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+  </a>
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="text-3xl font-bold tracking-tight">北京研发中心专属库</h1>
+      <span class="badge border-gray-500 font-mono text-xs">RAG KB</span>
+    </div>
+    <p class="text-secondary mt-1">项目级强物理隔离的知识数据，专用于支持架构组智能体做合规查询与溯源。</p>
+  </div>
+</div>
+
+<!-- Tab 导航 -->
+<div class="flex gap-4 border-b mb-6" style="border-color: var(--border-color)">
+  <button class="px-4 py-2 border-b-2 border-brand-main font-bold text-sm text-brand-main" id="tabBtnDocs" onclick="switchKTab('docs')">文档管理</button>
+  <button class="px-4 py-2 border-b-2 border-transparent font-bold text-sm text-secondary hover:text-primary" id="tabBtnRAG" onclick="switchKTab('rag')">RAG 策略调试</button>
+  <button class="px-4 py-2 border-b-2 border-transparent font-bold text-sm text-secondary hover:text-primary" id="tabBtnAgents" onclick="switchKTab('agents')">关联智能体</button>
+</div>
+
+<!-- Tab 内容 - 文档管理 -->
+<div id="tabContentDocs" class="space-y-6">
+  <div class="flex justify-between items-center bg-black/5 dark:bg-white/5 p-4 rounded-lg border" style="border-color: var(--border-color)">
+    <div class="text-sm text-secondary">拖拽或选择文件上传到此强物理隔离的 Milvus 分组。</div>
+    <button class="btn-primary text-xs" onclick="triggerMockUpload()">+ 选择并上传文档</button>
+  </div>
+
+  <div class="card p-0 overflow-hidden">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-black/5 dark:bg-white/5 border-b" style="border-color: var(--border-color)">
+        <tr>
+          <th class="p-4">文档名称</th>
+          <th class="p-4">大小</th>
+          <th class="p-4">向量块数量</th>
+          <th class="p-4">上传时间</th>
+          <th class="p-4">分块状态</th>
+          <th class="p-4 text-right">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y" style="border-color: var(--border-color)" id="kbDocTableBody">
+        <tr id="kb-doc-1">
+          <td class="p-4 font-bold flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> 生产环境数据库治理规范.pdf</td>
+          <td class="p-4 text-secondary">2.4 MB</td>
+          <td class="p-4 font-mono">142 块</td>
+          <td class="p-4 text-secondary">2小时前</td>
+          <td class="p-4"><span class="badge badge-success">解析成功</span></td>
+          <td class="p-4 text-right"><button class="text-brand-accent font-bold hover:underline" onclick="deleteKbDoc('kb-doc-1')">删除</button></td>
+        </tr>
+        <tr id="kb-doc-2">
+          <td class="p-4 font-bold flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> 架构委员会索引规范_V3.pdf</td>
+          <td class="p-4 text-secondary">1.1 MB</td>
+          <td class="p-4 font-mono">68 块</td>
+          <td class="p-4 text-secondary">1天前</td>
+          <td class="p-4"><span class="badge badge-success">解析成功</span></td>
+          <td class="p-4 text-right"><button class="text-brand-accent font-bold hover:underline" onclick="deleteKbDoc('kb-doc-2')">删除</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Tab 内容 - RAG 策略调试 -->
+<div id="tabContentRAG" class="space-y-6 hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-6 space-y-4">
+      <h3 class="font-bold text-sm uppercase tracking-widest text-secondary">切片与分块设置 (Chunking Policy)</h3>
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="text-xs font-bold text-secondary uppercase block mb-1">分块大小 (Chunk Size)</label><input type="number" class="input-base" value="500"></div>
+          <div><label class="text-xs font-bold text-secondary uppercase block mb-1">重叠 Token数 (Overlap)</label><input type="number" class="input-base" value="50"></div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-secondary uppercase block mb-1">文本嵌入模型 (Embedding LLM)</label>
+          <select class="input-base"><option>text-embedding-3-large</option><option>bge-large-zh-v1.5</option></select>
+        </div>
+      </div>
+      <button class="btn-primary w-full text-xs py-2.5" onclick="alert('RAG 策略已成功保存！后台正在自动异步重构索引向量块。')">保存切片规则</button>
+    </div>
+
+    <div class="card p-6 space-y-4">
+      <h3 class="font-bold text-sm uppercase tracking-widest text-secondary">实时召回预览 (Retrieval Debugger)</h3>
+      <input type="text" placeholder="输入搜索词测试召回，例如：SQL慢查询" class="input-base text-xs">
+      <button class="btn-secondary w-full text-xs py-2.5">运行调试检索</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 内容 - 关联智能体 -->
+<div id="tabContentAgents" class="space-y-6 hidden">
+  <div class="card p-5 space-y-4">
+    <h3 class="font-bold text-sm uppercase tracking-widest text-secondary">正在消费该知识库的智能体</h3>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between p-3 rounded-lg border" style="border-color: var(--border-color)">
+        <div><div class="font-bold text-sm">SQL 调优助理</div><div class="text-xs text-secondary mt-0.5">底座模型: gpt-4o · 状态: 正常</div></div>
+        <a href="agent-chat.html" class="btn-secondary text-xs py-1 px-3">去对话联调</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchKTab(tab) {
+      const tabs = ['docs', 'rag', 'agents'];
+      tabs.forEach(t => {
+          const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+          const content = document.getElementById(`tabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+          
+          if (t === tab) {
+              btn.className = 'px-4 py-2 border-b-2 border-brand-main font-bold text-sm text-brand-main';
+              content.classList.remove('hidden');
+          } else {
+              btn.className = 'px-4 py-2 border-b-2 border-transparent font-bold text-sm text-secondary hover:text-primary';
+              content.classList.add('hidden');
+          }
+      });
+  }
+
+  function triggerMockUpload() {
+      const name = prompt('请输入要模拟上传的文档名称：', '前端页面状态缓存设计指南.docx');
+      if (!name) return;
+
+      const tbody = document.getElementById('kbDocTableBody');
+      const tr = document.createElement('tr');
+      const newId = `kb-doc-${Math.floor(Math.random() * 90) + 10}`;
+      tr.id = newId;
+      tr.innerHTML = `
+          <td class="p-4 font-bold flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ${name}</td>
+          <td class="p-4 text-secondary">420.5 KB</td>
+          <td class="p-4 font-mono">24 块</td>
+          <td class="p-4 text-secondary">刚刚</td>
+          <td class="p-4"><span class="badge badge-success">解析成功</span></td>
+          <td class="p-4 text-right"><button class="text-brand-accent font-bold hover:underline" onclick="deleteKbDoc('${newId}')">删除</button></td>
+      `;
+      tbody.insertBefore(tr, tbody.firstChild);
+      alert('「' + name + '」文件上传且 Milvus 向量分块提取成功！已生成 24 个安全加密的文本片段。');
+  }
+
+  function deleteKbDoc(id) {
+      if (confirm('确认将此文档从强隔离向量库中移除吗？此操作不可逆。')) {
+          const row = document.getElementById(id);
+          if (row) row.remove();
+      }
+  }
+</script>
+
+</div></main>
+</main>
     </div>
 
     <script>
@@ -313,6 +426,130 @@
                 }
             }
         });
+
+        // ECharts 初始化与配置
+        let tokenTrendChart, modelTopChart;
+
+        function initCharts() {
+            const isDark = document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('apple');
+            
+            // 获取当前主题下的 CSS 变量真实颜色
+            const style = getComputedStyle(document.documentElement);
+            const brandMain = style.getPropertyValue('--brand-main').trim() || '#10b981';
+            const brandAccent = style.getPropertyValue('--brand-accent').trim() || '#f59e0b';
+            const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#a1a1aa';
+            const borderColor = style.getPropertyValue('--border-color').trim() || '#27272a';
+
+            // 1. Token 折线图配置
+            const tokenDom = document.getElementById('tokenTrendChart');
+            if (tokenDom) {
+                if (!tokenTrendChart) tokenTrendChart = echarts.init(tokenDom);
+                
+                const dates = Array.from({length: 30}, (_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - (29 - i));
+                    return `${d.getMonth() + 1}/${d.getDate()}`;
+                });
+                
+                // 模拟趋势数据
+                const values = [1.2, 1.5, 1.3, 1.7, 2.1, 1.8, 1.6, 2.4, 2.8, 2.5, 3.2, 3.8, 3.5, 3.1, 4.0, 4.5, 4.2, 3.9, 4.8, 5.2, 5.0, 5.6, 6.1, 5.8, 6.4, 7.2, 6.9, 7.5, 8.4, 8.2];
+
+                tokenTrendChart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'axis',
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        borderColor: borderColor,
+                        textStyle: { color: isDark ? '#f4f4f5' : '#111827' }
+                    },
+                    grid: { top: '10%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: dates,
+                        axisLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        splitLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    series: [{
+                        name: 'Token 消耗 (M)',
+                        type: 'line',
+                        smooth: true,
+                        showSymbol: false,
+                        lineStyle: { width: 3, color: brandMain },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: brandMain },
+                                { offset: 1, color: 'transparent' }
+                            ])
+                        },
+                        data: values
+                    }]
+                }, true);
+            }
+
+            // 2. 最受欢迎模型柱状图配置
+            const modelDom = document.getElementById('modelTopChart');
+            if (modelDom) {
+                if (!modelTopChart) modelTopChart = echarts.init(modelDom);
+
+                modelTopChart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        borderColor: borderColor,
+                        textStyle: { color: isDark ? '#f4f4f5' : '#111827' }
+                    },
+                    grid: { top: '10%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: {
+                        type: 'value',
+                        splitLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: ['gpt-4o', 'claude-3-5-sonnet', 'gemini-1.5-pro', 'dall-e-3', 'sora-turbo'].reverse(),
+                        axisLine: { lineStyle: { color: borderColor } },
+                        axisLabel: { color: textSecondary, fontSize: 10 }
+                    },
+                    series: [{
+                        name: '调用次数 (次)',
+                        type: 'bar',
+                        barWidth: '50%',
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                                { offset: 0, color: brandMain },
+                                { offset: 1, color: brandAccent }
+                            ]),
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        data: [42100, 28400, 15400, 4800, 1200].reverse()
+                    }]
+                }, true);
+            }
+        }
+
+        // 覆盖原 setTheme 并更新图表颜色
+        const originalSetTheme = setTheme;
+        setTheme = function(theme) {
+            originalSetTheme(theme);
+            setTimeout(initCharts, 150);
+        }
+
+        // 窗口 resize 监听
+        window.addEventListener('resize', () => {
+            if (tokenTrendChart) tokenTrendChart.resize();
+            if (modelTopChart) modelTopChart.resize();
+        });
+
+        // 首次加载初始化图表
+        setTimeout(initCharts, 200);
 
     </script>
 

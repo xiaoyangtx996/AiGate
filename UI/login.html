@@ -75,7 +75,9 @@
                 <div class="nav-items-container transition-all overflow-hidden">
                     <a href="dashboard.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3"/></svg>数据大盘</a>
                     <a href="my-workspace.html" class="nav-item view-user-only" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>我的工作台</a>
-                </div>
+                
+                    <a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>知识库</a>
+</div>
             </div>
             
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin">
@@ -105,15 +107,7 @@
                 </div>
             </div>
 
-            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
-                <div class="nav-group-header" onclick="toggleNavGroup(this)">
-                    <span>知识库</span>
-                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>项目知识库</a></div>
-                </div>
-            </div>
+            
 
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
                 <div class="nav-group-header" onclick="toggleNavGroup(this)">
@@ -177,14 +171,29 @@
                         <h2 class="text-xl font-bold mb-2">多租户安全网关</h2>
                         <p class="text-secondary text-sm mb-8">请使用企业域账号或分配的租户凭证登录。</p>
                         
-                        <form class="space-y-6" onsubmit="event.preventDefault(); window.location.href='dashboard.html';">
+                        <!-- 登录方式切换 Tab -->
+                        <div class="flex bg-black/10 dark:bg-white/5 rounded-lg p-1 mb-6 border border-border-color" style="border-color: var(--border-color)">
+                            <button type="button" id="tabCredential" onclick="switchLoginMode('credential')" class="flex-grow text-center py-2 text-xs font-bold rounded-md transition-colors bg-brand-main text-white" style="color: var(--bg-body)">网关凭证登录</button>
+                            <button type="button" id="tabLDAP" onclick="switchLoginMode('ldap')" class="flex-grow text-center py-2 text-xs font-bold rounded-md transition-colors text-secondary hover:text-primary">域账号登录 (LDAP)</button>
+                        </div>
+
+                        <!-- 错误通知横幅 -->
+                        <div id="errorBanner" class="hidden mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <div class="leading-relaxed">
+                                <span class="font-bold">登录失败：</span>
+                                <span id="errorMessage">您输入的账号或密码有误，请重新输入。</span>
+                            </div>
+                        </div>
+
+                        <form id="loginForm" class="space-y-6" onsubmit="handleLogin(event)">
                             <div>
-                                <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">账号 (Username)</label>
-                                <input type="text" class="input-base py-3" placeholder="admin / tenant / user" required>
+                                <label id="usernameLabel" class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">账号 (Username)</label>
+                                <input id="usernameInput" type="text" class="input-base py-3" placeholder="admin / tenant / user" required>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-secondary uppercase tracking-widest mb-2">密码 (Password)</label>
-                                <input type="password" class="input-base py-3" placeholder="••••••••" required>
+                                <input id="passwordInput" type="password" class="input-base py-3" placeholder="••••••••" required>
                             </div>
                             <div class="flex items-center justify-between">
                                 <label class="flex items-center gap-2 text-sm text-secondary cursor-pointer">
@@ -193,6 +202,27 @@
                                 <a href="#" class="text-sm font-bold text-brand-main hover:underline">忘记密码?</a>
                             </div>
                             <button type="submit" class="btn-primary w-full py-3 text-lg mt-4">登 录</button>
+                            
+                            <!-- 第三方企业 SSO 登录 -->
+                            <div class="relative flex py-3 items-center">
+                                <div class="flex-grow border-t" style="border-color: var(--border-color)"></div>
+                                <span class="flex-shrink mx-4 text-xs text-secondary">企业单点登录 (SSO)</span>
+                                <div class="flex-grow border-t" style="border-color: var(--border-color)"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button type="button" class="btn-secondary py-2.5 flex items-center justify-center gap-2 text-xs font-bold" onclick="showSSOLogin('飞书')">
+                                    <svg class="w-4 h-4 text-brand-main" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                                    </svg>
+                                    飞书登录
+                                </button>
+                                <button type="button" class="btn-secondary py-2.5 flex items-center justify-center gap-2 text-xs font-bold" onclick="showSSOLogin('企业微信')">
+                                    <svg class="w-4 h-4 text-brand-accent" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+                                    </svg>
+                                    企业微信
+                                </button>
+                            </div>
                         </form>
                         
                         <div class="mt-8 text-center border-t pt-6" style="border-color: var(--border-color)">
@@ -288,6 +318,70 @@
 
         const savedRole = localStorage.getItem('aigate_role') || 'sys_admin';
         applyRole(savedRole);
+
+        let currentLoginMode = 'credential';
+        
+        function switchLoginMode(mode) {
+            currentLoginMode = mode;
+            const tabCred = document.getElementById('tabCredential');
+            const tabLdap = document.getElementById('tabLDAP');
+            const userLabel = document.getElementById('usernameLabel');
+            const userInput = document.getElementById('usernameInput');
+            
+            if (mode === 'credential') {
+                tabCred.className = 'flex-grow text-center py-2 text-xs font-bold rounded-md transition-colors bg-brand-main text-white';
+                tabCred.style.color = 'var(--bg-body)';
+                tabLdap.className = 'flex-grow text-center py-2 text-xs font-bold rounded-md transition-colors text-secondary hover:text-primary';
+                tabLdap.style.color = '';
+                userLabel.innerText = '账号 (Username)';
+                userInput.placeholder = 'admin / tenant / user';
+            } else {
+                tabLdap.className = 'flex-grow text-center py-2 text-xs font-bold rounded-md transition-colors bg-brand-main text-white';
+                tabLdap.style.color = 'var(--bg-body)';
+                tabCred.className = 'flex-grow text-center py-2 text-xs font-bold rounded-md transition-colors text-secondary hover:text-primary';
+                tabCred.style.color = '';
+                userLabel.innerText = '域账号 (LDAP Account)';
+                userInput.placeholder = 'email@company.com';
+            }
+            document.getElementById('errorBanner').classList.add('hidden');
+        }
+
+        function showSSOLogin(provider) {
+            alert(`[单点登录演示] 正在拉取 ${provider} 的企业授权接口...`);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('usernameInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            const banner = document.getElementById('errorBanner');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (currentLoginMode === 'credential') {
+                if (username === 'admin') {
+                    setRole('sys_admin');
+                    window.location.href = 'dashboard.html';
+                } else if (username === 'tenant') {
+                    setRole('tenant_admin');
+                    window.location.href = 'dashboard.html';
+                } else if (username === 'user') {
+                    setRole('user');
+                    window.location.href = 'my-workspace.html';
+                } else {
+                    errorMsg.innerText = '凭证无效。测试账号请使用：admin、tenant 或 user。';
+                    banner.classList.remove('hidden');
+                }
+            } else {
+                // LDAP mode
+                if (username.includes('@') && password.length >= 6) {
+                    setRole('user');
+                    window.location.href = 'my-workspace.html';
+                } else {
+                    errorMsg.innerText = 'LDAP 域账号格式错误或密码不满足企业安全策略。';
+                    banner.classList.remove('hidden');
+                }
+            }
+        }
     </script>
 
 <!-- 悬浮 AI 对话机器人 -->

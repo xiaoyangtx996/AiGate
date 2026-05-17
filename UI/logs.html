@@ -96,7 +96,9 @@
                 <div class="nav-items-container transition-all overflow-hidden">
                     <a href="dashboard.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3"/></svg>数据大盘</a>
                     <a href="my-workspace.html" class="nav-item view-user-only" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>我的工作台</a>
-                </div>
+                
+                    <a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>知识库</a>
+</div>
             </div>
             
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin">
@@ -126,15 +128,7 @@
                 </div>
             </div>
 
-            <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
-                <div class="nav-group-header" onclick="toggleNavGroup(this)">
-                    <span>知识库</span>
-                    <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="knowledge.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>项目知识库</a></div>
-                </div>
-            </div>
+            
 
             <div class="nav-group py-2 border-t" style="border-color: var(--border-color)" data-roles="sys_admin,tenant_admin,user">
                 <div class="nav-group-header" onclick="toggleNavGroup(this)">
@@ -215,9 +209,9 @@
         <tr><th class="p-4">时间</th><th class="p-4">Key</th><th class="p-4">模型</th><th class="p-4">提示词 Tokens</th><th class="p-4">输出 Tokens</th><th class="p-4">耗时</th><th class="p-4 text-right">状态</th></tr>
       </thead>
       <tbody class="text-sm divide-y" style="border-color:var(--border-color)">
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5"><td class="p-4 text-secondary">2026-04-29 13:12</td><td class="p-4 font-mono text-brand-main">ag-rd-a8f2</td><td class="p-4">gpt-4o</td><td class="p-4 font-mono">845</td><td class="p-4 font-mono">400</td><td class="p-4 text-secondary">1.2s</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5"><td class="p-4 text-secondary">2026-04-29 13:10</td><td class="p-4 font-mono text-brand-main">ag-rd-a8f2</td><td class="p-4">claude-3-5-sonnet</td><td class="p-4 font-mono">1,240</td><td class="p-4 font-mono">890</td><td class="p-4 text-secondary">3.4s</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5"><td class="p-4 text-secondary">2026-04-29 12:58</td><td class="p-4 font-mono text-brand-accent">ag-test-x1y2</td><td class="p-4">gpt-4o</td><td class="p-4 font-mono">-</td><td class="p-4 font-mono">-</td><td class="p-4 text-secondary">-</td><td class="p-4 text-right"><span class="badge badge-warning">403</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('chat', '2026-04-29 13:12', 'ag-rd-a8f2', 'gpt-4o', '请帮我用 HTML/JS 写一个滑出抽屉组件的代码。', '这是一段滑出抽屉的实现：通过 CSS transform translate-x-full 进行控制，使用 JavaScript classList.toggle(‘translate-x-full’) 进行展开和折叠。', '845|400|1.2s')"><td class="p-4 text-secondary">2026-04-29 13:12</td><td class="p-4 font-mono text-brand-main">ag-rd-a8f2</td><td class="p-4">gpt-4o</td><td class="p-4 font-mono">845</td><td class="p-4 font-mono">400</td><td class="p-4 text-secondary">1.2s</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('chat', '2026-04-29 13:10', 'ag-rd-a8f2', 'claude-3-5-sonnet', '请审查这段 Python 代码的内存泄漏漏洞。', '我审查了您提供的 Python 代码，发现在多线程处理中使用全局 list 累积数据而没有及时清除。建议使用 queue.Queue 或限定大小的 cache。', '1,240|890|3.4s')"><td class="p-4 text-secondary">2026-04-29 13:10</td><td class="p-4 font-mono text-brand-main">ag-rd-a8f2</td><td class="p-4">claude-3-5-sonnet</td><td class="p-4 font-mono">1,240</td><td class="p-4 font-mono">890</td><td class="p-4 text-secondary">3.4s</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('chat', '2026-04-29 12:58', 'ag-test-x1y2', 'gpt-4o', '未授权的提示词获取', '未授权的调用请求，已被安全网关进行拦截。', '0|0|0.0s')"><td class="p-4 text-secondary">2026-04-29 12:58</td><td class="p-4 font-mono text-brand-accent">ag-test-x1y2</td><td class="p-4">gpt-4o</td><td class="p-4 font-mono">-</td><td class="p-4 font-mono">-</td><td class="p-4 text-secondary">-</td><td class="p-4 text-right"><span class="badge badge-warning">403</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -230,8 +224,8 @@
         <tr><th class="p-4">时间</th><th class="p-4">Key</th><th class="p-4">模型</th><th class="p-4">尺寸</th><th class="p-4">提示词摘要</th><th class="p-4">费用</th><th class="p-4 text-right">状态</th></tr>
       </thead>
       <tbody class="text-sm divide-y" style="border-color:var(--border-color)">
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5"><td class="p-4 text-secondary">2026-04-29 11:30</td><td class="p-4 font-mono text-brand-main">ag-prod-c3d4</td><td class="p-4">dall-e-3</td><td class="p-4">1024x1024</td><td class="p-4 text-secondary max-w-xs truncate">一只赛博朋克风格的熊猫...</td><td class="p-4 font-mono">¥ 2.00</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5"><td class="p-4 text-secondary">2026-04-29 10:15</td><td class="p-4 font-mono text-brand-main">ag-rd-a8f2</td><td class="p-4">dall-e-3</td><td class="p-4">1792x1024</td><td class="p-4 text-secondary max-w-xs truncate">企业级 AI 网关架构图...</td><td class="p-4 font-mono">¥ 4.00</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('image', '2026-04-29 11:30', 'ag-prod-c3d4', 'dall-e-3', '一只赛博朋克风格的熊猫，霓虹灯背景，高精细节。', '1024x1024', '¥ 2.00')"><td class="p-4 text-secondary">2026-04-29 11:30</td><td class="p-4 font-mono text-brand-main">ag-prod-c3d4</td><td class="p-4">dall-e-3</td><td class="p-4">1024x1024</td><td class="p-4 text-secondary max-w-xs truncate">一只赛博朋克风格的熊猫...</td><td class="p-4 font-mono">¥ 2.00</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('image', '2026-04-29 10:15', 'ag-rd-a8f2', 'dall-e-3', '企业级 AI 网关架构图，高对比度设计系统。', '1792x1024', '¥ 4.00')"><td class="p-4 text-secondary">2026-04-29 10:15</td><td class="p-4 font-mono text-brand-main">ag-rd-a8f2</td><td class="p-4">dall-e-3</td><td class="p-4">1792x1024</td><td class="p-4 text-secondary max-w-xs truncate">企业级 AI 网关架构图...</td><td class="p-4 font-mono">¥ 4.00</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -244,7 +238,7 @@
         <tr><th class="p-4">时间</th><th class="p-4">Key</th><th class="p-4">模型</th><th class="p-4">时长</th><th class="p-4">分辨率</th><th class="p-4">费用</th><th class="p-4 text-right">状态</th></tr>
       </thead>
       <tbody class="text-sm divide-y" style="border-color:var(--border-color)">
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5"><td class="p-4 text-secondary">2026-04-28 18:20</td><td class="p-4 font-mono text-brand-main">ag-prod-c3d4</td><td class="p-4">sora-turbo</td><td class="p-4">10s</td><td class="p-4">1080p</td><td class="p-4 font-mono">¥ 50.00</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('video', '2026-04-28 18:20', 'ag-prod-c3d4', 'sora-turbo', '赛博朋克城市雨夜飞车追逐镜头。', '10s / 1080p', '¥ 50.00')"><td class="p-4 text-secondary">2026-04-28 18:20</td><td class="p-4 font-mono text-brand-main">ag-prod-c3d4</td><td class="p-4">sora-turbo</td><td class="p-4">10s</td><td class="p-4">1080p</td><td class="p-4 font-mono">¥ 50.00</td><td class="p-4 text-right"><span class="badge badge-success">200</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -257,8 +251,8 @@
         <tr><th class="p-4">时间</th><th class="p-4">用户</th><th class="p-4">Agent</th><th class="p-4">调用知识库</th><th class="p-4">工具调用次数</th><th class="p-4">总 Tokens</th><th class="p-4 text-right">状态</th></tr>
       </thead>
       <tbody class="text-sm divide-y" style="border-color:var(--border-color)">
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"><td class="p-4 text-secondary">2026-04-29 14:05</td><td class="p-4">张三</td><td class="p-4 text-brand-main font-bold">AiGate Bot</td><td class="p-4 text-secondary">SLA 运维手册</td><td class="p-4 font-mono">3</td><td class="p-4 font-mono">2,480</td><td class="p-4 text-right"><span class="badge badge-success">完成</span></td></tr>
-        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"><td class="p-4 text-secondary">2026-04-29 13:40</td><td class="p-4">李四</td><td class="p-4 font-bold">代码审查助手</td><td class="p-4 text-secondary">研发规章手册</td><td class="p-4 font-mono">7</td><td class="p-4 font-mono">5,120</td><td class="p-4 text-right"><span class="badge badge-success">完成</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('agent', '2026-04-29 14:05', '张三 (USER)', 'AiGate Bot', 'AiGate Bot', 'SLA 运维手册', '3 次 (GitHub / Email / DB)')"><td class="p-4 text-secondary">2026-04-29 14:05</td><td class="p-4">张三</td><td class="p-4 text-brand-main font-bold">AiGate Bot</td><td class="p-4 text-secondary">SLA 运维手册</td><td class="p-4 font-mono">3</td><td class="p-4 font-mono">2,480</td><td class="p-4 text-right"><span class="badge badge-success">完成</span></td></tr>
+        <tr class="hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer" onclick="openLogDrawer('agent', '2026-04-29 13:40', '李四 (USER)', '代码审查助手', '代码审查助手', '研发规章手册', '7 次 (Git / Slack / Sonar)')"><td class="p-4 text-secondary">2026-04-29 13:40</td><td class="p-4">李四</td><td class="p-4 font-bold">代码审查助手</td><td class="p-4 text-secondary">研发规章手册</td><td class="p-4 font-mono">7</td><td class="p-4 font-mono">5,120</td><td class="p-4 text-right"><span class="badge badge-success">完成</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -460,7 +454,7 @@ function sendChat(){{
   messages.scrollTop=messages.scrollHeight;
 }}
 
-        // 点击外部关闭弹窗
+        // 点击外部关闭弹窗和抽屉
         document.addEventListener('click', (e) => {
             const avatarBtn = document.getElementById('avatarDropdownContainer');
             if (avatarBtn && !avatarBtn.contains(e.target)) {
@@ -477,7 +471,209 @@ function sendChat(){{
                     alertDrop.classList.add('hidden');
                 }
             }
+
+            // 点击外部关闭日志抽屉
+            const drawer = document.getElementById('logDetailDrawer');
+            const isClickInsideTable = e.target.closest('table');
+            if (drawer && !drawer.contains(e.target) && !isClickInsideTable) {
+                closeDrawer();
+            }
         });
+
+        function openLogDrawer(type, time, key, model, detail1, detail2, detail3) {
+            document.getElementById('drawerLogTime').innerText = time;
+            document.getElementById('drawerLogKey').innerText = key;
+            document.getElementById('drawerLogModel').innerText = model;
+            
+            // 重置所有详情面板的隐藏状态
+            document.getElementById('drawerChatDetail').classList.add('hidden');
+            document.getElementById('drawerMediaDetail').classList.add('hidden');
+            document.getElementById('drawerAgentDetail').classList.add('hidden');
+            
+            if (type === 'chat') {
+                document.getElementById('drawerChatDetail').classList.remove('hidden');
+                document.getElementById('drawerPromptText').innerText = detail1;
+                document.getElementById('drawerResponseText').innerText = detail2;
+                
+                const parts = detail3.split('|');
+                document.getElementById('drawerPromptTokens').innerText = parts[0] + ' Tokens';
+                document.getElementById('drawerResponseTokens').innerText = parts[1] + ' Tokens';
+                document.getElementById('drawerLatency').innerText = parts[2];
+            } else if (type === 'image') {
+                document.getElementById('drawerMediaDetail').classList.remove('hidden');
+                document.getElementById('drawerMediaTitle').innerText = '生图 Prompt & 规格';
+                document.getElementById('drawerMediaPromptText').innerText = detail1;
+                document.getElementById('drawerMediaSpecs').innerText = `生成尺寸: ${detail2} | 实际产生计费: ${detail3}`;
+                document.getElementById('drawerMediaPreview').innerHTML = `
+                    <div class="w-full h-44 bg-black/10 dark:bg-white/5 border border-dashed border-border-color rounded-lg flex flex-col items-center justify-center text-secondary gap-2 p-4 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span class="text-xs font-bold text-brand-main">【生图预览 - 点击以查看原图】</span>
+                        <span class="text-[10px] opacity-80">${detail1}</span>
+                    </div>
+                `;
+            } else if (type === 'video') {
+                document.getElementById('drawerMediaDetail').classList.remove('hidden');
+                document.getElementById('drawerMediaTitle').innerText = '生视频 Prompt & 规格';
+                document.getElementById('drawerMediaPromptText').innerText = detail1;
+                document.getElementById('drawerMediaSpecs').innerText = `时长/规格: ${detail2} | 实际产生计费: ${detail3}`;
+                document.getElementById('drawerMediaPreview').innerHTML = `
+                    <div class="w-full h-44 bg-black/10 dark:bg-white/5 border border-dashed border-border-color rounded-lg flex flex-col items-center justify-center text-secondary gap-2 p-4 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        <span class="text-xs font-bold text-brand-main">【生视频模拟播放】</span>
+                        <span class="text-[10px] opacity-80">${detail1}</span>
+                    </div>
+                `;
+            } else if (type === 'agent') {
+                document.getElementById('drawerAgentDetail').classList.remove('hidden');
+                document.getElementById('drawerAgentNameText').innerText = detail1;
+                document.getElementById('drawerAgentKBText').innerText = detail2;
+                document.getElementById('drawerAgentCallsText').innerText = detail3;
+            }
+            
+            const drawer = document.getElementById('logDetailDrawer');
+            drawer.classList.remove('translate-x-full');
+        }
+
+        function closeDrawer() {
+            const drawer = document.getElementById('logDetailDrawer');
+            if (drawer) drawer.classList.add('translate-x-full');
+        }
+
+        function copyPromptText() {
+            const promptBox = document.querySelector('#drawerPromptText');
+            if (promptBox) {
+                navigator.clipboard.writeText(promptBox.innerText).then(() => {
+                    alert('[演示系统] 提示词已成功复制到剪贴板！');
+                });
+            }
+        }
+
+    </script>
+
+    <!-- 调用日志详情滑出抽屉 (Drawer Overlay) -->
+    <div id="logDetailDrawer" class="fixed top-0 right-0 h-full w-[460px] max-w-full z-[120] bg-surface border-l shadow-2xl transition-transform duration-300 transform translate-x-full flex flex-col" style="background: var(--bg-surface); border-color: var(--border-color)">
+        <!-- 抽屉头部 -->
+        <div class="p-6 border-b flex justify-between items-center bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+            <div>
+                <span class="text-xs text-secondary font-mono" id="drawerLogTime">2026-04-29 13:12</span>
+                <h2 class="text-lg font-bold" id="drawerLogModel">gpt-4o</h2>
+            </div>
+            <button onclick="closeDrawer()" class="text-secondary hover:text-primary transition-colors cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- 抽屉主体 -->
+        <div class="flex-grow p-6 overflow-y-auto space-y-6">
+            <!-- 调用凭证 & 基本信息 -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-black/10 dark:bg-white/5 p-3 rounded-lg border" style="border-color: var(--border-color)">
+                    <div class="text-secondary text-xs">调用凭证 (Key)</div>
+                    <div class="text-xs font-mono font-bold mt-1 text-brand-main" id="drawerLogKey">ag-rd-a8f2</div>
+                </div>
+                <div class="bg-black/10 dark:bg-white/5 p-3 rounded-lg border" style="border-color: var(--border-color)">
+                    <div class="text-secondary text-xs">执行状态 (Status)</div>
+                    <div class="text-xs font-bold mt-1 text-green-500 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> 200 OK
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对话日志详情 -->
+            <div id="drawerChatDetail" class="space-y-4">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-secondary uppercase">用户输入 (Prompt)</label>
+                        <button onclick="copyPromptText()" class="text-xs text-brand-main font-bold hover:underline">复制提示词</button>
+                    </div>
+                    <div class="bg-black/10 dark:bg-white/5 p-3 rounded-lg border text-xs leading-relaxed" id="drawerPromptText" style="border-color: var(--border-color)"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase mb-2">模型响应 (Response)</label>
+                    <div class="bg-black/10 dark:bg-white/5 p-3 rounded-lg border text-xs leading-relaxed font-mono" id="drawerResponseText" style="border-color: var(--border-color)"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-black/10 dark:bg-white/5 p-2 rounded border text-center" style="border-color: var(--border-color)">
+                        <div class="text-[10px] text-secondary">提示 Tokens</div>
+                        <div class="text-xs font-bold mt-0.5" id="drawerPromptTokens">-</div>
+                    </div>
+                    <div class="bg-black/10 dark:bg-white/5 p-2 rounded border text-center" style="border-color: var(--border-color)">
+                        <div class="text-[10px] text-secondary">输出 Tokens</div>
+                        <div class="text-xs font-bold mt-0.5" id="drawerResponseTokens">-</div>
+                    </div>
+                    <div class="bg-black/10 dark:bg-white/5 p-2 rounded border text-center" style="border-color: var(--border-color)">
+                        <div class="text-[10px] text-secondary">模型耗时</div>
+                        <div class="text-xs font-bold mt-0.5" id="drawerLatency">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 多媒体日志详情 -->
+            <div id="drawerMediaDetail" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase mb-2" id="drawerMediaTitle">提示词 & 规格</label>
+                    <div class="bg-black/10 dark:bg-white/5 p-3 rounded-lg border text-xs" id="drawerMediaPromptText" style="border-color: var(--border-color)"></div>
+                </div>
+                <div class="bg-black/10 dark:bg-white/5 p-3 rounded-lg border text-xs text-brand-accent font-bold" id="drawerMediaSpecs" style="border-color: var(--border-color)"></div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase mb-2">多媒体预览</label>
+                    <div id="drawerMediaPreview"></div>
+                </div>
+            </div>
+
+            <!-- Agent 对话详情 -->
+            <div id="drawerAgentDetail" class="hidden space-y-4">
+                <div class="bg-black/10 dark:bg-white/5 p-4 rounded-lg border space-y-3" style="border-color: var(--border-color)">
+                    <div class="flex justify-between items-center text-xs border-b pb-2" style="border-color: var(--border-color)">
+                        <span class="text-secondary">目标智能体 (Agent)</span>
+                        <span class="font-bold text-brand-main" id="drawerAgentNameText">-</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b pb-2" style="border-color: var(--border-color)">
+                        <span class="text-secondary">检索关联知识库</span>
+                        <span class="font-bold" id="drawerAgentKBText">-</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs" style="border-color: var(--border-color)">
+                        <span class="text-secondary">MCP 工具调用连结</span>
+                        <span class="font-bold text-brand-accent" id="drawerAgentCallsText">-</span>
+                    </div>
+                </div>
+                <!-- 智能体拓扑链路 -->
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase mb-2">智能体执行拓扑</label>
+                    <div class="space-y-3 font-sans text-xs">
+                        <div class="flex gap-3 items-start">
+                            <div class="w-1.5 h-1.5 bg-brand-main rounded-full mt-1.5 shrink-0"></div>
+                            <div>
+                                <div class="font-bold">1. 开启意图分类 (Intent Routing)</div>
+                                <div class="text-secondary mt-0.5">模型判定用户意图为 “查询服务器故障预案”</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 items-start">
+                            <div class="w-1.5 h-1.5 bg-brand-main rounded-full mt-1.5 shrink-0"></div>
+                            <div>
+                                <div class="font-bold">2. 检索向量知识库 (Milvus Vector DB)</div>
+                                <div class="text-secondary mt-0.5">命中 “SLA运维手册” 段落，匹配度 92.4%</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 items-start">
+                            <div class="w-1.5 h-1.5 bg-brand-accent rounded-full mt-1.5 shrink-0"></div>
+                            <div>
+                                <div class="font-bold">3. MCP 外部工具调用 (Tool Call)</div>
+                                <div class="text-brand-accent font-bold mt-0.5">已触发 GitHub CLI 读取对应部署脚本仓库提交历史</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 抽屉脚部 -->
+        <div class="p-4 border-t flex justify-end gap-3 bg-black/5 dark:bg-white/5" style="border-color: var(--border-color)">
+            <button class="btn-secondary text-xs w-full py-2.5" onclick="closeDrawer()">关闭明细</button>
+        </div>
+    </div>
+
+    <script>
 
     </script>
 

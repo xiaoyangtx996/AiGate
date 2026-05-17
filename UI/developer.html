@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiGate - 预警中心</title>
+    <title>AiGate - 开发者中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<body>
+
 <body>
     <header class="master-nav" id="topHeader">
         <div class="flex items-center gap-3">
@@ -158,7 +160,7 @@
                     <svg class="transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div class="nav-items-container transition-all overflow-hidden">
-                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
+                    <div data-roles="sys_admin,tenant_admin,user"><a href="alerts.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>预警中心</a></div>
                     <div data-roles="sys_admin"><a href="audit.html" class="nav-item"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v4 M12 16h.01"/></svg>操作审计</a></div>
                 </div>
             </div>
@@ -174,46 +176,61 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
-            <!-- Apple 风格专属的背景光晕 -->
-            <div class="hidden apple:block absolute top-0 right-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10 mix-blend-multiply"></div>
-            
-            <div class="max-w-7xl mx-auto">
-                
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight">预警中心</h1>
-                        <p class="text-secondary mt-1">全局监控额度水位（70%/90%/100%）、密钥过期预警及 MCP 异常状态。</p>
-                    </div>
-                    <button class="btn-secondary">全部标记已读</button>
-                </div>
-                <div class="card p-0 overflow-hidden">
-                    <ul class="divide-y" style="border-color: var(--border-color); divide-color: var(--border-color)">
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">租户配额预警 (90% 水位)</h4>
-                                    <span class="text-xs text-secondary">10 分钟前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">「北京研发中心」本月 Token 配额已消耗 92%，即将触及熔断限制，请提醒租户管理员关注超额审批。</p>
-                            </div>
-                        </li>
-                        <li class="p-4 flex gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <div class="text-brand-accent mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <h4 class="font-bold text-sm">员工密钥即将过期</h4>
-                                    <span class="text-xs text-secondary">2 小时前</span>
-                                </div>
-                                <p class="text-sm text-secondary mt-1">架构部员工「张三」的 DEV 测试密钥 (ag-dev-3a1b...) 距离过期仅剩 3 天，请通知其轮换密钥。</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
         
-            </div>
-        </main>
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 relative"><div class="max-w-7xl mx-auto">
+
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">开发者中心</h1>
+    <p class="text-secondary mt-1">了解如何将你的企业专属 ag-key 配置到各种主流客户端、IDE 插件或直接发起 HTTP 调用。</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <div class="card">
+      <h3 class="font-bold mb-4 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> 快速集成教程</h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-sm text-brand-main">1. 在 Cursor IDE 中使用</h4>
+          <p class="text-xs text-secondary mt-1">打开 Settings -> Models -> OpenAI API，将 API URL 设置为：</p>
+          <div class="bg-black/20 dark:bg-white/5 p-3 rounded-lg font-mono text-xs text-secondary mt-2 flex justify-between items-center">
+            <span>https://api.aigate.company.com/v1</span>
+            <button class="text-xs text-brand-main font-bold hover:underline" onclick="navigator.clipboard.writeText('https://api.aigate.company.com/v1')">复制</button>
+          </div>
+          <p class="text-xs text-secondary mt-2">在 API Key 输入框中填写你的专属 ag-key（可在“我的密钥”中创建并获取）。</p>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-sm text-brand-main">2. 使用 OpenAI Python SDK 发起调用</h4>
+          <p class="text-xs text-secondary mt-1">直接将 OpenAI SDK 的 client base_url 指向企业网关即可，无需修改任何调用逻辑：</p>
+          <pre class="bg-black/20 dark:bg-white/5 p-3 rounded-lg font-mono text-xs text-secondary mt-2 overflow-x-auto"><code>from openai import OpenAI
+
+client = OpenAI(
+    api_key="your-ag-key-here",
+    base_url="https://api.aigate.company.com/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Hello, world!"}]
+)</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card flex flex-col justify-between">
+    <div>
+      <h3 class="font-bold mb-2">获取你的专属 Key</h3>
+      <p class="text-xs text-secondary mt-2">只有在拥有专属密钥时你才能成功发起上述调用，你可以立刻去申请或创建专属 Key。</p>
+    </div>
+    <a href="keys.html" class="btn-primary w-full text-center text-sm py-2 mt-4">创建 & 管理 Key</a>
+  </div>
+</div>
+
+</div></main>
+</main>
     </div>
 
     <script>
