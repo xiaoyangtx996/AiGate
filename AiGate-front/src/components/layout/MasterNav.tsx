@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { useUIStore } from '@/stores/ui'
 import { Badge } from '@/components/ui/Badge'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 export function MasterNav() {
   const { user, logout, simulatedRole, setSimulatedRole } = useAuth()
@@ -66,6 +67,8 @@ export function MasterNav() {
           <span className="hidden md:inline">搜索</span>
           <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs bg-surface rounded" style={{ backgroundColor: 'var(--bg-surface)' }}>⌘K</kbd>
         </button>
+
+        <LanguageSwitcher />
 
         <div ref={alertRef} className="relative">
           <button onClick={() => setAlertOpen(!alertOpen)} className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-elevated transition-colors">
