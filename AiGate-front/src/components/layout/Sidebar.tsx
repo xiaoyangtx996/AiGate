@@ -1,4 +1,4 @@
-import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow, X } from 'lucide-react'
+import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow, X, Palette } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useUIStore } from '@/stores/ui'
 import { clsx } from 'clsx'
@@ -82,6 +82,7 @@ const navGroups: NavGroup[] = [
     label: '系统',
     items: [
       { label: '系统设置', path: '/settings', icon: <Settings size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+      { label: '设计系统', path: '/design-system', icon: <Palette size={18} />, roles: ['sys_admin'] },
     ],
   },
 ]

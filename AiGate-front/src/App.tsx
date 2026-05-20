@@ -36,6 +36,7 @@ const Status = lazy(() => import('@/pages/Status'))
 const Developer = lazy(() => import('@/pages/Developer'))
 const Onboarding = lazy(() => import('@/pages/Onboarding'))
 const Profile = lazy(() => import('@/pages/Profile'))
+const DesignSystem = lazy(() => import('@/pages/DesignSystem'))
 const NotFound = lazy(() => import('@/pages/errors/NotFound'))
 const Forbidden = lazy(() => import('@/pages/errors/Forbidden'))
 const ServerError = lazy(() => import('@/pages/errors/ServerError'))
@@ -99,6 +100,7 @@ function App() {
           <Route path="developer" element={<Developer />} />
           <Route path="onboarding" element={<Onboarding />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="design-system" element={<DesignSystem />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/404" replace />} />
