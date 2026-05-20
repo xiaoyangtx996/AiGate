@@ -1,9 +1,8 @@
-import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, LayoutDashboard, Plug, Code2, Workflow } from 'lucide-react'
+import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useUIStore } from '@/stores/ui'
 import { clsx } from 'clsx'
+import { SidebarItem } from './SidebarItem'
 
 interface NavItem {
   label: string
@@ -88,9 +87,8 @@ const navGroups: NavGroup[] = [
 ]
 
 export function Sidebar() {
-  const location = useLocation()
   const { getEffectiveRole } = useAuth()
-  const { expandedGroups, toggleGroup, sidebarCollapsed } = useUIStore()
+  const { expandedGroups, toggleGroup, sidebarCollapsed, toggleSidebar } = useUIStore()
   const currentRole = getEffectiveRole()
 
   const isItemVisible = (item: NavItem) => !item.roles || item.roles.includes(currentRole)
@@ -98,23 +96,44 @@ export function Sidebar() {
 
   return (
     <aside className={clsx('sidebar', sidebarCollapsed && 'collapsed')}>
+      {/* Toggle button */}
+      <button
+        onClick={toggleSidebar}
+        className="absolute -right-3 top-6 w-6 h-6 flex items-center justify-center rounded-full border z-10 transition-colors"
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderColor: 'var(--border-color)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
       <nav className="space-y-1">
         {navGroups.filter(isGroupVisible).map((group) => (
           <div key={group.id} className="nav-group py-2">
-            <button
-              onClick={() => toggleGroup(group.id)}
-              className="nav-group-header w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
-            >
-              <span>{group.label}</span>
-              <ChevronDown size={14} className={clsx('transform transition-transform duration-200', expandedGroups.includes(group.id) && 'rotate-180')} />
-            </button>
-            {expandedGroups.includes(group.id) && (
-              <div className="nav-items-container space-y-0.5 mt-1">
+            {/* Group header - hidden when collapsed */}
+            {!sidebarCollapsed && (
+              <button
+                onClick={() => toggleGroup(group.id)}
+                className="nav-group-header w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
+              >
+                <span>{group.label}</span>
+                <ChevronDown size={14} className={clsx('transform transition-transform duration-200', expandedGroups.includes(group.id) && 'rotate-180')} />
+              </button>
+            )}
+
+            {/* Items - always visible when collapsed, otherwise follow expanded state */}
+            {(sidebarCollapsed || expandedGroups.includes(group.id)) && (
+              <div className={clsx('nav-items-container', sidebarCollapsed ? 'space-y-1' : 'space-y-0.5 mt-1')}>
                 {group.items.filter(isItemVisible).map((item) => (
-                  <Link key={item.path} to={item.path} className={clsx('nav-item', location.pathname === item.path && 'active')}>
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </Link>
+                  <SidebarItem
+                    key={item.path}
+                    label={item.label}
+                    path={item.path}
+                    icon={item.icon}
+                    collapsed={sidebarCollapsed}
+                  />
                 ))}
               </div>
             )}
