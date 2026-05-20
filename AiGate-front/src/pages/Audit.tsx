@@ -694,9 +694,10 @@ export default function Audit() {
                     onClick={() => setCurrentPage(page)}
                     className={`w-8 h-8 rounded text-xs font-bold transition-colors ${
                       page === currentPage
-                        ? 'bg-brand-main text-white'
+                        ? 'bg-brand-main'
                         : 'hover:bg-elevated text-secondary'
                     }`}
+                    style={page === currentPage ? { color: 'var(--text-on-brand)' } : undefined}
                   >
                     {page}
                   </button>
@@ -847,15 +848,17 @@ export default function Audit() {
                 </div>
                 <div className="flex font-mono text-xs h-48">
                   <div
-                    className="w-1/2 p-3 bg-red-500/5 border-r overflow-y-auto whitespace-pre leading-relaxed"
+                    className="w-1/2 p-3 border-r overflow-y-auto whitespace-pre leading-relaxed"
                     style={{
+                      backgroundColor: 'color-mix(in srgb, var(--error) 5%, transparent)',
                       borderColor: 'var(--border-color)',
                       color: 'var(--text-secondary)',
                     }}
                   >
                     {renderDiffLines(selectedRecord.before, 'before')}
                   </div>
-                  <div className="w-1/2 p-3 bg-green-500/5 overflow-y-auto whitespace-pre leading-relaxed">
+                  <div className="w-1/2 p-3 overflow-y-auto whitespace-pre leading-relaxed"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--success) 5%, transparent)' }}>
                     {renderDiffLines(selectedRecord.after, 'after')}
                   </div>
                 </div>

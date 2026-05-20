@@ -820,7 +820,7 @@ function FaqPanel() {
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                   style={{
                     backgroundColor: isExpanded ? 'var(--brand-main)' : 'var(--bg-elevated)',
-                    color: isExpanded ? '#fff' : 'var(--text-secondary)',
+                    color: isExpanded ? 'var(--text-on-brand)' : 'var(--text-secondary)',
                   }}
                 >
                   {index + 1}
