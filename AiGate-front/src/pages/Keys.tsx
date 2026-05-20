@@ -329,7 +329,7 @@ export default function Keys() {
                               title="吊销"
                               onClick={() => handleRevoke(key.id)}
                             >
-                              <Trash2 size={14} className="text-red-500" />
+                              <Trash2 size={14} style={{ color: 'var(--error)' }} />
                             </button>
                           </>
                         )}

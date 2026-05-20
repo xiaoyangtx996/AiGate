@@ -71,7 +71,7 @@ const tokenTrend = {
     { name: 'gpt-4o', data: [1.8, 3.2, 2.1, 2.8, 1.5, 2.0, 1.6, 3.8], color: '#10b981' },
     { name: 'claude-3-5-sonnet', data: [0.9, 1.5, 1.8, 1.2, 0.8, 1.0, 0.5, 2.8], color: '#f59e0b' },
     { name: 'gemini-1.5-pro', data: [0.3, 0.5, 0.4, 0.6, 0.3, 0.2, 0.4, 1.5], color: '#6366f1' },
-    { name: '其他', data: [0.2, 0.3, 0.5, 0.3, 0.4, 0.6, 0.2, 0.3], color: '#8b5cf6' },
+    { name: '其他', data: [0.2, 0.3, 0.5, 0.3, 0.4, 0.6, 0.2, 0.3], color: 'var(--brand-accent)' },
   ],
 }
 

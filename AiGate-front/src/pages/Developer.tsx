@@ -463,7 +463,7 @@ function GuidePanel() {
                             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                             style={{
                               backgroundColor: 'var(--brand-main)',
-                              color: '#fff',
+                              color: 'var(--text-on-brand)',
                             }}
                           >
                             {index + 1}
@@ -602,7 +602,7 @@ function ApiPanel() {
           <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
             <span
               className="w-5 h-5 rounded flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: 'var(--brand-main)', color: '#fff' }}
+              style={{ backgroundColor: 'var(--brand-main)', color: 'var(--text-on-brand)' }}
             >
               R
             </span>
@@ -626,7 +626,7 @@ Authorization: Bearer ag-prod-xxxx
           <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
             <span
               className="w-5 h-5 rounded flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: 'var(--brand-accent)', color: '#fff' }}
+              style={{ backgroundColor: 'var(--brand-accent)', color: 'var(--text-on-brand)' }}
             >
               S
             </span>

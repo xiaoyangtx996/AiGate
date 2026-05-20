@@ -19,6 +19,7 @@
   --warning: #f59e0b;
   --error: #ef4444;
   --info: #06b6d4;
+  --text-on-brand: #ffffff;
   --border-radius-base: 0.75rem;
   --shadow-card: none;
   --shadow-dropdown: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
@@ -42,6 +43,7 @@
   --warning: #d97706;
   --error: #dc2626;
   --info: #0891b2;
+  --text-on-brand: #ffffff;
   --border-radius-base: 0px;
   --shadow-card: 4px 4px 0px #111;
   --shadow-dropdown: 4px 4px 0px #111;
@@ -65,6 +67,7 @@
   --warning: #ff9500;
   --error: #ff3b30;
   --info: #007aff;
+  --text-on-brand: #ffffff;
   --border-radius-base: 1.125rem;
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
   --shadow-dropdown: 0 10px 40px rgba(0, 0, 0, 0.12);

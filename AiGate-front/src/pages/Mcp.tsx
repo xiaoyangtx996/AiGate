@@ -61,9 +61,9 @@ interface McpTool {
 /* ------------------------------------------------------------------ */
 
 const HEALTH_CONFIG: Record<HealthStatus, { label: string; color: string; dotClass: string; badgeVariant: 'success' | 'warning' | 'error' }> = {
-  healthy: { label: '健康', color: '#10b981', dotClass: 'bg-emerald-500', badgeVariant: 'success' },
-  degraded: { label: '降级', color: '#f59e0b', dotClass: 'bg-amber-500', badgeVariant: 'warning' },
-  down: { label: '故障', color: '#ef4444', dotClass: 'bg-red-500', badgeVariant: 'error' },
+  healthy: { label: '健康', color: 'var(--success)', dotClass: 'bg-emerald-500', badgeVariant: 'success' },
+  degraded: { label: '降级', color: 'var(--warning)', dotClass: 'bg-amber-500', badgeVariant: 'warning' },
+  down: { label: '故障', color: 'var(--error)', dotClass: 'bg-red-500', badgeVariant: 'error' },
 }
 
 function HealthDot({ status }: { status: HealthStatus }) {
@@ -394,11 +394,11 @@ export default function Mcp() {
               </div>
               <div className="text-2xl font-bold">{STATS.totalTools}</div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs" style={{ color: '#10b981' }}>{STATS.healthyTools} 健康</span>
+                <span className="text-xs" style={{ color: 'var(--success)' }}>{STATS.healthyTools} 健康</span>
                 <span className="text-xs text-secondary">/</span>
-                <span className="text-xs" style={{ color: '#f59e0b' }}>{STATS.degradedTools} 降级</span>
+                <span className="text-xs" style={{ color: 'var(--warning)' }}>{STATS.degradedTools} 降级</span>
                 <span className="text-xs text-secondary">/</span>
-                <span className="text-xs" style={{ color: '#ef4444' }}>{STATS.downTools} 故障</span>
+                <span className="text-xs" style={{ color: 'var(--error)' }}>{STATS.downTools} 故障</span>
               </div>
             </Card>
 
@@ -414,8 +414,8 @@ export default function Mcp() {
               </div>
               <div className="text-2xl font-bold">{STATS.totalCalls7d.toLocaleString()}</div>
               <div className="flex items-center gap-1 mt-1">
-                <ArrowUpRight size={12} style={{ color: '#10b981' }} />
-                <span className="text-xs" style={{ color: '#10b981' }}>较上周 +12.3%</span>
+                <ArrowUpRight size={12} style={{ color: 'var(--success)' }} />
+                <span className="text-xs" style={{ color: 'var(--success)' }}>较上周 +12.3%</span>
               </div>
             </Card>
 
@@ -431,8 +431,8 @@ export default function Mcp() {
               </div>
               <div className="text-2xl font-bold">{STATS.avgSuccessRate}%</div>
               <div className="flex items-center gap-1 mt-1">
-                <ArrowUpRight size={12} style={{ color: '#10b981' }} />
-                <span className="text-xs" style={{ color: '#10b981' }}>较上周 +0.5%</span>
+                <ArrowUpRight size={12} style={{ color: 'var(--success)' }} />
+                <span className="text-xs" style={{ color: 'var(--success)' }}>较上周 +0.5%</span>
               </div>
             </Card>
 
@@ -448,8 +448,8 @@ export default function Mcp() {
               </div>
               <div className="text-2xl font-bold">{STATS.avgLatency}ms</div>
               <div className="flex items-center gap-1 mt-1">
-                <ArrowDownRight size={12} style={{ color: '#10b981' }} />
-                <span className="text-xs" style={{ color: '#10b981' }}>较上周 -8ms</span>
+                <ArrowDownRight size={12} style={{ color: 'var(--success)' }} />
+                <span className="text-xs" style={{ color: 'var(--success)' }}>较上周 -8ms</span>
               </div>
             </Card>
           </div>
@@ -543,7 +543,7 @@ export default function Mcp() {
                         </td>
                         <td className="py-3 px-2 text-right font-medium">{tool.calls7d}</td>
                         <td className="py-3 px-2 text-right">
-                          <span style={{ color: tool.successRate >= 99 ? '#10b981' : tool.successRate >= 95 ? '#f59e0b' : '#ef4444' }}>
+                          <span style={{ color: tool.successRate >= 99 ? 'var(--success)' : tool.successRate >= 95 ? 'var(--warning)' : 'var(--error)' }}>
                             {tool.successRate}%
                           </span>
                         </td>
@@ -616,7 +616,7 @@ export default function Mcp() {
                 {tool.calls7dNum > 0 && (
                   <>
                     <span className="text-xs text-secondary">
-                      成功率 <strong style={{ color: tool.successRate >= 99 ? '#10b981' : '#f59e0b' }}>{tool.successRate}%</strong>
+                      成功率 <strong style={{ color: tool.successRate >= 99 ? 'var(--success)' : 'var(--warning)' }}>{tool.successRate}%</strong>
                     </span>
                     <span className="text-xs text-secondary">
                       延迟 <strong style={{ color: 'var(--text-primary)' }}>{tool.avgLatency}ms</strong>

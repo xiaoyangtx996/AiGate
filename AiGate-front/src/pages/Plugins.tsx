@@ -61,9 +61,9 @@ interface Plugin {
 /* ------------------------------------------------------------------ */
 
 const HEALTH_CONFIG: Record<HealthStatus, { label: string; color: string; dotClass: string; badgeVariant: 'success' | 'warning' | 'error' }> = {
-  healthy: { label: '健康', color: '#10b981', dotClass: 'bg-emerald-500', badgeVariant: 'success' },
-  degraded: { label: '降级', color: '#f59e0b', dotClass: 'bg-amber-500', badgeVariant: 'warning' },
-  down: { label: '故障', color: '#ef4444', dotClass: 'bg-red-500', badgeVariant: 'error' },
+  healthy: { label: '健康', color: 'var(--success)', dotClass: 'bg-emerald-500', badgeVariant: 'success' },
+  degraded: { label: '降级', color: 'var(--warning)', dotClass: 'bg-amber-500', badgeVariant: 'warning' },
+  down: { label: '故障', color: 'var(--error)', dotClass: 'bg-red-500', badgeVariant: 'error' },
 }
 
 function HealthDot({ status }: { status: HealthStatus }) {
@@ -419,7 +419,7 @@ export default function Plugins() {
               </div>
               <div className="text-2xl font-bold">{STATS.totalPlugins}</div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs" style={{ color: '#10b981' }}>{STATS.healthyCount} 健康</span>
+                <span className="text-xs" style={{ color: 'var(--success)' }}>{STATS.healthyCount} 健康</span>
               </div>
             </Card>
 
@@ -481,7 +481,7 @@ export default function Plugins() {
                       className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                       style={{
                         background: idx === 0 ? 'var(--brand-main)' : 'var(--bg-elevated)',
-                        color: idx === 0 ? '#fff' : 'var(--text-secondary)',
+                        color: idx === 0 ? 'var(--text-on-brand)' : 'var(--text-secondary)',
                       }}
                     >
                       {idx + 1}
@@ -547,7 +547,7 @@ export default function Plugins() {
                       </td>
                       <td className="py-3 px-2 text-right font-medium">{plugin.calls7dLabel}</td>
                       <td className="py-3 px-2 text-right">
-                        <span style={{ color: plugin.successRate >= 99 ? '#10b981' : plugin.successRate >= 95 ? '#f59e0b' : '#ef4444' }}>
+                        <span style={{ color: plugin.successRate >= 99 ? 'var(--success)' : plugin.successRate >= 95 ? 'var(--warning)' : 'var(--error)' }}>
                           {plugin.calls7d > 0 ? `${plugin.successRate}%` : '-'}
                         </span>
                       </td>
@@ -628,7 +628,7 @@ export default function Plugins() {
                 <HealthDot status={plugin.health} />
                 {plugin.calls7d > 0 && (
                   <span className="text-xs text-secondary">
-                    成功率 <strong style={{ color: plugin.successRate >= 99 ? '#10b981' : '#f59e0b' }}>{plugin.successRate}%</strong>
+                    成功率 <strong style={{ color: plugin.successRate >= 99 ? 'var(--success)' : 'var(--warning)' }}>{plugin.successRate}%</strong>
                   </span>
                 )}
               </div>
@@ -752,7 +752,7 @@ export default function Plugins() {
                     </div>
                     <div>
                       <span className="text-xs text-secondary block mb-1">成功率</span>
-                      <span className="text-lg font-bold" style={{ color: selectedPlugin.successRate >= 99 ? '#10b981' : '#f59e0b' }}>
+                      <span className="text-lg font-bold" style={{ color: selectedPlugin.successRate >= 99 ? 'var(--success)' : 'var(--warning)' }}>
                         {selectedPlugin.calls7d > 0 ? `${selectedPlugin.successRate}%` : '-'}
                       </span>
                     </div>
@@ -822,7 +822,7 @@ export default function Plugins() {
                   style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}
                 >
                   <div className="flex items-start gap-2">
-                    <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: '#f59e0b' }} />
+                    <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--warning)' }} />
                     <div>
                       <p className="text-sm font-medium">权限说明</p>
                       <p className="text-xs text-secondary mt-1">

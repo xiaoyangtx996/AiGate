@@ -701,9 +701,10 @@ export default function Models() {
                 <div className="flex items-center gap-1 text-xs shrink-0">
                   <TrendingUp
                     size={12}
-                    className={item.trend >= 0 ? 'text-green-500' : 'text-red-500 rotate-180'}
+                    className={item.trend >= 0 ? '' : 'rotate-180'}
+                    style={{ color: item.trend >= 0 ? 'var(--success)' : 'var(--error)' }}
                   />
-                  <span className={item.trend >= 0 ? 'text-green-500' : 'text-red-500'}>
+                  <span style={{ color: item.trend >= 0 ? 'var(--success)' : 'var(--error)' }}>
                     {Math.abs(item.trend)}%
                   </span>
                 </div>
@@ -1011,9 +1012,9 @@ export default function Models() {
                         >
                           <div className="flex items-center gap-2">
                             {rule.allowed ? (
-                              <CheckCircle size={14} className="text-green-500" />
+                              <CheckCircle size={14} style={{ color: 'var(--success)' }} />
                             ) : (
-                              <XCircle size={14} className="text-red-500" />
+                              <XCircle size={14} style={{ color: 'var(--error)' }} />
                             )}
                             <span className="text-sm">{rule.name}</span>
                           </div>
@@ -1045,9 +1046,9 @@ export default function Models() {
                         >
                           <div className="flex items-center gap-2">
                             {rule.allowed ? (
-                              <CheckCircle size={14} className="text-green-500" />
+                              <CheckCircle size={14} style={{ color: 'var(--success)' }} />
                             ) : (
-                              <XCircle size={14} className="text-red-500" />
+                              <XCircle size={14} style={{ color: 'var(--error)' }} />
                             )}
                             <span className="text-sm">{rule.name}</span>
                           </div>

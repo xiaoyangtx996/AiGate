@@ -795,7 +795,7 @@ export default function Hooks() {
                 <div
                   className="text-lg font-bold"
                   style={{
-                    color: selectedHook.errorRate > 3 ? '#ef4444' : selectedHook.errorRate > 1 ? '#f59e0b' : 'var(--text-primary)',
+                    color: selectedHook.errorRate > 3 ? 'var(--error)' : selectedHook.errorRate > 1 ? 'var(--warning)' : 'var(--text-primary)',
                   }}
                 >
                   {selectedHook.errorRate}%

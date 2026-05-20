@@ -452,7 +452,7 @@ export default function Channels() {
                           {channel.connectivity.status === 'success' ? (
                             <CheckCircle size={16} className="text-[var(--brand-main)]" />
                           ) : channel.connectivity.status === 'error' ? (
-                            <XCircle size={16} className="text-red-500" />
+                            <XCircle size={16} style={{ color: 'var(--error)' }} />
                           ) : (
                             <Wifi size={16} className="text-secondary" />
                           )}
@@ -575,7 +575,7 @@ export default function Channels() {
                         selectedChannel.connectivity.status === 'success'
                           ? 'var(--brand-main)'
                           : selectedChannel.connectivity.status === 'error'
-                          ? '#ef4444'
+                          ? 'var(--error)'
                           : 'var(--border-color)',
                     }}
                   >
@@ -585,7 +585,7 @@ export default function Channels() {
                       ) : selectedChannel.connectivity.status === 'success' ? (
                         <CheckCircle size={20} className="text-[var(--brand-main)]" />
                       ) : (
-                        <XCircle size={20} className="text-red-500" />
+                        <XCircle size={20} style={{ color: 'var(--error)' }} />
                       )}
                       <div>
                         <p className="font-medium">
