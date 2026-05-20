@@ -114,6 +114,24 @@ export default function AgentCreate() {
   }
 
   const handleSubmit = () => {
+    // 表单验证
+    if (!name.trim()) {
+      addToast({ type: 'error', title: '验证失败', message: '请填写智能体名称' })
+      return
+    }
+    if (!systemPrompt.trim()) {
+      addToast({ type: 'error', title: '验证失败', message: '请填写系统设定指令' })
+      return
+    }
+    if (name.trim().length < 2) {
+      addToast({ type: 'error', title: '验证失败', message: '智能体名称至少需要 2 个字符' })
+      return
+    }
+    if (systemPrompt.trim().length < 10) {
+      addToast({ type: 'error', title: '验证失败', message: '系统设定指令至少需要 10 个字符' })
+      return
+    }
+
     const selectedKb = knowledgeBases.filter((kb) => kb.selected).length
     const selectedMcp = mcpTools.filter((mcp) => mcp.selected).length
     const selectedMembers = members.filter((m) => m.selected).length

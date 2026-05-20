@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
@@ -44,11 +45,12 @@ const Forbidden = lazy(() => import('@/pages/errors/Forbidden'))
 const ServerError = lazy(() => import('@/pages/errors/ServerError'))
 
 function PageLoading() {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center justify-center h-[60vh]">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[var(--brand-main)] border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-[var(--text-secondary)]">Loading...</span>
+        <span className="text-sm text-[var(--text-secondary)]">{t('status.loading')}</span>
       </div>
     </div>
   )

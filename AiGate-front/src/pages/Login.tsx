@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore, Role } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { useUIStore } from '@/stores/ui'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Tabs } from '@/components/ui/Tabs'
@@ -17,14 +18,43 @@ export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
   const { theme, setTheme } = useThemeStore()
+  const { addToast } = useUIStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('password')
   const [selectedRole, setSelectedRole] = useState<Role>('sys_admin')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  const validateEmail = (value: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(value)
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // 表单验证
+    if (activeTab === 'password') {
+      if (!email.trim()) {
+        addToast({ type: 'error', title: '验证失败', message: '请输入邮箱' })
+        return
+      }
+      if (!validateEmail(email)) {
+        addToast({ type: 'error', title: '验证失败', message: '邮箱格式不正确' })
+        return
+      }
+      if (!password) {
+        addToast({ type: 'error', title: '验证失败', message: '请输入密码' })
+        return
+      }
+      if (password.length < 8) {
+        addToast({ type: 'error', title: '验证失败', message: '密码长度不能少于 8 位' })
+        return
+      }
+    }
+
     setLoading(true)
 
     setTimeout(() => {
@@ -75,8 +105,8 @@ export default function Login() {
         {/* Password login */}
         {activeTab === 'password' && (
           <form onSubmit={handleLogin} className="space-y-4">
-            <Input label="邮箱" type="email" placeholder="请输入邮箱" required />
-            <Input label="密码" type="password" placeholder="请输入密码" required />
+            <Input label="邮箱" type="email" placeholder="请输入邮箱" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input label="密码" type="password" placeholder="请输入密码" required value={password} onChange={(e) => setPassword(e.target.value)} />
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 text-secondary">
                 <input type="checkbox" className="accent-[var(--brand-main)]" /> 记住登录

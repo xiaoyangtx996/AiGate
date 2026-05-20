@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import {
   Building2,
   Gauge,
@@ -833,7 +834,24 @@ const tabContent: Record<string, React.FC> = {
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('basic')
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const currentTab = tabs.find((t) => t.id === activeTab)!
+
+  const SENSITIVE_TABS = ['security', 'audit-retention']
+  const isSensitive = SENSITIVE_TABS.includes(activeTab)
+
+  const handleSave = () => {
+    if (isSensitive) {
+      setShowConfirmDialog(true)
+    } else {
+      // 普通保存逻辑
+    }
+  }
+
+  const handleConfirmSave = () => {
+    setShowConfirmDialog(false)
+    // 执行敏感配置保存
+  }
 
   const TabPanel = tabContent[activeTab]
 
@@ -844,8 +862,21 @@ export default function Settings() {
         subtitle={currentTab.description}
         breadcrumbs={[{ label: '系统' }, { label: '系统设置' }]}
         actions={
-          <Button icon={<Save size={16} />}>保存配置</Button>
+          <Button icon={<Save size={16} />} onClick={handleSave}>保存配置</Button>
         }
+      />
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleConfirmSave}
+        title="确认保存敏感配置"
+        description={activeTab === 'security'
+          ? '安全策略变更将影响所有用户的登录和访问权限，请确认修改内容无误。'
+          : '审计保留期变更属于敏感操作，缩短保留期后已被清理的日志无法恢复。'}
+        confirmText="确认保存"
+        cancelText="取消"
+        variant="warning"
       />
 
       <div className="flex gap-6">

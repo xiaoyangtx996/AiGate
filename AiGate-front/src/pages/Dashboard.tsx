@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { LineChart } from '@/components/charts/LineChart'
@@ -131,31 +132,24 @@ export default function Dashboard() {
       {/* ============================================================ */}
       {/*  Page Header                                                 */}
       {/* ============================================================ */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-widest text-brand-main mb-2">
-            AI Governance Command Center
+      <PageHeader
+        title="企业 AI 运营驾驶舱"
+        subtitle="统一观察网关流量、组织配额、MCP/知识库资产与 Agent 使用风险。"
+        actions={
+          <div className="flex gap-2">
+            <select
+              className="input text-xs font-bold"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+            >
+              <option>本月</option>
+              <option>最近 7 天</option>
+              <option>本季度</option>
+            </select>
+            <button className="btn btn-secondary">费用分摊</button>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            企业 AI 运营驾驶舱
-          </h1>
-          <p className="text-secondary mt-1">
-            统一观察网关流量、组织配额、MCP/知识库资产与 Agent 使用风险。
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <select
-            className="input text-xs font-bold"
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-          >
-            <option>本月</option>
-            <option>最近 7 天</option>
-            <option>本季度</option>
-          </select>
-          <button className="btn btn-secondary">费用分摊</button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ============================================================ */}
       {/*  Hero Card  --  Cost + Governance                            */}
