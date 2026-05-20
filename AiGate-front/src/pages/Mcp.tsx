@@ -19,6 +19,7 @@ import {
   Database,
   Globe,
   Shield,
+  Trash2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
@@ -28,6 +29,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Tabs } from '@/components/ui/Tabs'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useUIStore } from '@/stores/ui'
 
 /* ------------------------------------------------------------------ */
@@ -253,6 +255,7 @@ export default function Mcp() {
   const [protocol, setProtocol] = useState<'stdio' | 'sse'>('stdio')
   const [toolName, setToolName] = useState('')
   const [search, setSearch] = useState('')
+  const [confirmAction, setConfirmAction] = useState<{ type: string; toolId?: string; toolName?: string } | null>(null)
   const [protocolFilter, setProtocolFilter] = useState<string>('all')
   const [healthFilter, setHealthFilter] = useState<string>('all')
   const { addToast } = useUIStore()
@@ -283,6 +286,18 @@ export default function Mcp() {
     addToast({ type: 'success', title: '注册成功', message: `MCP 工具「${toolName}」已成功注册` })
     setModalOpen(false)
     setToolName('')
+  }
+
+  const handleDelete = (toolId: string, toolName: string) => {
+    setConfirmAction({ type: 'delete', toolId, toolName })
+  }
+
+  const handleConfirmAction = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'delete') {
+      addToast({ type: 'success', title: '已删除', message: `MCP 工具「${confirmAction.toolName}」已删除` })
+    }
+    setConfirmAction(null)
   }
 
   return (
@@ -626,12 +641,33 @@ export default function Mcp() {
                     <Settings size={12} className="inline mr-1" />
                     配置
                   </button>
+                  <button
+                    className="text-xs font-bold text-red-500 hover:text-red-600 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(tool.id, tool.name)
+                    }}
+                  >
+                    <Trash2 size={12} className="inline mr-1" />
+                    删除
+                  </button>
                 </div>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title="确认删除 MCP 工具"
+        description={`删除后 MCP 工具「${confirmAction?.toolName}」的所有配置将被清除，此操作不可逆。`}
+        confirmText="删除"
+        variant="danger"
+      />
 
       {/* Register Modal */}
       <Modal

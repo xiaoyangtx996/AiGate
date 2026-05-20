@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Tabs } from '@/components/ui/Tabs'
 import { Drawer } from '@/components/ui/Drawer'
 import { Timeline } from '@/components/ui/Timeline'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import {
   Clock,
   Bell,
@@ -70,9 +71,9 @@ const categoryTabs: { id: string; label: string; icon?: React.ReactNode }[] = [
 
 const severityOptions: { id: string; label: string; color: string }[] = [
   { id: 'all', label: '全部', color: '' },
-  { id: 'critical', label: '紧急', color: '#ef4444' },
-  { id: 'warning', label: '警告', color: '#f59e0b' },
-  { id: 'info', label: '提示', color: '#3b82f6' },
+  { id: 'critical', label: '紧急', color: 'var(--error)' },
+  { id: 'warning', label: '警告', color: 'var(--warning)' },
+  { id: 'info', label: '提示', color: 'var(--info)' },
 ]
 
 const statusOptions: { id: string; label: string }[] = [
@@ -387,9 +388,9 @@ function getCategoryIcon(category: AlertCategory) {
 
 function getSeverityColor(severity: AlertSeverity): string {
   const map: Record<AlertSeverity, string> = {
-    critical: '#ef4444',
-    warning: '#f59e0b',
-    info: '#3b82f6',
+    critical: 'var(--error)',
+    warning: 'var(--warning)',
+    info: 'var(--info)',
   }
   return map[severity]
 }
@@ -431,6 +432,7 @@ export default function Alerts() {
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [actionNote, setActionNote] = useState('')
+  const [confirmAction, setConfirmAction] = useState<{ type: string; alertId?: string } | null>(null)
 
   // 筛选逻辑
   const filteredAlerts = useMemo(() => {
@@ -462,7 +464,20 @@ export default function Alerts() {
 
   // 操作处理
   function handleMarkAllRead() {
-    setAlerts((prev) => prev.map((a) => ({ ...a, status: 'resolved' as AlertStatus })))
+    setConfirmAction({ type: 'markAllResolved' })
+  }
+
+  function handleConfirmAction() {
+    if (!confirmAction) return
+    if (confirmAction.type === 'markAllResolved') {
+      setAlerts((prev) => prev.map((a) => ({ ...a, status: 'resolved' as AlertStatus })))
+    } else if (confirmAction.type === 'markResolved' && confirmAction.alertId) {
+      setAlerts((prev) =>
+        prev.map((a) => (a.id === confirmAction.alertId ? { ...a, status: 'resolved' as AlertStatus } : a))
+      )
+      handleCloseDrawer()
+    }
+    setConfirmAction(null)
   }
 
   function handleOpenDrawer(alert: AlertItem) {
@@ -507,12 +522,12 @@ export default function Alerts() {
         <Card className="flex items-center gap-4 p-4">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: '#ef444420' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--error) 12%, transparent)' }}
           >
-            <XCircle size={20} style={{ color: '#ef4444' }} />
+            <XCircle size={20} style={{ color: 'var(--error)' }} />
           </div>
           <div>
-            <p className="text-2xl font-bold" style={{ color: '#ef4444' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--error)' }}>
               {stats.pending}
             </p>
             <p className="text-xs text-secondary">未处理</p>
@@ -521,12 +536,12 @@ export default function Alerts() {
         <Card className="flex items-center gap-4 p-4">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: '#f59e0b20' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)' }}
           >
-            <Clock size={20} style={{ color: '#f59e0b' }} />
+            <Clock size={20} style={{ color: 'var(--warning)' }} />
           </div>
           <div>
-            <p className="text-2xl font-bold" style={{ color: '#f59e0b' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--warning)' }}>
               {stats.processing}
             </p>
             <p className="text-xs text-secondary">处理中</p>
@@ -736,6 +751,17 @@ export default function Alerts() {
         )}
       </Card>
 
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title={confirmAction?.type === 'markAllResolved' ? '确认全部标记已解决' : '确认标记已解决'}
+        description={confirmAction?.type === 'markAllResolved' ? '将所有未处理和处理中的预警标记为已解决，此操作不可撤销。' : '确认将此预警标记为已解决？'}
+        confirmText="确认"
+        variant="warning"
+      />
+
       {/* 处置抽屉 */}
       <Drawer
         isOpen={drawerOpen}
@@ -894,7 +920,7 @@ export default function Alerts() {
                     size="sm"
                     icon={<CheckCircle size={14} />}
                     onClick={() =>
-                      handleAction(selectedAlert.id, 'resolved')
+                      setConfirmAction({ type: 'markResolved', alertId: selectedAlert.id })
                     }
                   >
                     标记已解决

@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Tabs } from '@/components/ui/Tabs'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -165,6 +166,7 @@ export default function KnowledgeDetail() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{ type: string; docId?: string } | null>(null)
 
   // RAG settings
   const [chunkSize, setChunkSize] = useState(512)
@@ -198,9 +200,15 @@ export default function KnowledgeDetail() {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('确认将此文档从向量库中移除吗？此操作不可逆。')) {
-      setDocs((prev) => prev.filter((d) => d.id !== id))
+    setConfirmAction({ type: 'delete', docId: id })
+  }
+
+  const handleConfirmAction = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'delete' && confirmAction.docId) {
+      setDocs((prev) => prev.filter((d) => d.id !== confirmAction.docId))
     }
+    setConfirmAction(null)
   }
 
   const handleSearch = () => {
@@ -251,6 +259,17 @@ export default function KnowledgeDetail() {
           <Badge variant="success">RAG KB</Badge>
         </div>
       </PageHeader>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title="确认删除文档"
+        description="确认将此文档从向量库中移除吗？删除后相关向量块将被清除，此操作不可逆。"
+        confirmText="删除"
+        variant="danger"
+      />
 
       {/* Tab Navigation */}
       <div className="mb-6">

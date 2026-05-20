@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import {
   ArrowLeft,
   Bot,
@@ -875,6 +876,7 @@ export default function AgentChat() {
   const [streamingId, setStreamingId] = useState<string | null>(null)
   const [citationSidebarVisible, setCitationSidebarVisible] = useState(true)
   const [currentCitations, setCurrentCitations] = useState<CitationSource[]>([])
+  const [confirmAction, setConfirmAction] = useState<{ type: string } | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   const thinkingSteps = [
@@ -987,12 +989,7 @@ export default function AgentChat() {
             {citationSidebarVisible ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
           </button>
           <button
-            onClick={() => {
-              setMessages([botWelcome])
-              setCurrentCitations([])
-              setStreamingId(null)
-              setThinking(false)
-            }}
+            onClick={() => setConfirmAction({ type: 'clearChat' })}
             className="btn-secondary text-xs px-3 py-2"
           >
             清空对话
@@ -1169,6 +1166,25 @@ export default function AgentChat() {
           />
         )}
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction?.type === 'clearChat') {
+            setMessages([botWelcome])
+            setCurrentCitations([])
+            setStreamingId(null)
+            setThinking(false)
+          }
+          setConfirmAction(null)
+        }}
+        title="确认清空对话"
+        description="清空后当前对话的所有消息将被删除，此操作不可逆。"
+        confirmText="清空"
+        variant="danger"
+      />
 
       {/* ============================================================ */}
       {/*  Floating AiGate Bot Chat                                    */}

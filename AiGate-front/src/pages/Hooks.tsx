@@ -30,6 +30,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { Drawer } from '@/components/ui/Drawer'
 import { Stepper } from '@/components/ui/Stepper'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useUIStore } from '@/stores/ui'
 
 /* ------------------------------------------------------------------ */
@@ -64,10 +65,10 @@ interface Hook {
 /* ------------------------------------------------------------------ */
 
 const TRIGGER_CONFIG: Record<HookTrigger, { label: string; color: string; badgeVariant: 'success' | 'warning' | 'error' | 'info' }> = {
-  before: { label: 'before', color: '#3b82f6', badgeVariant: 'info' },
-  after: { label: 'after', color: '#10b981', badgeVariant: 'success' },
-  error: { label: 'error', color: '#ef4444', badgeVariant: 'error' },
-  abort: { label: 'abort', color: '#f59e0b', badgeVariant: 'warning' },
+  before: { label: 'before', color: 'var(--info)', badgeVariant: 'info' },
+  after: { label: 'after', color: 'var(--success)', badgeVariant: 'success' },
+  error: { label: 'error', color: 'var(--error)', badgeVariant: 'error' },
+  abort: { label: 'abort', color: 'var(--warning)', badgeVariant: 'warning' },
 }
 
 const STATUS_CONFIG: Record<HookStatus, { label: string; badgeVariant: 'success' | 'warning' | 'neutral' }> = {
@@ -77,9 +78,9 @@ const STATUS_CONFIG: Record<HookStatus, { label: string; badgeVariant: 'success'
 }
 
 const REVIEW_CONFIG: Record<ReviewStatus, { label: string; icon: React.ReactNode; color: string }> = {
-  approved: { label: '已通过', icon: <CheckCircle2 size={14} />, color: '#10b981' },
-  pending: { label: '待审批', icon: <Clock size={14} />, color: '#f59e0b' },
-  rejected: { label: '已拒绝', icon: <XCircle size={14} />, color: '#ef4444' },
+  approved: { label: '已通过', icon: <CheckCircle2 size={14} />, color: 'var(--success)' },
+  pending: { label: '待审批', icon: <Clock size={14} />, color: 'var(--warning)' },
+  rejected: { label: '已拒绝', icon: <XCircle size={14} />, color: 'var(--error)' },
   not_submitted: { label: '未提交', icon: <AlertTriangle size={14} />, color: 'var(--text-secondary)' },
 }
 
@@ -333,6 +334,7 @@ export default function Hooks() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [selectedHook, setSelectedHook] = useState<Hook | null>(null)
   const [drawerTab, setDrawerTab] = useState<'code' | 'config' | 'test' | 'audit'>('code')
+  const [confirmAction, setConfirmAction] = useState<{ type: string; hookName?: string } | null>(null)
 
   // Wizard state
   const [wizardStep, setWizardStep] = useState(0)
@@ -458,6 +460,15 @@ export default function Hooks() {
     })
   }
 
+  const handleConfirmAction = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'delete') {
+      addToast({ type: 'success', title: '已删除', message: `Hook「${confirmAction.hookName}」已删除` })
+      closeDrawer()
+    }
+    setConfirmAction(null)
+  }
+
   /* ---------------------------------------------------------------- */
   /*  Render                                                           */
   /* ---------------------------------------------------------------- */
@@ -511,7 +522,7 @@ export default function Hooks() {
           <div className="flex items-center gap-3 mb-2">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ background: 'var(--bg-elevated)', color: '#f59e0b' }}
+              style={{ background: 'var(--bg-elevated)', color: 'var(--warning)' }}
             >
               <Clock size={18} />
             </div>
@@ -924,7 +935,7 @@ export default function Hooks() {
                       className="p-4 rounded-lg text-xs overflow-x-auto"
                       style={{
                         background: 'var(--bg-body)',
-                        color: '#10b981',
+                        color: 'var(--success)',
                         fontFamily: 'ui-monospace, "JetBrains Mono", Consolas, monospace',
                         border: '1px solid var(--border-color)',
                       }}
@@ -1029,10 +1040,7 @@ export default function Hooks() {
                 variant="danger"
                 size="sm"
                 icon={<Trash2 size={14} />}
-                onClick={() => {
-                  addToast({ type: 'success', title: '已删除', message: `Hook「${selectedHook.name}」已删除` })
-                  closeDrawer()
-                }}
+                onClick={() => setConfirmAction({ type: 'delete', hookName: selectedHook.name })}
               >
                 删除
               </Button>
@@ -1055,6 +1063,17 @@ export default function Hooks() {
           </div>
         )}
       </Drawer>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title={confirmAction?.type === 'delete' ? '确认删除 Hook' : '确认操作'}
+        description={confirmAction?.type === 'delete' ? `删除后 Hook「${confirmAction.hookName}」的所有配置和代码将被清除，此操作不可逆。` : undefined}
+        confirmText={confirmAction?.type === 'delete' ? '删除' : '确认'}
+        variant="danger"
+      />
 
       {/* ============================================================ */}
       {/*  Create Wizard Modal                                          */}
@@ -1240,10 +1259,10 @@ export default function Hooks() {
                 <div className="space-y-4">
                   <div
                     className="p-4 rounded-lg border"
-                    style={{ borderColor: '#f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}
+                    style={{ borderColor: 'var(--warning)', background: 'rgba(245, 158, 11, 0.05)' }}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle size={18} style={{ color: '#f59e0b' }} />
+                      <AlertTriangle size={18} style={{ color: 'var(--warning)' }} />
                       <span className="font-medium text-sm">安全审查要求</span>
                     </div>
                     <ul className="text-xs text-secondary space-y-1.5 ml-6">

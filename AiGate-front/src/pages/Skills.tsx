@@ -21,6 +21,7 @@ import {
   Play,
   Copy,
   Eye,
+  Trash2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
@@ -31,6 +32,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { Drawer } from '@/components/ui/Drawer'
 import { Stepper } from '@/components/ui/Stepper'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useUIStore } from '@/stores/ui'
 
 /* ------------------------------------------------------------------ */
@@ -266,6 +268,7 @@ export default function Skills() {
   const [wizardStep, setWizardStep] = useState(0)
   const [skillName, setSkillName] = useState('')
   const [skillCategory, setSkillCategory] = useState('代码')
+  const [confirmAction, setConfirmAction] = useState<{ type: string; skillName?: string } | null>(null)
   const { addToast } = useUIStore()
 
   const hasActiveFilters = categoryFilter !== '全部分类' || statusFilter !== '全部状态'
@@ -306,6 +309,19 @@ export default function Skills() {
     setWizardOpen(false)
     setWizardStep(0)
     setSkillName('')
+  }
+
+  const handleDelete = (name: string) => {
+    setConfirmAction({ type: 'delete', skillName: name })
+  }
+
+  const handleConfirmAction = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'delete') {
+      addToast({ type: 'success', title: '已删除', message: `技能「${confirmAction.skillName}」已删除` })
+      closeDrawer()
+    }
+    setConfirmAction(null)
   }
 
   const nextStep = () => {
@@ -1006,22 +1022,43 @@ curl -X POST https://api.aigate.com/v1/skills/${activeSkill.id}/invoke \\
 
             {/* Footer Actions */}
             <div
-              className="flex justify-end gap-3 pt-4 border-t"
+              className="flex justify-between items-center pt-4 border-t"
               style={{ borderColor: 'var(--border-color)' }}
             >
-              <Button variant="secondary" size="sm" onClick={closeDrawer}>
-                关闭
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Trash2 size={14} />}
+                onClick={() => handleDelete(activeSkill.name)}
+              >
+                删除
               </Button>
-              <Button variant="secondary" size="sm" icon={<Copy size={14} />}>
-                复制调用
-              </Button>
-              <Button variant="primary" size="sm" icon={<Play size={14} />}>
-                测试调用
-              </Button>
+              <div className="flex gap-3">
+                <Button variant="secondary" size="sm" onClick={closeDrawer}>
+                  关闭
+                </Button>
+                <Button variant="secondary" size="sm" icon={<Copy size={14} />}>
+                  复制调用
+                </Button>
+                <Button variant="primary" size="sm" icon={<Play size={14} />}>
+                  测试调用
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </Drawer>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title="确认删除技能"
+        description={`删除后技能「${confirmAction?.skillName}」的所有配置和版本将被清除，此操作不可逆。`}
+        confirmText="删除"
+        variant="danger"
+      />
 
       {/* ============================================================ */}
       {/*  Create Skill Wizard                                         */}

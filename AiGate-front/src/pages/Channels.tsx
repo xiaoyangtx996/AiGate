@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/Input'
 import { Drawer } from '@/components/ui/Drawer'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useUIStore } from '@/stores/ui'
 
 /* ------------------------------------------------------------------ */
@@ -177,6 +178,7 @@ export default function Channels() {
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [drawerTab, setDrawerTab] = useState<'info' | 'oauth' | 'rateLimit'>('info')
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{ type: string; channelId?: string } | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [healthFilter, setHealthFilter] = useState<string>('all')
@@ -248,6 +250,18 @@ export default function Channels() {
         handleTestConnectivity(ch.id)
       }
     })
+  }
+
+  // Handle confirm action
+  const handleConfirmAction = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'delete') {
+      setChannels((prev) => prev.filter((ch) => ch.id !== confirmAction.channelId))
+      setDrawerOpen(false)
+      setSelectedChannel(null)
+    }
+    addToast({ type: 'success', title: '操作成功' })
+    setConfirmAction(null)
   }
 
   // Toggle channel status
@@ -870,13 +884,29 @@ export default function Channels() {
               </Button>
             </div>
             {selectedChannel.status === 'enabled' && (
-              <Button variant="danger" className="w-full" icon={<Trash2 size={16} />}>
+              <Button
+                variant="danger"
+                className="w-full"
+                icon={<Trash2 size={16} />}
+                onClick={() => setConfirmAction({ type: 'delete', channelId: selectedChannel.id })}
+              >
                 删除渠道
               </Button>
             )}
           </div>
         )}
       </Drawer>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title={confirmAction?.type === 'delete' ? '确认删除渠道' : '确认操作'}
+        description={confirmAction?.type === 'delete' ? '删除后该渠道的所有配置将被清除，此操作不可逆。' : undefined}
+        confirmText={confirmAction?.type === 'delete' ? '删除' : '确认'}
+        variant="danger"
+      />
 
       {/* Add Channel Modal */}
       <Modal

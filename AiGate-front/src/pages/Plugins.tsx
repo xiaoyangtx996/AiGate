@@ -26,6 +26,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Drawer } from '@/components/ui/Drawer'
 import { Tabs } from '@/components/ui/Tabs'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useUIStore } from '@/stores/ui'
 
 /* ------------------------------------------------------------------ */
@@ -273,6 +274,7 @@ export default function Plugins() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('全部')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [confirmAction, setConfirmAction] = useState<{ type: string; pluginName?: string } | null>(null)
   const { addToast } = useUIStore()
 
   const hasActiveFilters = categoryFilter !== '全部' || statusFilter !== 'all'
@@ -310,8 +312,16 @@ export default function Plugins() {
   }
 
   const handleUninstall = (pluginName: string) => {
-    addToast({ type: 'info', title: '已卸载', message: `插件「${pluginName}」已从当前环境卸载` })
-    setDrawerOpen(false)
+    setConfirmAction({ type: 'uninstall', pluginName })
+  }
+
+  const handleConfirmAction = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'uninstall') {
+      addToast({ type: 'info', title: '已卸载', message: `插件「${confirmAction.pluginName}」已从当前环境卸载` })
+      setDrawerOpen(false)
+    }
+    setConfirmAction(null)
   }
 
   const handleToggleStatus = (pluginName: string, currentStatus: string) => {
@@ -854,6 +864,17 @@ export default function Plugins() {
           </div>
         )}
       </Drawer>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title={confirmAction?.type === 'uninstall' ? '确认卸载插件' : '确认操作'}
+        description={confirmAction?.type === 'uninstall' ? `卸载后插件「${confirmAction.pluginName}」的所有配置将被清除，此操作不可逆。` : undefined}
+        confirmText={confirmAction?.type === 'uninstall' ? '卸载' : '确认'}
+        variant="danger"
+      />
 
       {/* ============================================================ */}
       {/*  Install Modal                                                */}
