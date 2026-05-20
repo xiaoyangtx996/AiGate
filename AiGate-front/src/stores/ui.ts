@@ -19,6 +19,9 @@ interface UIState {
   removeToast: (id: string) => void
   searchOpen: boolean
   setSearchOpen: (open: boolean) => void
+  recentSearches: string[]
+  addRecentSearch: (term: string) => void
+  clearRecentSearches: () => void
 }
 
 export interface Toast {
@@ -70,12 +73,21 @@ export const useUIStore = create<UIState>()(
 
       searchOpen: false,
       setSearchOpen: (open) => set({ searchOpen: open }),
+
+      recentSearches: [],
+      addRecentSearch: (term) => {
+        const { recentSearches } = get()
+        const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(0, 5)
+        set({ recentSearches: updated })
+      },
+      clearRecentSearches: () => set({ recentSearches: [] }),
     }),
     {
       name: 'aigate_ui',
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         expandedGroups: state.expandedGroups,
+        recentSearches: state.recentSearches,
       }),
     }
   )
