@@ -4,8 +4,10 @@ import { persist } from 'zustand/middleware'
 interface UIState {
   sidebarCollapsed: boolean
   sidebarOpen: boolean
+  mobileSidebarOpen: boolean
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
+  setMobileSidebarOpen: (open: boolean) => void
   expandedGroups: string[]
   toggleGroup: (group: string) => void
   activeModal: string | null
@@ -37,8 +39,10 @@ export const useUIStore = create<UIState>()(
     (set, get) => ({
       sidebarCollapsed: false,
       sidebarOpen: true,
+      mobileSidebarOpen: false,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 
       expandedGroups: ['data-center', 'org-governance', 'gateway', 'assets', 'agent', 'monitoring'],
       toggleGroup: (group) => {

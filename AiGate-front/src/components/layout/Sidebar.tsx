@@ -1,4 +1,4 @@
-import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow } from 'lucide-react'
+import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useUIStore } from '@/stores/ui'
 import { clsx } from 'clsx'
@@ -86,60 +86,94 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-export function Sidebar() {
+function SidebarContent({ collapsed, onItemClick }: { collapsed: boolean; onItemClick?: () => void }) {
   const { getEffectiveRole } = useAuth()
-  const { expandedGroups, toggleGroup, sidebarCollapsed, toggleSidebar } = useUIStore()
+  const { expandedGroups, toggleGroup } = useUIStore()
   const currentRole = getEffectiveRole()
 
   const isItemVisible = (item: NavItem) => !item.roles || item.roles.includes(currentRole)
   const isGroupVisible = (group: NavGroup) => (!group.roles || group.roles.includes(currentRole)) && group.items.some(isItemVisible)
 
   return (
-    <aside className={clsx('sidebar', sidebarCollapsed && 'collapsed')}>
-      {/* Toggle button */}
-      <button
-        onClick={toggleSidebar}
-        className="absolute -right-3 top-6 w-6 h-6 flex items-center justify-center rounded-full border z-10 transition-colors"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-color)',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+    <nav className="space-y-1">
+      {navGroups.filter(isGroupVisible).map((group) => (
+        <div key={group.id} className="nav-group py-2">
+          {!collapsed && (
+            <button
+              onClick={() => toggleGroup(group.id)}
+              className="nav-group-header w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
+            >
+              <span>{group.label}</span>
+              <ChevronDown size={14} className={clsx('transform transition-transform duration-200', expandedGroups.includes(group.id) && 'rotate-180')} />
+            </button>
+          )}
+          {(collapsed || expandedGroups.includes(group.id)) && (
+            <div className={clsx('nav-items-container', collapsed ? 'space-y-1' : 'space-y-0.5 mt-1')}>
+              {group.items.filter(isItemVisible).map((item) => (
+                <SidebarItem
+                  key={item.path}
+                  label={item.label}
+                  path={item.path}
+                  icon={item.icon}
+                  collapsed={collapsed}
+                  onClick={onItemClick}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </nav>
+  )
+}
 
-      <nav className="space-y-1">
-        {navGroups.filter(isGroupVisible).map((group) => (
-          <div key={group.id} className="nav-group py-2">
-            {/* Group header - hidden when collapsed */}
-            {!sidebarCollapsed && (
-              <button
-                onClick={() => toggleGroup(group.id)}
-                className="nav-group-header w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
-              >
-                <span>{group.label}</span>
-                <ChevronDown size={14} className={clsx('transform transition-transform duration-200', expandedGroups.includes(group.id) && 'rotate-180')} />
-              </button>
-            )}
+export function Sidebar() {
+  const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore()
 
-            {/* Items - always visible when collapsed, otherwise follow expanded state */}
-            {(sidebarCollapsed || expandedGroups.includes(group.id)) && (
-              <div className={clsx('nav-items-container', sidebarCollapsed ? 'space-y-1' : 'space-y-0.5 mt-1')}>
-                {group.items.filter(isItemVisible).map((item) => (
-                  <SidebarItem
-                    key={item.path}
-                    label={item.label}
-                    path={item.path}
-                    icon={item.icon}
-                    collapsed={sidebarCollapsed}
-                  />
-                ))}
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className={clsx('sidebar sidebar-desktop', sidebarCollapsed && 'collapsed')}>
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-6 w-6 h-6 flex items-center justify-center rounded-full border z-10 transition-colors"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+        <SidebarContent collapsed={sidebarCollapsed} />
+      </aside>
+
+      {/* Mobile sidebar drawer */}
+      {mobileSidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setMobileSidebarOpen(false)}>
+          <aside className="sidebar-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="sidebar-drawer-header">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-8 h-8 flex items-center justify-center font-bold text-lg"
+                  style={{ background: 'var(--brand-main)', color: 'var(--bg-body)', borderRadius: 'var(--border-radius-base)' }}
+                >
+                  A
+                </div>
+                <span className="text-lg font-bold tracking-tight">AiGate</span>
               </div>
-            )}
-          </div>
-        ))}
-      </nav>
-    </aside>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="sidebar-drawer-close"
+                aria-label="关闭侧边栏"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <SidebarContent collapsed={false} onItemClick={() => setMobileSidebarOpen(false)} />
+          </aside>
+        </div>
+      )}
+    </>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, Search, User, LogOut, Key, Moon, Sun, Monitor, Building2 } from 'lucide-react'
+import { Bell, Search, User, LogOut, Key, Moon, Sun, Monitor, Building2, Menu } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { useUIStore } from '@/stores/ui'
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 export function MasterNav() {
   const { user, logout, simulatedRole, setSimulatedRole } = useAuth()
   const { theme, setTheme } = useTheme()
-  const { setSearchOpen } = useUIStore()
+  const { setSearchOpen, setMobileSidebarOpen } = useUIStore()
   const navigate = useNavigate()
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
@@ -38,7 +38,16 @@ export function MasterNav() {
 
   return (
     <header className="master-nav">
-      <Link to="/" className="flex items-center gap-3">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setMobileSidebarOpen(true)}
+          className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-elevated transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
+          aria-label="打开侧边栏"
+        >
+          <Menu size={20} />
+        </button>
+        <Link to="/" className="flex items-center gap-3">
         <div
           className="w-8 h-8 flex items-center justify-center font-bold text-lg"
           style={{ background: 'var(--brand-main)', color: 'var(--bg-body)', borderRadius: 'var(--border-radius-base)' }}
@@ -49,6 +58,7 @@ export function MasterNav() {
           AiGate <span className="text-secondary text-sm ml-1 font-normal">Enterprise</span>
         </span>
       </Link>
+      </div>
 
       <div className="flex items-center gap-4">
         <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 px-3 py-1.5 text-sm text-secondary hover:text-primary transition-colors rounded-lg" style={{ backgroundColor: 'var(--bg-elevated)' }}>

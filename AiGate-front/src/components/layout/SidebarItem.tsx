@@ -6,9 +6,10 @@ interface SidebarItemProps {
   path: string
   icon: React.ReactNode
   collapsed: boolean
+  onClick?: () => void
 }
 
-export function SidebarItem({ label, path, icon, collapsed }: SidebarItemProps) {
+export function SidebarItem({ label, path, icon, collapsed, onClick }: SidebarItemProps) {
   const location = useLocation()
   const isActive = location.pathname === path
 
@@ -21,6 +22,7 @@ export function SidebarItem({ label, path, icon, collapsed }: SidebarItemProps) 
         isActive && 'active'
       )}
       title={collapsed ? label : undefined}
+      onClick={onClick}
     >
       {icon}
       {!collapsed && <span>{label}</span>}
