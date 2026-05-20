@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Activity } from 'lucide-react'
+import { LineChart } from '@/components/charts/LineChart'
+import { PieChart } from '@/components/charts/PieChart'
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -87,6 +88,37 @@ const riskItems = [
   },
 ]
 
+// Mock chart data - 30 days
+const tokenTrendData = {
+  dates: Array.from({ length: 30 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - 29 + i)
+    return `${date.getMonth() + 1}/${date.getDate()}`
+  }),
+  series: [
+    {
+      name: 'GPT-4o',
+      data: Array.from({ length: 30 }, () => Math.floor(Math.random() * 20 + 30)),
+    },
+    {
+      name: 'Claude-3.5',
+      data: Array.from({ length: 30 }, () => Math.floor(Math.random() * 15 + 20)),
+    },
+    {
+      name: 'DeepSeek',
+      data: Array.from({ length: 30 }, () => Math.floor(Math.random() * 10 + 10)),
+    },
+  ],
+}
+
+const modelTop5Data = [
+  { name: 'GPT-4o', value: 45 },
+  { name: 'Claude-3.5 Sonnet', value: 28 },
+  { name: 'DeepSeek Coder', value: 15 },
+  { name: 'Gemini Pro', value: 8 },
+  { name: '其他', value: 4 },
+]
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -113,7 +145,7 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <select
-            className="input-base text-xs font-bold"
+            className="input text-xs font-bold"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
           >
@@ -121,7 +153,7 @@ export default function Dashboard() {
             <option>最近 7 天</option>
             <option>本季度</option>
           </select>
-          <button className="btn-secondary">费用分摊</button>
+          <button className="btn btn-secondary">费用分摊</button>
         </div>
       </div>
 
@@ -213,12 +245,7 @@ export default function Dashboard() {
             </span>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] flex items-center justify-center text-secondary">
-              <div className="text-center">
-                <Activity size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="text-sm">图表加载区域 (ECharts)</p>
-              </div>
-            </div>
+            <LineChart data={tokenTrendData} height={300} />
           </CardContent>
         </Card>
 
@@ -231,12 +258,7 @@ export default function Dashboard() {
             <span className="text-xs text-secondary font-mono">占比一览</span>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] flex items-center justify-center text-secondary">
-              <div className="text-center">
-                <BarChart3Placeholder />
-                <p className="text-sm mt-2">图表加载区域 (ECharts)</p>
-              </div>
-            </div>
+            <PieChart data={modelTop5Data} height={300} />
           </CardContent>
         </Card>
       </div>
@@ -367,28 +389,5 @@ function MetricBlock({
       </div>
       <div className={`text-xl font-bold mt-1 ${valueClass}`}>{value}</div>
     </div>
-  )
-}
-
-/** Simple placeholder icon for the bar chart area */
-function BarChart3Placeholder() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="32"
-      height="32"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="mx-auto opacity-40"
-    >
-      <path d="M3 3v18h18" />
-      <path d="M18 17V9" />
-      <path d="M13 17V5" />
-      <path d="M8 17v-3" />
-    </svg>
   )
 }
