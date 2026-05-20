@@ -1,4 +1,5 @@
 import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow, X, Palette } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { useUIStore } from '@/stores/ui'
 import { clsx } from 'clsx'
@@ -18,78 +19,79 @@ interface NavGroup {
   roles?: string[]
 }
 
-const navGroups: NavGroup[] = [
-  {
-    id: 'data-center',
-    label: '数据中心',
-    items: [
-      { label: '数据大盘', path: '/dashboard', icon: <BarChart3 size={18} />, roles: ['sys_admin', 'tenant_admin', 'dept_lead', 'project_lead'] },
-      { label: '我的工作台', path: '/workspace', icon: <LayoutDashboard size={18} />, roles: ['user'] },
-    ],
-  },
-  {
-    id: 'org-governance',
-    label: '组织治理',
-    items: [
-      { label: '组织与配额', path: '/organization', icon: <Building2 size={18} />, roles: ['sys_admin', 'tenant_admin'] },
-      { label: '用户管理', path: '/users', icon: <Users2 size={18} />, roles: ['sys_admin', 'tenant_admin'] },
-      { label: '配额申请审批', path: '/quota-approval', icon: <Receipt size={18} />, roles: ['sys_admin', 'tenant_admin', 'dept_lead', 'project_lead'] },
-    ],
-  },
-  {
-    id: 'gateway',
-    label: '网关与接入',
-    items: [
-      { label: '渠道管理', path: '/channels', icon: <Plug size={18} />, roles: ['sys_admin'] },
-      { label: '模型资产', path: '/models', icon: <Puzzle size={18} />, roles: ['sys_admin'] },
-      { label: '密钥管理', path: '/keys', icon: <Key size={18} /> },
-      { label: '调用日志', path: '/logs', icon: <FileText size={18} /> },
-    ],
-  },
-  {
-    id: 'knowledge',
-    label: '知识库',
-    items: [
-      { label: '项目知识库', path: '/knowledge', icon: <BookOpen size={18} />, roles: ['sys_admin', 'dept_lead', 'project_lead'] },
-    ],
-  },
-  {
-    id: 'assets',
-    label: 'AI 资产市场',
-    items: [
-      { label: '提示词库', path: '/prompts', icon: <FileText size={18} /> },
-      { label: 'MCP 工具', path: '/mcp', icon: <Puzzle size={18} />, roles: ['sys_admin', 'tenant_admin'] },
-      { label: 'Skills 技能库', path: '/skills', icon: <Workflow size={18} />, roles: ['sys_admin', 'tenant_admin', 'project_lead'] },
-      { label: 'Plugins 插件库', path: '/plugins', icon: <Plug size={18} />, roles: ['sys_admin', 'tenant_admin', 'project_lead'] },
-      { label: 'Hooks 钩子库', path: '/hooks', icon: <Code2 size={18} />, roles: ['sys_admin'] },
-    ],
-  },
-  {
-    id: 'agent',
-    label: 'Agent 中心',
-    items: [{ label: 'Agent 中心', path: '/agent', icon: <Bot size={18} /> }],
-  },
-  {
-    id: 'monitoring',
-    label: '监控与合规',
-    items: [
-      { label: '预警中心', path: '/alerts', icon: <Bell size={18} /> },
-      { label: '操作审计', path: '/audit', icon: <ShieldCheck size={18} />, roles: ['sys_admin'] },
-    ],
-  },
-  {
-    id: 'system',
-    label: '系统',
-    items: [
-      { label: '系统设置', path: '/settings', icon: <Settings size={18} />, roles: ['sys_admin', 'tenant_admin'] },
-      { label: '设计系统', path: '/design-system', icon: <Palette size={18} />, roles: ['sys_admin'] },
-    ],
-  },
-]
-
 function SidebarContent({ collapsed, onItemClick }: { collapsed: boolean; onItemClick?: () => void }) {
+  const { t } = useTranslation('nav')
   const { getEffectiveRole } = useAuth()
   const { expandedGroups, toggleGroup } = useUIStore()
+
+  const navGroups: NavGroup[] = [
+    {
+      id: 'data-center',
+      label: t('dataCenter'),
+      items: [
+        { label: t('dashboard'), path: '/dashboard', icon: <BarChart3 size={18} />, roles: ['sys_admin', 'tenant_admin', 'dept_lead', 'project_lead'] },
+        { label: t('workspace'), path: '/workspace', icon: <LayoutDashboard size={18} />, roles: ['user'] },
+      ],
+    },
+    {
+      id: 'org-governance',
+      label: t('orgGovernance'),
+      items: [
+        { label: t('organization'), path: '/organization', icon: <Building2 size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+        { label: t('users'), path: '/users', icon: <Users2 size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+        { label: t('quotaApproval'), path: '/quota-approval', icon: <Receipt size={18} />, roles: ['sys_admin', 'tenant_admin', 'dept_lead', 'project_lead'] },
+      ],
+    },
+    {
+      id: 'gateway',
+      label: t('gateway'),
+      items: [
+        { label: t('channels'), path: '/channels', icon: <Plug size={18} />, roles: ['sys_admin'] },
+        { label: t('models'), path: '/models', icon: <Puzzle size={18} />, roles: ['sys_admin'] },
+        { label: t('keys'), path: '/keys', icon: <Key size={18} /> },
+        { label: t('logs'), path: '/logs', icon: <FileText size={18} /> },
+      ],
+    },
+    {
+      id: 'knowledge',
+      label: t('knowledge'),
+      items: [
+        { label: t('projectKnowledge'), path: '/knowledge', icon: <BookOpen size={18} />, roles: ['sys_admin', 'dept_lead', 'project_lead'] },
+      ],
+    },
+    {
+      id: 'assets',
+      label: t('aiAssets'),
+      items: [
+        { label: t('prompts'), path: '/prompts', icon: <FileText size={18} /> },
+        { label: t('mcpTools'), path: '/mcp', icon: <Puzzle size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+        { label: t('skills'), path: '/skills', icon: <Workflow size={18} />, roles: ['sys_admin', 'tenant_admin', 'project_lead'] },
+        { label: t('plugins'), path: '/plugins', icon: <Plug size={18} />, roles: ['sys_admin', 'tenant_admin', 'project_lead'] },
+        { label: t('hooks'), path: '/hooks', icon: <Code2 size={18} />, roles: ['sys_admin'] },
+      ],
+    },
+    {
+      id: 'agent',
+      label: t('agentCenter'),
+      items: [{ label: t('agentCenter'), path: '/agent', icon: <Bot size={18} /> }],
+    },
+    {
+      id: 'monitoring',
+      label: t('monitoring'),
+      items: [
+        { label: t('alerts'), path: '/alerts', icon: <Bell size={18} /> },
+        { label: t('audit'), path: '/audit', icon: <ShieldCheck size={18} />, roles: ['sys_admin'] },
+      ],
+    },
+    {
+      id: 'system',
+      label: t('system'),
+      items: [
+        { label: t('settings'), path: '/settings', icon: <Settings size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+        { label: t('designSystem'), path: '/design-system', icon: <Palette size={18} />, roles: ['sys_admin'] },
+      ],
+    },
+  ]
   const currentRole = getEffectiveRole()
 
   const isItemVisible = (item: NavItem) => !item.roles || item.roles.includes(currentRole)
