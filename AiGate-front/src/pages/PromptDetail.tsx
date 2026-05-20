@@ -1,407 +1,541 @@
-import { useState, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Bot,
-  Send,
-  X,
-} from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Tabs } from '@/components/ui/Tabs'
+import { Input } from '@/components/ui/Input'
+import { useUIStore } from '@/stores/ui'
+import {
+  ArrowLeft,
+  Play,
+  Copy,
+  GitBranch,
+  Clock,
+  User,
+  BarChart3,
+  Zap,
+  CheckCircle,
+  RotateCcw,
+  Send,
+} from 'lucide-react'
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 
 interface PromptVersion {
-  value: string
-  label: string
-  variables: {
-    language: string
-    focusArea: string
-    code: string
+  id: string
+  version: string
+  status: 'published' | 'draft' | 'archived'
+  createdAt: string
+  author: string
+  changes: string
+  template: string
+  variables: Record<string, string>
+  stats?: {
+    calls: number
+    avgTokens: number
+    avgLatency: number
   }
 }
 
-const versions: PromptVersion[] = [
+/* ------------------------------------------------------------------ */
+/*  Mock Data                                                          */
+/* ------------------------------------------------------------------ */
+
+const MOCK_VERSIONS: PromptVersion[] = [
   {
-    value: 'v2.1.0',
-    label: 'v2.1.0 (当前线上 · 2026-05-17)',
-    variables: {
-      language: 'Javascript',
-      focusArea: '内存溢出与回调陷阱',
-      code: `function execute() {\n  for(let i=0; i<10000; i++) {\n    setTimeout(() => {\n      console.log(i);\n    }, 100);\n  }\n}`,
-    },
+    id: 'v3',
+    version: 'v3.0.0',
+    status: 'published',
+    createdAt: '2026-05-20',
+    author: '张三',
+    changes: '优化代码审查输出格式，增加修复建议',
+    template: '请用专业的语气审查以下 {{language}} 代码，重点关注 {{focus_area}}：\n\n{{code}}\n\n请按以下格式输出：\n1. 问题摘要\n2. 详细分析\n3. 修复建议\n4. 最佳实践',
+    variables: { language: 'Python', focus_area: '内存泄漏', code: 'def process():\n  data = []\n  while True:\n    data.append(fetch())' },
+    stats: { calls: 28420, avgTokens: 520, avgLatency: 1200 },
   },
   {
-    value: 'v2.0.0',
-    label: 'v2.0.0 (历史归档 · 2026-04-12)',
-    variables: {
-      language: 'Python',
-      focusArea: '类型注解与列表推导式性能',
-      code: `def parse(items):\n  return [x * 2 for x in items]`,
-    },
+    id: 'v2',
+    version: 'v2.1.0',
+    status: 'archived',
+    createdAt: '2026-04-15',
+    author: '张三',
+    changes: '支持多语言代码审查',
+    template: '请审查以下 {{language}} 代码，关注 {{focus_area}}：\n\n{{code}}',
+    variables: { language: 'JavaScript', focus_area: '性能优化', code: 'function loop() {\n  for(let i=0; i<1000; i++) {\n    setTimeout(() => console.log(i), 100)\n  }\n}' },
+    stats: { calls: 15200, avgTokens: 380, avgLatency: 950 },
+  },
+  {
+    id: 'v1',
+    version: 'v1.0.0',
+    status: 'archived',
+    createdAt: '2026-03-01',
+    author: '李四',
+    changes: '初始版本',
+    template: '审查代码：\n{{code}}',
+    variables: { language: 'Python', focus_area: '安全性', code: '' },
+    stats: { calls: 5800, avgTokens: 250, avgLatency: 800 },
   },
 ]
 
-const template = `请用专业的语气审查以下 {{language}} 代码，重点关注 {{focus_area}}：\n\n{{code}}`
-
-const sandboxModels = [
-  'gpt-4o (企业首选模型)',
-  'claude-3-5-sonnet',
-]
-
-function renderTemplate(language: string, focusArea: string, code: string): string {
-  return template
-    .replace('{{language}}', language)
-    .replace('{{focus_area}}', focusArea)
-    .replace('{{code}}', code)
+const MOCK_DRAFT: PromptVersion = {
+  id: 'draft',
+  version: 'draft',
+  status: 'draft',
+  createdAt: '2026-05-20',
+  author: '张三',
+  changes: '正在测试新的输出格式',
+  template: '请用专业的语气审查以下 {{language}} 代码，重点关注 {{focus_area}}：\n\n{{code}}\n\n请输出 JSON 格式的结果。',
+  variables: { language: 'TypeScript', focus_area: '类型安全', code: 'function add(a: any, b: any) {\n  return a + b\n}' },
 }
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
+
 export default function PromptDetail() {
-  const [selectedVersion, setSelectedVersion] = useState('v2.1.0')
-  const [language, setLanguage] = useState(versions[0].variables.language)
-  const [focusArea, setFocusArea] = useState(versions[0].variables.focusArea)
-  const [code, setCode] = useState(versions[0].variables.code)
-  const [sandboxModel, setSandboxModel] = useState(sandboxModels[0])
-  const [sandboxResult, setSandboxResult] = useState<string | null>(null)
+  const { addToast } = useUIStore()
+
+  // Active tab
+  const [activeTab, setActiveTab] = useState('editor')
+
+  // Version management
+  const [selectedVersionId, setSelectedVersionId] = useState('v3')
+  const [showDraft] = useState(false)
+
+  // Editor variables
+  const [variables, setVariables] = useState<Record<string, string>>(MOCK_VERSIONS[0].variables)
+  const [template, setTemplate] = useState(MOCK_VERSIONS[0].template)
+
+  // Sandbox
+  const [sandboxModel, setSandboxModel] = useState('gpt-4o')
   const [sandboxLoading, setSandboxLoading] = useState(false)
+  const [sandboxResult, setSandboxResult] = useState<string | null>(null)
 
-  // AiGate Bot chat state
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatMessages, setChatMessages] = useState<
-    { role: 'bot' | 'user'; text: string }[]
-  >([
-    {
-      role: 'bot',
-      text: '你好！我是 AiGate Bot，可以帮你查询配额、调用日志，或根据选定知识库回答问题。',
-    },
-  ])
-  const [chatInput, setChatInput] = useState('')
-  const [chatKb, setChatKb] = useState('全局 (不限知识库)')
-  const [chatModel, setChatModel] = useState('gpt-4o')
+  // A/B Test
+  const [abModelA, setAbModelA] = useState('gpt-4o')
+  const [abModelB, setAbModelB] = useState('claude-3-5-sonnet')
+  const [abResultA, setAbResultA] = useState<string | null>(null)
+  const [abResultB, setAbResultB] = useState<string | null>(null)
+  const [abLoading, setAbLoading] = useState(false)
 
-  const renderedOutput = renderTemplate(language, focusArea, code)
+  // Get current version
+  const currentVersion = useMemo(() => {
+    if (showDraft) return MOCK_DRAFT
+    return MOCK_VERSIONS.find((v) => v.id === selectedVersionId) || MOCK_VERSIONS[0]
+  }, [selectedVersionId, showDraft])
 
-  const handleVersionChange = useCallback((version: string) => {
-    setSelectedVersion(version)
-    const found = versions.find((v) => v.value === version)
-    if (found) {
-      setLanguage(found.variables.language)
-      setFocusArea(found.variables.focusArea)
-      setCode(found.variables.code)
-    }
-  }, [])
+  // Render template
+  const renderedTemplate = useMemo(() => {
+    let result = template
+    Object.entries(variables).forEach(([key, value]) => {
+      result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+    })
+    return result
+  }, [template, variables])
 
+  // Update variable
+  const updateVariable = (key: string, value: string) => {
+    setVariables((prev) => ({ ...prev, [key]: value }))
+  }
+
+  // Run sandbox
   const handleRunSandbox = () => {
     setSandboxLoading(true)
     setSandboxResult(null)
     setTimeout(() => {
       setSandboxResult(
-        `[代码审查意见 - gpt-4o v2.1.0]\n\n这段代码存在典型的内存溢出（Memory Leak）隐患：\n1. **闭包/回调陷阱**：在循环中创建了 10,000 个 setTimeout 回调函数，所有回调函数保持了对局部变量 i 的引用闭包，这会导致 JS 引擎的宏任务队列瞬间暴涨。\n2. **性能优化建议**：若仅做周期性的批量异步消费，应避免瞬时创建庞大的宏任务队列。建议采用批处理（Batching）或 async/await 队列排队处理。`
+        `[${sandboxModel} 审查结果]\n\n1. **问题摘要**：检测到潜在的内存泄漏问题\n\n2. **详细分析**：\n   - 在 while True 循环中持续调用 fetch() 并追加到 data 列表\n   - 没有清理机制，data 列表会无限增长\n   - 最终导致内存溢出\n\n3. **修复建议**：\n   - 添加数据处理后的清理逻辑\n   - 设置最大缓存大小\n   - 使用生成器模式替代列表累积\n\n4. **最佳实践**：\n   - 使用 with 语句管理资源\n   - 实现背压控制机制`
       )
       setSandboxLoading(false)
-    }, 1000)
+    }, 1500)
   }
 
-  const handleSendChat = () => {
-    const msg = chatInput.trim()
-    if (!msg) return
-    setChatMessages((prev) => [...prev, { role: 'user', text: msg }])
-    setChatInput('')
+  // Run A/B test
+  const handleRunAB = () => {
+    setAbLoading(true)
+    setAbResultA(null)
+    setAbResultB(null)
+
     setTimeout(() => {
-      setChatMessages((prev) => [
-        ...prev,
-        { role: 'bot', text: '[演示] 已收到您的问题，正在检索知识库并生成回答...' },
-      ])
-    }, 800)
+      setAbResultA(
+        `[${abModelA} 输出]\n\n审查结果：\n- 发现类型安全问题：参数使用 any 类型\n- 建议使用泛型或具体类型\n- 运行时可能出现类型错误`
+      )
+      setAbResultB(
+        `[${abModelB} 输出]\n\n代码审查报告：\n1. 类型安全：函数参数使用 any 类型，丧失了 TypeScript 的类型检查优势\n2. 运行时风险：a + b 在类型不匹配时可能产生意外结果\n3. 建议改进：\n   \`\`\`typescript\n   function add<T extends number | string>(a: T, b: T): T {\n     return (a as any) + (b as any) as T\n   }\n   \`\`\``
+      )
+      setAbLoading(false)
+    }, 2000)
   }
+
+  // Copy to clipboard
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text)
+    addToast({ type: 'success', title: '复制成功' })
+  }
+
+  // Tabs
+  const tabs = [
+    { id: 'editor', label: '编辑器' },
+    { id: 'sandbox', label: '沙箱调试' },
+    { id: 'ab-test', label: 'A/B 对比' },
+    { id: 'versions', label: '版本管理' },
+    { id: 'stats', label: '调用统计' },
+  ]
 
   return (
     <div>
       <PageHeader
-        title="提示词资产调试中心"
-        subtitle="编辑提示词版本，填槽调试，进行 A/B 真实测试与安全风险拦截审计。"
+        title="代码评审 Prompt"
+        subtitle="编辑提示词版本，填槽调试，进行 A/B 真实测试。"
         breadcrumbs={[
           { label: 'AI 资产市场' },
           { label: '提示词库', path: '/prompts' },
-          { label: '调试中心' },
+          { label: '代码评审' },
         ]}
         actions={
-          <Link
-            to="/prompts"
-            className="text-secondary hover:text-primary transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </Link>
+          <div className="flex gap-2">
+            <Badge variant={currentVersion.status === 'published' ? 'success' : 'warning'}>
+              {currentVersion.status === 'published' ? '已发布' : currentVersion.status === 'draft' ? '草稿' : '已归档'}
+            </Badge>
+            <Link to="/prompts">
+              <Button variant="ghost" size="sm" icon={<ArrowLeft size={16} />}>
+                返回
+              </Button>
+            </Link>
+          </div>
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left control panel */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Version control */}
-          <Card className="p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-sm uppercase tracking-widest text-secondary">
-                版本控制
-              </h3>
-              <Badge variant="success">已发布</Badge>
+      {/* Tabs */}
+      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-6" />
+
+      {/* Editor Tab */}
+      {activeTab === 'editor' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Template Editor */}
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold">模板编辑器</h3>
+              <Badge variant="neutral">{currentVersion.version}</Badge>
             </div>
-            <div className="space-y-2">
-              <select
-                className="input-base text-xs font-mono font-bold"
-                value={selectedVersion}
-                onChange={(e) => handleVersionChange(e.target.value)}
+            <textarea
+              className="w-full min-h-[300px] p-4 rounded-lg border text-sm font-mono leading-relaxed resize-y"
+              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}
+              value={template}
+              onChange={(e) => setTemplate(e.target.value)}
+            />
+            <div className="flex items-center justify-between mt-2 text-xs text-secondary">
+              <span>{template.length} 字符 · 约 {Math.ceil(template.length / 4)} Tokens</span>
+              <button
+                className="text-brand-main hover:underline flex items-center gap-1"
+                onClick={() => handleCopy(template)}
               >
-                {versions.map((v) => (
-                  <option key={v.value} value={v.value}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-secondary leading-relaxed">
-                提示词作为企业级资产，每次修改都将生成新版本，必须审核发布方可供网关消费。
-              </p>
+                <Copy size={12} /> 复制模板
+              </button>
             </div>
           </Card>
 
-          {/* Variable sandbox */}
-          <Card className="p-5 space-y-4">
-            <h3 className="font-bold text-sm uppercase tracking-widest text-secondary">
-              调试槽变量填入 (Variables Sandbox)
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-secondary uppercase block mb-1">
-                  language (编程语言)
-                </label>
-                <input
-                  type="text"
-                  className="input-base"
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-secondary uppercase block mb-1">
-                  focus_area (关注重点)
-                </label>
-                <input
-                  type="text"
-                  className="input-base"
-                  value={focusArea}
-                  onChange={(e) => setFocusArea(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-secondary uppercase block mb-1">
-                  code (源代码片段)
-                </label>
-                <textarea
-                  className="input-base text-xs h-24 p-3 font-mono leading-relaxed"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                />
-              </div>
+          {/* Variables */}
+          <Card>
+            <h3 className="font-bold mb-4">变量填槽</h3>
+            <div className="space-y-4">
+              {Object.entries(variables).map(([key, value]) => (
+                <div key={key}>
+                  <label className="block text-xs font-bold text-secondary uppercase mb-1.5">
+                    {key}
+                  </label>
+                  {key === 'code' ? (
+                    <textarea
+                      className="w-full h-32 p-3 rounded-lg border text-sm font-mono leading-relaxed resize-y"
+                      style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}
+                      value={value}
+                      onChange={(e) => updateVariable(key, e.target.value)}
+                    />
+                  ) : (
+                    <Input
+                      value={value}
+                      onChange={(e) => updateVariable(key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Preview */}
+          <Card className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold">渲染预览</h3>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Play size={14} />}
+                onClick={handleRunSandbox}
+              >
+                沙箱测试
+              </Button>
+            </div>
+            <div
+              className="p-4 rounded-lg border text-sm font-mono leading-relaxed whitespace-pre-wrap min-h-[200px]"
+              style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}
+            >
+              {renderedTemplate}
             </div>
           </Card>
         </div>
+      )}
 
-        {/* Right debug panel */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Rendered output */}
-          <Card className="flex flex-col min-h-[300px] p-5">
-            <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-secondary">
-              渲染组合提示词 (Rendered Output)
-            </h3>
-            <textarea
-              className="w-full flex-grow p-4 rounded-lg border text-xs font-mono leading-relaxed resize-none focus:outline-none"
-              style={{
-                borderColor: 'var(--border-color)',
-                backgroundColor: 'var(--bg-elevated)',
-                color: 'var(--text-primary)',
-              }}
-              value={renderedOutput}
-              readOnly
-            />
+      {/* Sandbox Tab */}
+      {activeTab === 'sandbox' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <h3 className="font-bold mb-4">沙箱配置</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  测试模型
+                </label>
+                <select
+                  className="input"
+                  value={sandboxModel}
+                  onChange={(e) => setSandboxModel(e.target.value)}
+                >
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                  <option value="deepseek-coder">DeepSeek Coder</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  温度 (Temperature)
+                </label>
+                <Input type="number" value="0.7" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  最大 Tokens
+                </label>
+                <Input type="number" value="2048" />
+              </div>
+
+              <Button
+                className="w-full"
+                loading={sandboxLoading}
+                onClick={handleRunSandbox}
+                icon={<Play size={16} />}
+              >
+                运行沙箱测试
+              </Button>
+            </div>
           </Card>
 
-          {/* Sandbox model test */}
-          <Card className="p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-sm uppercase tracking-widest text-secondary">
-                沙箱大模型联调
-              </h3>
-              <select
-                className="input-base text-xs w-48"
-                value={sandboxModel}
-                onChange={(e) => setSandboxModel(e.target.value)}
+          <Card>
+            <h3 className="font-bold mb-4">测试结果</h3>
+            {sandboxResult ? (
+              <div
+                className="p-4 rounded-lg border text-sm leading-relaxed whitespace-pre-wrap"
+                style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}
               >
-                {sandboxModels.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button
-              className="w-full py-3 font-bold text-sm"
-              size="lg"
-              loading={sandboxLoading}
-              onClick={handleRunSandbox}
-            >
-              发送并模拟推理响应
-            </Button>
-            {sandboxResult && (
-              <div className="space-y-2 mt-4">
-                <label className="text-xs font-bold text-secondary uppercase tracking-widest block">
-                  模型响应 (Response Payload)
-                </label>
-                <div
-                  className="p-4 rounded-lg border text-xs font-mono leading-relaxed whitespace-pre-wrap"
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {sandboxResult}
-                </div>
+                {sandboxResult}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-secondary text-sm">
+                点击「运行沙箱测试」查看结果
               </div>
             )}
           </Card>
         </div>
-      </div>
+      )}
 
-      {/* Floating AI chat bot */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <button
-          onClick={() => setChatOpen(!chatOpen)}
-          className="w-13 h-13 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform"
-          style={{
-            background: 'var(--brand-main)',
-            color: 'var(--bg-body)',
-            width: 52,
-            height: 52,
-          }}
-        >
-          <Bot size={26} />
-        </button>
-      </div>
-
-      {chatOpen && (
-        <div
-          className="fixed bottom-24 right-8 z-50 w-[380px] h-[520px] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-color)',
-          }}
-        >
-          {/* Chat header */}
-          <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ background: 'var(--brand-main)', color: 'var(--bg-body)' }}
-          >
-            <div className="flex items-center gap-2.5">
-              <Bot size={20} />
+      {/* A/B Test Tab */}
+      {activeTab === 'ab-test' && (
+        <div className="space-y-6">
+          <Card>
+            <h3 className="font-bold mb-4">A/B 测试配置</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <div className="font-bold text-sm">AiGate Bot</div>
-                <div className="text-xs opacity-80">选择知识库开始对话</div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  模型 A
+                </label>
+                <select className="input" value={abModelA} onChange={(e) => setAbModelA(e.target.value)}>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  模型 B
+                </label>
+                <select className="input" value={abModelB} onChange={(e) => setAbModelB(e.target.value)}>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <Button className="w-full" loading={abLoading} onClick={handleRunAB} icon={<Play size={16} />}>
+                  运行 A/B 对比
+                </Button>
               </div>
             </div>
-            <button
-              onClick={() => setChatOpen(false)}
-              className="bg-transparent border-none cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
-              style={{ color: 'var(--bg-body)' }}
-            >
-              <X size={18} />
-            </button>
-          </div>
+          </Card>
 
-          {/* Chat KB/model selectors */}
-          <div
-            className="flex gap-2 items-center px-4 py-3"
-            style={{ borderBottom: '1px solid var(--border-color)' }}
-          >
-            <select
-              className="flex-1 input-base text-xs"
-              value={chatKb}
-              onChange={(e) => setChatKb(e.target.value)}
-            >
-              <option>全局 (不限知识库)</option>
-              <option>产品设计文档</option>
-              <option>SLA 运维手册</option>
-            </select>
-            <select
-              className="input-base text-xs w-36"
-              value={chatModel}
-              onChange={(e) => setChatModel(e.target.value)}
-            >
-              <option>gpt-4o</option>
-              <option>claude-3-5-sonnet</option>
-            </select>
-          </div>
-
-          {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-            {chatMessages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'gap-2.5 items-start'}`}
-              >
-                {msg.role === 'bot' && (
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'var(--brand-main)' }}
-                  >
-                    <Bot size={14} style={{ color: 'var(--bg-body)' }} />
-                  </div>
-                )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">模型 A: {abModelA}</h3>
+                {abResultA && <Badge variant="success">完成</Badge>}
+              </div>
+              {abResultA ? (
                 <div
-                  className="text-[13px] max-w-[80%] leading-relaxed"
+                  className="p-4 rounded-lg border text-sm leading-relaxed whitespace-pre-wrap"
+                  style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}
+                >
+                  {abResultA}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-48 text-secondary text-sm">
+                  等待运行...
+                </div>
+              )}
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">模型 B: {abModelB}</h3>
+                {abResultB && <Badge variant="success">完成</Badge>}
+              </div>
+              {abResultB ? (
+                <div
+                  className="p-4 rounded-lg border text-sm leading-relaxed whitespace-pre-wrap"
+                  style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}
+                >
+                  {abResultB}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-48 text-secondary text-sm">
+                  等待运行...
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Versions Tab */}
+      {activeTab === 'versions' && (
+        <div className="space-y-6">
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold">版本历史</h3>
+              <Button variant="secondary" size="sm" icon={<GitBranch size={14} />}>
+                创建新版本
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {MOCK_VERSIONS.map((version) => (
+                <div
+                  key={version.id}
+                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                    selectedVersionId === version.id ? 'border-brand-main' : ''
+                  }`}
                   style={{
-                    background:
-                      msg.role === 'user'
-                        ? 'var(--brand-main)'
-                        : 'var(--bg-body)',
-                    color:
-                      msg.role === 'user'
-                        ? 'var(--bg-body)'
-                        : 'var(--text-primary)',
-                    border:
-                      msg.role === 'bot'
-                        ? '1px solid var(--border-color)'
-                        : 'none',
-                    borderRadius:
-                      msg.role === 'user'
-                        ? '12px 0 12px 12px'
-                        : '0 12px 12px 12px',
-                    padding: '10px 14px',
+                    borderColor: selectedVersionId === version.id ? 'var(--brand-main)' : 'var(--border-color)',
+                    backgroundColor: selectedVersionId === version.id ? 'color-mix(in srgb, var(--brand-main) 5%, var(--bg-surface))' : 'transparent',
+                  }}
+                  onClick={() => {
+                    setSelectedVersionId(version.id)
+                    setTemplate(version.template)
+                    setVariables(version.variables)
                   }}
                 >
-                  {msg.text}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <Badge variant={version.status === 'published' ? 'success' : 'neutral'}>
+                        {version.version}
+                      </Badge>
+                      {version.status === 'published' && <Badge variant="success">当前线上</Badge>}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-secondary">
+                      <User size={12} />
+                      <span>{version.author}</span>
+                      <Clock size={12} />
+                      <span>{version.createdAt}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm mb-2">{version.changes}</p>
+                  {version.stats && (
+                    <div className="flex gap-4 text-xs text-secondary">
+                      <span>调用: {version.stats.calls.toLocaleString()}</span>
+                      <span>平均 Tokens: {version.stats.avgTokens}</span>
+                      <span>平均延迟: {version.stats.avgLatency}ms</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Card>
 
-          {/* Chat input */}
-          <div
-            className="flex gap-2 p-3"
-            style={{ borderTop: '1px solid var(--border-color)' }}
-          >
-            <input
-              type="text"
-              placeholder="输入问题，按 Enter 发送..."
-              className="flex-1 input-base text-sm"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-            />
-            <Button size="sm" onClick={handleSendChat}>
-              <Send size={14} className="mr-1" />
-              发送
-            </Button>
-          </div>
+          {/* Draft */}
+          <Card style={{ borderColor: 'var(--warning)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="warning">草稿</Badge>
+                <h3 className="font-bold">未发布修改</h3>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" icon={<RotateCcw size={14} />}>
+                  放弃修改
+                </Button>
+                <Button size="sm" icon={<Send size={14} />}>
+                  提交审核
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-secondary mb-2">{MOCK_DRAFT.changes}</p>
+            <div className="text-xs text-secondary">
+              修改人: {MOCK_DRAFT.author} · 修改时间: {MOCK_DRAFT.createdAt}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Stats Tab */}
+      {activeTab === 'stats' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 size={16} className="text-brand-main" />
+              <span className="text-xs text-secondary">总调用次数</span>
+            </div>
+            <div className="text-2xl font-bold">49,420</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap size={16} className="text-brand-main" />
+              <span className="text-xs text-secondary">平均 Tokens</span>
+            </div>
+            <div className="text-2xl font-bold">450</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock size={16} className="text-brand-main" />
+              <span className="text-xs text-secondary">平均延迟</span>
+            </div>
+            <div className="text-2xl font-bold">1.1s</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle size={16} className="text-brand-main" />
+              <span className="text-xs text-secondary">成功率</span>
+            </div>
+            <div className="text-2xl font-bold">99.8%</div>
+          </Card>
         </div>
       )}
     </div>
