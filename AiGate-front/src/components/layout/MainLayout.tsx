@@ -2,8 +2,12 @@ import { Outlet } from 'react-router-dom'
 import { MasterNav } from './MasterNav'
 import { Sidebar } from './Sidebar'
 import { ToastContainer } from '@/components/ui/Toast'
+import { GlobalSearch } from '@/components/search/GlobalSearch'
+import { useKeyboard } from '@/hooks/useKeyboard'
 
 export function MainLayout() {
+  useKeyboard()
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <MasterNav />
@@ -16,6 +20,7 @@ export function MainLayout() {
         </main>
       </div>
       <ToastContainer />
+      <GlobalSearch />
     </div>
   )
 }

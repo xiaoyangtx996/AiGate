@@ -3,11 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Bell, Search, User, LogOut, Key, Moon, Sun, Monitor, Building2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
+import { useUIStore } from '@/stores/ui'
 import { Badge } from '@/components/ui/Badge'
 
 export function MasterNav() {
   const { user, logout, simulatedRole, setSimulatedRole } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { setSearchOpen } = useUIStore()
   const navigate = useNavigate()
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
@@ -49,7 +51,7 @@ export function MasterNav() {
       </Link>
 
       <div className="flex items-center gap-4">
-        <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-secondary hover:text-primary transition-colors rounded-lg" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+        <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 px-3 py-1.5 text-sm text-secondary hover:text-primary transition-colors rounded-lg" style={{ backgroundColor: 'var(--bg-elevated)' }}>
           <Search size={16} />
           <span className="hidden md:inline">搜索</span>
           <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs bg-surface rounded" style={{ backgroundColor: 'var(--bg-surface)' }}>⌘K</kbd>
