@@ -57,5 +57,18 @@
     "yesterday": "昨天",
     "thisWeek": "本周",
     "thisMonth": "本月"
+  },
+  "topbar": {
+    "search": "搜索",
+    "openSidebar": "打开侧边栏",
+    "closeSidebar": "折叠侧边栏",
+    "alertsAndNotifications": "系统预警与通知",
+    "viewAll": "查看全部",
+    "personalProfile": "个人资料",
+    "myKeys": "我的密钥",
+    "simulateRole": "模拟角色",
+    "theme": "主题",
+    "logout": "退出登录",
+    "defaultOption": "默认"
   }
 }

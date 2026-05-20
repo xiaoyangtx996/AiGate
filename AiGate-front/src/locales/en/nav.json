@@ -29,5 +29,10 @@
   "settings": "Settings",
   "menuManage": "Menu Management",
   "status": "System Status",
-  "developer": "Developer Center"
+  "developer": "Developer Center",
+  "aiAssets": "AI Asset Market",
+  "projectKnowledge": "Project Knowledge",
+  "mcpTools": "MCP Tools",
+  "agentCenter": "Agent Center",
+  "designSystem": "Design System"
 }

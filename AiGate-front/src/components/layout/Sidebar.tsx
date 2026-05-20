@@ -133,6 +133,7 @@ function SidebarContent({ collapsed, onItemClick }: { collapsed: boolean; onItem
 }
 
 export function Sidebar() {
+  const { t } = useTranslation('common')
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore()
 
   const handleMobileItemClick = () => {
@@ -147,7 +148,7 @@ export function Sidebar() {
         <button
           onClick={toggleSidebar}
           className="sidebar-toggle-btn"
-          aria-label={sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'}
+          aria-label={sidebarCollapsed ? t('topbar.openSidebar') : t('topbar.closeSidebar')}
         >
           {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
@@ -176,7 +177,7 @@ export function Sidebar() {
             <button
               onClick={() => setMobileSidebarOpen(false)}
               className="sidebar-drawer-close"
-              aria-label="关闭侧边栏"
+              aria-label={t('topbar.closeSidebar')}
             >
               <X size={18} />
             </button>

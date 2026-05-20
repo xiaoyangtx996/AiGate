@@ -57,5 +57,18 @@
     "yesterday": "Yesterday",
     "thisWeek": "This week",
     "thisMonth": "This month"
+  },
+  "topbar": {
+    "search": "Search",
+    "openSidebar": "Open sidebar",
+    "closeSidebar": "Close sidebar",
+    "alertsAndNotifications": "Alerts & Notifications",
+    "viewAll": "View All",
+    "personalProfile": "Profile",
+    "myKeys": "My Keys",
+    "simulateRole": "Simulate Role",
+    "theme": "Theme",
+    "logout": "Logout",
+    "defaultOption": "Default"
   }
 }

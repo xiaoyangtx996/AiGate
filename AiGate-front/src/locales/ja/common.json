@@ -57,5 +57,18 @@
     "yesterday": "昨日",
     "thisWeek": "今週",
     "thisMonth": "今月"
+  },
+  "topbar": {
+    "search": "検索",
+    "openSidebar": "サイドバーを開く",
+    "closeSidebar": "サイドバーを閉じる",
+    "alertsAndNotifications": "システム通知",
+    "viewAll": "すべて表示",
+    "personalProfile": "プロフィール",
+    "myKeys": "マイキー",
+    "simulateRole": "役割シミュレーション",
+    "theme": "テーマ",
+    "logout": "ログアウト",
+    "defaultOption": "デフォルト"
   }
 }

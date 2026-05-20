@@ -29,5 +29,10 @@
   "settings": "系统设置",
   "menuManage": "菜单管理",
   "status": "系统状态",
-  "developer": "开发者中心"
+  "developer": "开发者中心",
+  "aiAssets": "AI 资产市场",
+  "projectKnowledge": "项目知识库",
+  "mcpTools": "MCP 工具",
+  "agentCenter": "Agent 中心",
+  "designSystem": "设计系统"
 }

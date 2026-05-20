@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, Search, User, LogOut, Key, Moon, Sun, Monitor, Building2, Menu } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { useUIStore } from '@/stores/ui'
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { LanguageSwitcher } from './LanguageSwitcher'
 
 export function MasterNav() {
+  const { t } = useTranslation()
   const { user, logout, simulatedRole, setSimulatedRole } = useAuth()
   const { theme, setTheme } = useTheme()
   const { setSearchOpen, setMobileSidebarOpen } = useUIStore()
@@ -44,7 +46,7 @@ export function MasterNav() {
           onClick={() => setMobileSidebarOpen(true)}
           className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-elevated transition-colors"
           style={{ color: 'var(--text-secondary)' }}
-          aria-label="打开侧边栏"
+          aria-label={t('topbar.openSidebar')}
         >
           <Menu size={20} />
         </button>
@@ -64,7 +66,7 @@ export function MasterNav() {
       <div className="flex items-center gap-4">
         <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 px-3 py-1.5 text-sm text-secondary hover:text-primary transition-colors rounded-lg" style={{ backgroundColor: 'var(--bg-elevated)' }}>
           <Search size={16} />
-          <span className="hidden md:inline">搜索</span>
+          <span className="hidden md:inline">{t('topbar.search')}</span>
           <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs bg-surface rounded" style={{ backgroundColor: 'var(--bg-surface)' }}>⌘K</kbd>
         </button>
 
@@ -78,10 +80,10 @@ export function MasterNav() {
           {alertOpen && (
             <div className="absolute right-0 mt-2 w-80 card p-0 shadow-dropdown z-50">
               <div className="p-4 border-b font-bold flex justify-between items-center" style={{ borderColor: 'var(--border-color)' }}>
-                系统预警与通知 <Badge variant="warning">2</Badge>
+                {t('topbar.alertsAndNotifications')} <Badge variant="warning">2</Badge>
               </div>
               <Link to="/alerts" className="p-3 text-center text-xs font-bold text-secondary hover:text-primary transition-colors" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                查看全部
+                {t('topbar.viewAll')}
               </Link>
             </div>
           )}
@@ -105,24 +107,24 @@ export function MasterNav() {
               </div>
               <div className="p-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
                 <Link to="/profile" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-elevated text-secondary hover:text-primary transition-colors" onClick={() => setAvatarOpen(false)}>
-                  <User size={16} /> 个人资料
+                  <User size={16} /> {t('topbar.personalProfile')}
                 </Link>
                 <Link to="/keys" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-elevated text-secondary hover:text-primary transition-colors" onClick={() => setAvatarOpen(false)}>
-                  <Key size={16} /> 我的密钥
+                  <Key size={16} /> {t('topbar.myKeys')}
                 </Link>
               </div>
               <div className="p-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
                 <div className="flex items-center justify-between px-3 py-2 rounded-md text-secondary">
-                  <div className="flex items-center gap-3"><Building2 size={16} /> 模拟角色</div>
+                  <div className="flex items-center gap-3"><Building2 size={16} /> {t('topbar.simulateRole')}</div>
                   <select value={simulatedRole || ''} onChange={(e) => setSimulatedRole(e.target.value as any || null)} className="bg-transparent border-none outline-none cursor-pointer font-bold text-xs">
-                    <option value="">默认</option>
+                    <option value="">{t('topbar.defaultOption')}</option>
                     <option value="sys_admin">SYS</option>
                     <option value="tenant_admin">TENANT</option>
                     <option value="user">USER</option>
                   </select>
                 </div>
                 <div className="flex items-center justify-between px-3 py-2 rounded-md text-secondary">
-                  <div className="flex items-center gap-3"><Monitor size={16} /> 主题</div>
+                  <div className="flex items-center gap-3"><Monitor size={16} /> {t('topbar.theme')}</div>
                   <div className="flex gap-1 p-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-elevated)' }}>
                     {themeOptions.map((option) => (
                       <button
@@ -139,7 +141,7 @@ export function MasterNav() {
               </div>
               <div className="p-2">
                 <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-red-500/10 text-red-500 transition-colors w-full">
-                  <LogOut size={16} /> 退出登录
+                  <LogOut size={16} /> {t('topbar.logout')}
                 </button>
               </div>
             </div>

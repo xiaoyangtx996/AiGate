@@ -29,5 +29,10 @@
   "settings": "設定",
   "menuManage": "メニュー管理",
   "status": "システムステータス",
-  "developer": "開発者センター"
+  "developer": "開発者センター",
+  "aiAssets": "AIアセットマーケット",
+  "projectKnowledge": "プロジェクトナレッジ",
+  "mcpTools": "MCPツール",
+  "agentCenter": "エージェントセンター",
+  "designSystem": "デザインシステム"
 }
