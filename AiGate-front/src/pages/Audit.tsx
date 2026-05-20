@@ -728,13 +728,24 @@ export default function Audit() {
           <div className="space-y-5 text-sm">
             {/* Risk Level Banner */}
             <div
-              className={`p-3 rounded-lg flex items-center gap-2 ${
-                selectedRecord.riskLevel === 'high'
-                  ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+              className="p-3 rounded-lg flex items-center gap-2"
+              style={{
+                backgroundColor: selectedRecord.riskLevel === 'high'
+                  ? 'color-mix(in srgb, var(--error) 10%, transparent)'
                   : selectedRecord.riskLevel === 'medium'
-                  ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                  : 'bg-green-500/10 text-green-500 border border-green-500/20'
-              }`}
+                  ? 'color-mix(in srgb, var(--warning) 10%, transparent)'
+                  : 'color-mix(in srgb, var(--success) 10%, transparent)',
+                color: selectedRecord.riskLevel === 'high'
+                  ? 'var(--error)'
+                  : selectedRecord.riskLevel === 'medium'
+                  ? 'var(--warning)'
+                  : 'var(--success)',
+                border: `1px solid ${selectedRecord.riskLevel === 'high'
+                  ? 'color-mix(in srgb, var(--error) 20%, transparent)'
+                  : selectedRecord.riskLevel === 'medium'
+                  ? 'color-mix(in srgb, var(--warning) 20%, transparent)'
+                  : 'color-mix(in srgb, var(--success) 20%, transparent)'}`,
+              }}
             >
               <AlertTriangle size={16} />
               <span className="font-bold">
@@ -826,11 +837,11 @@ export default function Audit() {
                     className="w-1/2 p-2 border-r flex items-center gap-1"
                     style={{ borderColor: 'var(--border-color)' }}
                   >
-                    <span className="inline-block w-2 h-2 rounded-full bg-red-500" />
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--error)' }} />
                     变更前 (Before)
                   </div>
                   <div className="w-1/2 p-2 flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--success)' }} />
                     变更后 (After)
                   </div>
                 </div>

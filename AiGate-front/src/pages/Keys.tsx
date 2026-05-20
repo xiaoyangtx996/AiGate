@@ -325,7 +325,10 @@ export default function Keys() {
                               <RefreshCw size={14} className="text-secondary" />
                             </button>
                             <button
-                              className="p-1.5 rounded hover:bg-red-500/10 transition-colors"
+                              className="p-1.5 rounded transition-colors"
+                              style={{ '--hover-bg': 'color-mix(in srgb, var(--error) 10%, transparent)' } as React.CSSProperties}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--error) 10%, transparent)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
                               title="吊销"
                               onClick={() => handleRevoke(key.id)}
                             >
@@ -506,7 +509,7 @@ export default function Keys() {
                     style={{ borderColor: 'var(--border-color)' }}
                   >
                     <span>{ip}</span>
-                    <button className="text-red-500 hover:text-red-700">
+                    <button style={{ color: 'var(--error)' }}>
                       <Trash2 size={14} />
                     </button>
                   </div>
