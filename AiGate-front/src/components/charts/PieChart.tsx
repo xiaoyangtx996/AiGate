@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react'
-import * as echarts from 'echarts'
 import { useThemeStore } from '@/stores/theme'
 import { getChartTheme } from '@/utils/chartTheme'
+import { getEcharts } from '@/utils/lazyEcharts'
 
 interface PieChartProps {
   data: {
@@ -15,23 +15,32 @@ interface PieChartProps {
 
 export function PieChart({ data, height = 300, className }: PieChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
-  const chartInstance = useRef<echarts.ECharts | null>(null)
+  const chartInstance = useRef<unknown>(null)
   const { theme } = useThemeStore()
 
   useEffect(() => {
     if (!chartRef.current) return
+    let disposed = false
 
-    chartInstance.current = echarts.init(chartRef.current)
+    getEcharts().then((echarts) => {
+      if (disposed || !chartRef.current) return
 
-    const handleResize = () => {
-      chartInstance.current?.resize()
-    }
+      const instance = echarts.init(chartRef.current)
+      chartInstance.current = instance
 
-    window.addEventListener('resize', handleResize)
+      const handleResize = () => instance.resize()
+      window.addEventListener('resize', handleResize)
+
+      ;(chartRef.current as HTMLDivElement & { _chartCleanup?: () => void })._chartCleanup = () => {
+        window.removeEventListener('resize', handleResize)
+        instance.dispose()
+      }
+    })
 
     return () => {
-      window.removeEventListener('resize', handleResize)
-      chartInstance.current?.dispose()
+      disposed = true
+      const cleanup = (chartRef.current as HTMLDivElement & { _chartCleanup?: () => void })?._chartCleanup
+      cleanup?.()
     }
   }, [])
 
@@ -89,7 +98,7 @@ export function PieChart({ data, height = 300, className }: PieChartProps) {
       backgroundColor: 'transparent',
     }
 
-    chartInstance.current.setOption(option)
+    ;(chartInstance.current as { setOption: (opt: unknown) => void }).setOption(option)
   }, [data, theme])
 
   return (
