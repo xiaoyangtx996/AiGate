@@ -10,16 +10,16 @@ interface BreadcrumbItem {
 
 export function Breadcrumb({ items, className }: { items: BreadcrumbItem[]; className?: string }) {
   return (
-    <nav className={clsx('flex items-center gap-2 text-sm', className)}>
+    <nav className={clsx('breadcrumb flex items-center gap-2 text-sm', className)}>
       {items.map((item, index) => (
         <React.Fragment key={index}>
-          {index > 0 && <ChevronRight size={14} className="text-muted" />}
+          {index > 0 && <ChevronRight size={14} className="breadcrumb-separator" />}
           {item.path ? (
-            <Link to={item.path} className="text-secondary hover:text-primary transition-colors">
+            <Link to={item.path} className="breadcrumb-link">
               {item.label}
             </Link>
           ) : (
-            <span className="text-primary font-medium">{item.label}</span>
+            <span className="breadcrumb-current">{item.label}</span>
           )}
         </React.Fragment>
       ))}

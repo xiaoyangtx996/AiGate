@@ -133,18 +133,19 @@ function SidebarContent({ collapsed, onItemClick }: { collapsed: boolean; onItem
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore()
 
+  const handleMobileItemClick = () => {
+    // 延迟关闭抽屉，让路由跳转先完成
+    setTimeout(() => setMobileSidebarOpen(false), 100)
+  }
+
   return (
     <>
       {/* Desktop sidebar */}
       <aside className={clsx('sidebar sidebar-desktop', sidebarCollapsed && 'collapsed')}>
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-6 w-6 h-6 flex items-center justify-center rounded-full border z-10 transition-colors"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            borderColor: 'var(--border-color)',
-            color: 'var(--text-secondary)',
-          }}
+          className="sidebar-toggle-btn"
+          aria-label={sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'}
         >
           {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
@@ -152,31 +153,35 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile sidebar drawer */}
-      {mobileSidebarOpen && (
-        <div className="sidebar-overlay" onClick={() => setMobileSidebarOpen(false)}>
-          <aside className="sidebar-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="sidebar-drawer-header">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 flex items-center justify-center font-bold text-lg"
-                  style={{ background: 'var(--brand-main)', color: 'var(--bg-body)', borderRadius: 'var(--border-radius-base)' }}
-                >
-                  A
-                </div>
-                <span className="text-lg font-bold tracking-tight">AiGate</span>
-              </div>
-              <button
-                onClick={() => setMobileSidebarOpen(false)}
-                className="sidebar-drawer-close"
-                aria-label="关闭侧边栏"
+      <div
+        className={clsx('sidebar-overlay', mobileSidebarOpen ? 'visible' : 'hidden')}
+        onClick={() => setMobileSidebarOpen(false)}
+      >
+        <aside
+          className={clsx('sidebar-drawer', mobileSidebarOpen ? 'open' : 'closed')}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="sidebar-drawer-header">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 flex items-center justify-center font-bold text-lg"
+                style={{ background: 'var(--brand-main)', color: 'var(--bg-body)', borderRadius: 'var(--border-radius-base)' }}
               >
-                <X size={18} />
-              </button>
+                A
+              </div>
+              <span className="text-lg font-bold tracking-tight">AiGate</span>
             </div>
-            <SidebarContent collapsed={false} onItemClick={() => setMobileSidebarOpen(false)} />
-          </aside>
-        </div>
-      )}
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="sidebar-drawer-close"
+              aria-label="关闭侧边栏"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <SidebarContent collapsed={false} onItemClick={handleMobileItemClick} />
+        </aside>
+      </div>
     </>
   )
 }
