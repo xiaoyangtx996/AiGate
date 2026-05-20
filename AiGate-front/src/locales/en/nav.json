@@ -5,6 +5,7 @@
   "orgGovernance": "Organization",
   "organization": "Organization & Quota",
   "users": "User Management",
+  "roleManage": "Role Management",
   "quotaApproval": "Quota Approval",
   "subscription": "Subscription",
   "gateway": "Gateway",
@@ -26,6 +27,7 @@
   "audit": "Audit Logs",
   "system": "System",
   "settings": "Settings",
+  "menuManage": "Menu Management",
   "status": "System Status",
   "developer": "Developer Center"
 }

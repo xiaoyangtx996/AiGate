@@ -5,6 +5,7 @@
   "orgGovernance": "組織管理",
   "organization": "組織とクォータ",
   "users": "ユーザー管理",
+  "roleManage": "役割管理",
   "quotaApproval": "クォータ承認",
   "subscription": "サブスクリプション",
   "gateway": "ゲートウェイ",
@@ -26,6 +27,7 @@
   "audit": "監査ログ",
   "system": "システム",
   "settings": "設定",
+  "menuManage": "メニュー管理",
   "status": "システムステータス",
   "developer": "開発者センター"
 }

@@ -1,4 +1,4 @@
-import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow, X, Palette } from 'lucide-react'
+import { BarChart3, Users2, Building2, Key, FileText, Puzzle, BookOpen, Bot, Bell, Settings, Receipt, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, Plug, Code2, Workflow, X, Palette, Shield, FolderTree } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { useUIStore } from '@/stores/ui'
@@ -39,6 +39,7 @@ function SidebarContent({ collapsed, onItemClick }: { collapsed: boolean; onItem
       items: [
         { label: t('organization'), path: '/organization', icon: <Building2 size={18} />, roles: ['sys_admin', 'tenant_admin'] },
         { label: t('users'), path: '/users', icon: <Users2 size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+        { label: t('roleManage'), path: '/role-manage', icon: <Shield size={18} />, roles: ['sys_admin'] },
         { label: t('quotaApproval'), path: '/quota-approval', icon: <Receipt size={18} />, roles: ['sys_admin', 'tenant_admin', 'dept_lead', 'project_lead'] },
       ],
     },
@@ -88,6 +89,7 @@ function SidebarContent({ collapsed, onItemClick }: { collapsed: boolean; onItem
       label: t('system'),
       items: [
         { label: t('settings'), path: '/settings', icon: <Settings size={18} />, roles: ['sys_admin', 'tenant_admin'] },
+        { label: t('menuManage'), path: '/menu-manage', icon: <FolderTree size={18} />, roles: ['sys_admin'] },
         { label: t('designSystem'), path: '/design-system', icon: <Palette size={18} />, roles: ['sys_admin'] },
       ],
     },

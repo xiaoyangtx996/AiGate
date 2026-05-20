@@ -5,6 +5,7 @@
   "orgGovernance": "组织治理",
   "organization": "组织与配额",
   "users": "用户管理",
+  "roleManage": "角色管理",
   "quotaApproval": "配额申请审批",
   "subscription": "套餐与计费",
   "gateway": "网关与接入",
@@ -26,6 +27,7 @@
   "audit": "操作审计",
   "system": "系统",
   "settings": "系统设置",
+  "menuManage": "菜单管理",
   "status": "系统状态",
   "developer": "开发者中心"
 }

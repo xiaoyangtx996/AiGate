@@ -35,7 +35,9 @@ const Audit = lazy(() => import('@/pages/Audit'))
 const Status = lazy(() => import('@/pages/Status'))
 const Developer = lazy(() => import('@/pages/Developer'))
 const Onboarding = lazy(() => import('@/pages/Onboarding'))
+const RoleManage = lazy(() => import('@/pages/RoleManage'))
 const Profile = lazy(() => import('@/pages/Profile'))
+const MenuManage = lazy(() => import('@/pages/MenuManage'))
 const DesignSystem = lazy(() => import('@/pages/DesignSystem'))
 const NotFound = lazy(() => import('@/pages/errors/NotFound'))
 const Forbidden = lazy(() => import('@/pages/errors/Forbidden'))
@@ -74,6 +76,7 @@ function App() {
           <Route path="workspace" element={<MyWorkspace />} />
           <Route path="organization" element={<Organization />} />
           <Route path="users" element={<Users />} />
+          <Route path="role-manage" element={<RoleManage />} />
           <Route path="keys" element={<Keys />} />
           <Route path="logs" element={<Logs />} />
           <Route path="alerts" element={<Alerts />} />
@@ -90,6 +93,7 @@ function App() {
           <Route path="plugins" element={<Plugins />} />
           <Route path="hooks" element={<Hooks />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="menu-manage" element={<MenuManage />} />
           <Route path="channels" element={<Channels />} />
           <Route path="models" element={<Models />} />
           <Route path="billing" element={<Billing />} />
