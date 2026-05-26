@@ -65,3 +65,5 @@ target/
 ruoyi-ai-main/
 new-api-main/
 CLIProxyAPI-main/
+
+.git_broken/
