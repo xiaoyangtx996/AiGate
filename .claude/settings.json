@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash(prettier:*)",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)"
+    ]
+  },
+  "project": {
+    "name": "AiGate",
+    "description": "企业级 AI 全栈管控平台",
+    "version": "v2.0"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context-server"
+      ],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-401d52a2-c472-4e6c-8a35-2de53a7c2c4d"
+      },
+      "description": "实时文档查询 - 用于查询 Tailwind v4、React 18、ECharts 5、Lucide 等库的最新文档",
+      "disabled": false
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
+      },
+      "description": "GitHub 集成 - 管理 PR、Issue、提交记录（需要先安装 GitHub CLI: gh）",
+      "disabled": false
+    }
+  },
+  "setup": {
+    "instructions": [
+      "1. context7 配置:",
+      "   - 访问 https://upstash.com/ 注册账号",
+      "   - 获取 API Key",
+      "   - 替换上面的 YOUR_API_KEY_HERE",
+      "",
+      "2. GitHub MCP 配置:",
+      "   - 安装 GitHub CLI: winget install GitHub.cli",
+      "   - 运行: gh auth login",
+      "   - 生成 Personal Access Token: https://github.com/settings/tokens",
+      "   - 权限需要: repo, read:org, read:user",
+      "   - 替换上面的 YOUR_GITHUB_TOKEN_HERE",
+      "   - 将 disabled 改为 false",
+      "",
+      "3. 验证配置:",
+      "   - 重启 Claude Code",
+      "   - 测试: '查询 Tailwind v4 毛玻璃效果'",
+      "   - 测试: '查看最近的 git 提交'"
+    ]
+  },
+  "recommended": {
+    "playwright": {
+      "description": "浏览器自动化测试 - 用于 UI 测试和截图",
+      "install": "claude mcp add playwright",
+      "useCase": "当需要测试前端页面交互时"
+    },
+    "memory": {
+      "description": "跨会话记忆 - 持久化项目上下文",
+      "install": "claude mcp add memory",
+      "useCase": "记住项目偏好和历史决策"
+    }
+  }
+}
