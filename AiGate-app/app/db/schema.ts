@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm'
+﻿import { relations, sql } from 'drizzle-orm'
 import { boolean, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createUpdateSchema } from 'drizzle-zod'
 import { user } from '../../auth-schema'
@@ -13,7 +13,7 @@ export const targetEnum = pgEnum('target_enum', [
 export const methodEnum = pgEnum('method', ['GET', 'POST', 'PUT', 'DELETE'])
 
 /**
- * @description: 鑿滃崟绠＄悊
+ * @description: 菜单管理
  */
 export const menu = pgTable('menu', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -25,19 +25,19 @@ export const menu = pgTable('menu', {
   to: text('to'),
   // badge: New
   badge: text('badge'),
-  // 鏍戝舰缁撴瀯鍏抽敭瀛楁
+  // 树形结构关键字段
   parentId: text('parent_id'),
-  // 鎺掑簭
+  // 排序
   sort: integer('sort').default(0).notNull(),
-  // 鏄惁缂撳瓨
+  // 是否缓存
   keepAlive: boolean('keep_alive').default(false).notNull(),
-  // 鏄惁鍚敤
+  // 是否启用
   enabled: boolean('enabled').default(true).notNull(),
-  // 鏄惁榛樿鎵撳紑
+  // 是否默认打开
   defaultOpen: boolean('default_open').default(false).notNull(),
-  // 鏄惁鏂扮獥鍙ｆ墦寮€
+  // 是否新窗口打开
   target: targetEnum('target').default('_self').notNull(),
-  // 鎸夐挳鏉冮檺浣?  permissions: integer('permissions').default(0).notNull(),
+  // 按钮权限位?  permissions: integer('permissions').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -46,11 +46,11 @@ export const menu = pgTable('menu', {
 }, t => ([
   index('menu_parent_idx').on(t.parentId),
   index('menu_sort_idx').on(t.parentId, t.sort),
-  // --- 鏄惧紡瀹氫箟澶栭敭绾︽潫锛堟帹鑽愶紝纭繚鏁版嵁搴撳眰闈㈢殑涓€鑷存€э級 ---
+  // --- 显式定义外键约束（推荐，确保数据库层面的一致性） ---
   foreignKey({
     columns: [t.parentId],
     foreignColumns: [t.id],
-    name: 'menu_parent_fk', // 绾︽潫鍚嶇О
+    name: 'menu_parent_fk', // 约束名称
   }).onDelete('restrict'),
 ]))
 export const insertMenuSchema = createInsertSchema(menu).omit({
@@ -65,16 +65,16 @@ export const updateMenuSchema = createUpdateSchema(menu).omit({
 })
 
 /**
- * @description: 瑙掕壊绠＄悊
+ * @description: 角色管理
  */
 export const role = pgTable('role', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull().unique(),
   code: text('code').notNull().unique(),
   description: text('description'),
-  // 鏄惁鍚敤
+  // 是否启用
   enabled: boolean('enabled').default(true).notNull(),
-  // 鎺掑簭
+  // 排序
   sort: integer('sort').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
@@ -96,7 +96,7 @@ export const updateRoleSchema = createUpdateSchema(role).omit({
 })
 
 /**
- * @description: 瑙掕壊鍏宠仈鑿滃崟
+ * @description: 角色关联菜单
  */
 export const roleMenu = pgTable('role_menu', {
   roleId: text('role_id').notNull().references(() => role.id, { onDelete: 'cascade' }),
@@ -115,7 +115,7 @@ export const insertRoleMenuSchema = createInsertSchema(roleMenu).omit({
 })
 
 /**
- * @description: 鐢ㄦ埛鍏宠仈瑙掕壊
+ * @description: 用户关联角色
  */
 export const userRole = pgTable('user_role', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -134,17 +134,17 @@ export const insertUserRoleSchema = createInsertSchema(userRole).omit({
 })
 
 /**
- * @description: 鍥介檯鍖? */
+ * @description: 国际化? */
 export const internalization = pgTable('internalization', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   // 涓枃
   zh: text('zh'),
-  // 鑻辨枃
+  // 英文
   en: text('en'),
-  // 鏍戝舰缁撴瀯鍏抽敭瀛楁
+  // 树形结构关键字段
   parentId: text('parent_id'),
-  // 鎺掑簭
+  // 排序
   sort: integer('sort').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
@@ -154,11 +154,11 @@ export const internalization = pgTable('internalization', {
 }, t => ([
   index('internalization_parent_idx').on(t.parentId),
   index('internalization_sort_idx').on(t.parentId, t.sort),
-  // --- 鏄惧紡瀹氫箟澶栭敭绾︽潫锛堟帹鑽愶紝纭繚鏁版嵁搴撳眰闈㈢殑涓€鑷存€э級 ---
+  // --- 显式定义外键约束（推荐，确保数据库层面的一致性） ---
   foreignKey({
     columns: [t.parentId],
     foreignColumns: [t.id],
-    name: 'internalization_parent_fk', // 绾︽潫鍚嶇О
+    name: 'internalization_parent_fk', // 约束名称
   }).onDelete('restrict'),
 ]))
 export const insertInternalizationSchema = createInsertSchema(internalization).omit({
@@ -173,7 +173,7 @@ export const updateInternalizationSchema = createUpdateSchema(internalization).o
 })
 
 /**
- * @description: 鎿嶄綔鏃ュ織
+ * @description: 操作日志
  */
 export const logs = pgTable('logs', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),

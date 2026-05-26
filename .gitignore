@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -65,5 +65,3 @@ target/
 ruoyi-ai-main/
 new-api-main/
 CLIProxyAPI-main/
-
-.git_broken/

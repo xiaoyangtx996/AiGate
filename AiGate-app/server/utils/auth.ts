@@ -7,7 +7,7 @@ import { Resend } from 'resend'
 import { db } from '@/db/drizzle'
 import * as schema from '@/db/schema'
 
-const resend = new Resend(process.env.NUXT_RESEND_API_KEY || 're_fake_key')
+const resend = new Resend(process.env.NUXT_RESEND_API_KEY || '')
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
