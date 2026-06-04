@@ -1,15 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
-import { agent } from '@/db/schema'
+import { channel } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as { organizationId?: string | null } | undefined
     const id = getRouterParam(event, 'id')
     const where = principal?.organizationId
-      ? and(eq(agent.id, id!), eq(agent.organizationId, principal.organizationId))
-      : eq(agent.id, id!)
-    const [res] = await db.select().from(agent).where(where)
+      ? and(eq(channel.id, id!), eq(channel.organizationId, principal.organizationId))
+      : eq(channel.id, id!)
+    const [res] = await db.select().from(channel).where(where)
     if (!res) { return responseSuccess(null, '资源不存在或无权操作', 404) }
     return responseSuccess(res)
   }

@@ -1,69 +1,76 @@
-﻿import { eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
-import { knowledgeBase, document } from '@/db/schema'
+import { document, knowledgeBase } from '@/db/schema'
 import { responseError, responseSuccess } from '@/server/utils'
+
+const allowedTypes = new Set([
+  'application/pdf',
+  'text/plain',
+  'text/markdown',
+  'application/json',
+])
+
+const maxSize = 10 * 1024 * 1024
 
 export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as { organizationId?: string | null } | undefined
     const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing knowledge base ID' })
+    if (!id) {
+      return responseError(null, '缺少知识库 ID')
+    }
 
     const [kb] = await db.select().from(knowledgeBase).where(eq(knowledgeBase.id, id))
-    if (!kb) throw createError({ statusCode: 404, statusMessage: 'Knowledge base not found' })
+    if (!kb) {
+      return responseError(null, '知识库不存在')
+    }
 
     if (principal?.organizationId && kb.organizationId !== principal.organizationId) {
-      throw createError({ statusCode: 403, statusMessage: '无权操作此知识库' })
+      return responseError(null, '无权操作此知识库')
     }
 
-    // 解析 multipart form data
     const formData = await readMultipartFormData(event)
-    if (!formData) {
-      return responseError(new Error('No file uploaded'), 400)
+    if (!formData?.length) {
+      return responseError(null, '未上传文件')
     }
 
-    // 提取文件和元数据
-    const file = formData.find(part => part.name === 'file')
-    const kbId = formData.find(part => part.name === 'kbId')?.value
-    const chunkSize = parseInt(formData.find(part => part.name === 'chunkSize')?.value || '1000')
+    const file = formData.find(part => part.name === 'file' && part.data)
+    const chunkSizeValue = formData.find(part => part.name === 'chunkSize')?.data?.toString()
+    const chunkSize = Number.parseInt(chunkSizeValue || '1000', 10)
 
-    if (!file || !kbId) {
-      return responseError(new Error('Missing required fields'), 400)
+    if (!file?.data) {
+      return responseError(null, '缺少上传文件')
     }
 
-    // 验证文件类型和大小
-    const allowedTypes = ['application/pdf', 'text/plain', 'text/markdown', 'application/json']
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    const fileType = file.type || 'text/plain'
+    const fileSize = file.data.byteLength
+    const fileName = file.filename || 'untitled'
 
-    if (!allowedTypes.includes(file.type)) {
-      return responseError(new Error('Unsupported file type'), 400)
+    if (!allowedTypes.has(fileType)) {
+      return responseError(null, '不支持的文件类型')
     }
 
-    if (file.size > maxSize) {
-      return responseError(new Error('File too large (max 10MB)'), 400)
+    if (fileSize > maxSize) {
+      return responseError(null, '文件过大，最大支持 10MB')
     }
 
-    // 保存文档记录到数据库
-    const doc = {
-      knowledgeBaseId: kbId,
-      name: file.filename,
-      type: file.type,
-      size: file.size,
+    const [insertedDoc] = await db.insert(document).values({
+      knowledgeBaseId: id,
+      name: fileName,
+      type: fileType,
+      size: fileSize,
       status: 'processing',
       chunks: 0,
       metadata: {
-        originalName: file.filename,
-        chunkSize,
+        originalName: fileName,
+        chunkSize: Number.isNaN(chunkSize) ? 1000 : chunkSize,
       },
-    }
+    }).returning()
 
-    const [insertedDoc] = await db.insert(document).values(doc).returning()
-
-    // 更新知识库统计
     await db.update(knowledgeBase).set({
       documentCount: sql`${knowledgeBase.documentCount} + 1`,
-      size: sql`${knowledgeBase.size} + ${file.size}`,
-    }).where(eq(knowledgeBase.id, kbId))
+      size: sql`${knowledgeBase.size} + ${fileSize}`,
+    }).where(eq(knowledgeBase.id, id))
 
     return responseSuccess({
       id: insertedDoc.id,
@@ -73,5 +80,7 @@ export default defineEventHandler(async (event) => {
       status: insertedDoc.status,
     })
   }
-  catch (err) { return responseError(err) }
+  catch (err) {
+    return responseError(err)
+  }
 })

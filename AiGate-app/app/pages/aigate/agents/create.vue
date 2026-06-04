@@ -1,29 +1,7 @@
-<script setup lang="ts">
-interface AgentDetail {
-  id: string
-  name: string
-  description?: string | null
-  model?: string | null
-  systemPrompt?: string | null
-  temperature?: number | null
-  maxTokens?: number | null
-  tags?: string[] | null
-}
-
-const route = useRoute()
+﻿<script setup lang="ts">
+const { insertAgent } = useAigateApi()
+const { successToast } = useAppToast()
 const router = useRouter()
-const { getAgent, updateAgent } = useAigateApi()
-const { successToast, errorToast } = useAppToast()
-const id = computed(() => route.params.id as string)
-
-const { data: agent, pending: loading, refresh } = await useAsyncData(
-  () => `agent-${id.value}`,
-  async () => {
-    const res = await getAgent(id.value)
-    return res.data as AgentDetail | null
-  },
-  { watch: [id] }
-)
 
 const form = reactive({
   name: '',
@@ -37,18 +15,6 @@ const form = reactive({
 
 const tagInput = ref('')
 const saving = ref(false)
-
-watchEffect(() => {
-  if (agent.value) {
-    form.name = agent.value.name
-    form.description = agent.value.description || ''
-    form.model = agent.value.model || 'gpt-4o'
-    form.systemPrompt = agent.value.systemPrompt || ''
-    form.temperature = agent.value.temperature || 30
-    form.maxTokens = agent.value.maxTokens || 4096
-    form.tags = agent.value.tags || []
-  }
-})
 
 function addTag() {
   const tag = tagInput.value.trim()
@@ -66,12 +32,9 @@ async function handleSave() {
   if (!form.name) return
   saving.value = true
   try {
-    await updateAgent({ id: id.value, ...form })
-    successToast('Agent 更新成功')
+    await insertAgent(form)
+    successToast('Agent 创建成功')
     router.push('/aigate/agents')
-  }
-  catch (err) {
-    errorToast('更新失败')
   }
   finally { saving.value = false }
 }
@@ -89,14 +52,11 @@ const models = [
   <div class="max-w-2xl mx-auto space-y-6">
     <div class="flex items-center gap-3">
       <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/agents" />
-      <h2 class="text-xl font-bold">编辑 Agent</h2>
+      <h2 class="text-xl font-bold">创建 Agent</h2>
     </div>
 
     <UCard>
-      <div v-if="loading" class="flex justify-center py-8">
-        <UButton loading variant="ghost" />
-      </div>
-      <div v-else-if="agent" class="space-y-4">
+      <div class="space-y-4">
         <UFormField label="Agent 名称" required>
           <UInput v-model="form.name" placeholder="如：项目助手、代码审查 Agent" />
         </UFormField>
@@ -131,14 +91,11 @@ const models = [
           <UInput v-model="tagInput" placeholder="输入标签后回车" @keyup.enter="addTag" />
         </UFormField>
       </div>
-      <div v-else class="text-center py-8 text-muted">
-        未找到 Agent
-      </div>
     </UCard>
 
     <div class="flex justify-end gap-2">
       <UButton variant="ghost" to="/aigate/agents">取消</UButton>
-      <UButton :loading="saving" :disabled="!form.name" icon="lucide:save" @click="handleSave">保存修改</UButton>
+      <UButton :loading="saving" :disabled="!form.name" icon="lucide:save" @click="handleSave">创建 Agent</UButton>
     </div>
   </div>
 </template>

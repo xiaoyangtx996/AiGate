@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-const { getKnowledgeBaseList, insertKnowledgeBase, delKnowledgeBase, getKbDocuments, uploadKbDocument, delKbDocument } = useAigateApi()
+const { getKnowledgeBaseList, insertKnowledgeBase, delKnowledgeBase, getKbDocuments, delKbDocument } = useAigateApi()
 const { successToast, errorToast } = useAppToast()
 const { data, pending: loading, refresh } = await useAsyncData('aigate-kb', async () => {
   const res = await getKnowledgeBaseList()
@@ -59,19 +59,19 @@ async function handleFileSelect(event: Event) {
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
+      const queueItem = uploadQueue.value[i]
+      if (!file || !queueItem) continue
+
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('kbId', selectedKb.value.id)
       formData.append('chunkSize', '1000')
 
-      // 使用 $fetch 上传
+      queueItem.progress = 10
       await $fetch(`/api/aigate/knowledge-base/${selectedKb.value.id}/documents`, {
         method: 'POST',
         body: formData,
-        onUploadProgress: (progress) => {
-          uploadQueue.value[i].progress = Math.round(progress * 100)
-        },
       })
+      queueItem.progress = 100
     }
 
     successToast(`成功上传 ${files.length} 个文档`)

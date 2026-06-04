@@ -5,7 +5,9 @@ import { channel } from '@/db/schema'
 export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
+    const principal = event.context.principal as { organizationId?: string | null } | undefined
     const conditions = []
+    if (principal?.organizationId) { conditions.push(eq(channel.organizationId, principal.organizationId)) }
     if (query.keyword) {
       conditions.push(or(ilike(channel.name, `%${query.keyword}%`), ilike(channel.vendor, `%${query.keyword}%`)))
     }
