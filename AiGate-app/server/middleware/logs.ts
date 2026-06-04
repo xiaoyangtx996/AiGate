@@ -1,28 +1,22 @@
-/*
- * @Author: 白雾茫茫丶<baiwumm.com>
- * @Date: 2026-04-29 09:14:56
- * @LastEditors: 白雾茫茫丶<baiwumm.com>
- * @LastEditTime: 2026-05-14 16:50:17
- * @Description: 记录操作日志
- */
-import { UAParser } from 'ua-parser-js'
-import { auth } from '#server/utils/auth'
+﻿import { UAParser } from 'ua-parser-js'
 import { db } from '@/db/drizzle'
 import { logs } from '@/db/schema'
+import { sanitizeLogData, sanitizeHeaders } from '@/server/utils/logs'
 
 export default defineEventHandler(async (event) => {
   const method = event.method as Methods
   const url = getRequestURL(event)
   const path = url.pathname
 
-  // 获取用户会话信息
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  })
-
-  // 🚫 只记录非 GET 和已登录的接口
-  if (method === 'GET' || !session?.user?.id || path.startsWith('/api/system-settings/operation-log'))
+  if (!path.startsWith('/api') || method === 'GET' || path.startsWith('/api/system-settings/operation-log')) {
     return
+  }
+
+  const principal = event.context.principal as { userId?: string } | undefined
+
+  if (!principal?.userId) {
+    return
+  }
 
   const body = await readBody(event)
 
@@ -37,13 +31,18 @@ export default defineEventHandler(async (event) => {
   const uaResult = parser.getResult()
   const { device, os, browser } = uaResult
 
+  const headers = Object.fromEntries(
+    Array.from(event.node.req.headers.entries())
+  )
+
   try {
     await db.insert(logs).values({
-      userId: session.user.id,
+      userId: principal.userId,
       ip,
       action: path,
       method,
-      params: body ?? undefined,
+      params: sanitizeLogData(body ?? {}), // ✅ 脱敏参数
+      headers: sanitizeHeaders(headers), // ✅ 脱敏请求头
       device: device.type ?? 'desktop',
       os: os.name ? `${os.name} ${os.version || ''}`.trim() : '未知',
       browser: browser.name ? `${browser.name} ${browser.version || ''}`.trim() : '未知',
