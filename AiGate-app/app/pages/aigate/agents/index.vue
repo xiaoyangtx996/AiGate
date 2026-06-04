@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
-const { getAgentList, insertAgent, delAgent } = useAigateApi()
+const { getAgentList, delAgent } = useAigateApi()
 const { successToast } = useAppToast()
+const router = useRouter()
 const { data, pending: loading, refresh } = await useAsyncData('aigate-agents', async () => {
   const res = await getAgentList()
   return res.data ?? []
@@ -8,6 +9,9 @@ const { data, pending: loading, refresh } = await useAsyncData('aigate-agents', 
 const list = computed(() => data.value || [])
 async function handleDelete(id: string) { await delAgent(id); successToast(); refresh() }
 const statusColor: Record<string, string> = { active: 'success', inactive: 'neutral', archived: 'warning' }
+function editAgent(row: any) {
+  return router.push(`/aigate/agents/edit/${row.id}`)
+}
 </script>
 
 <template>
@@ -35,6 +39,7 @@ const statusColor: Record<string, string> = { active: 'success', inactive: 'neut
         </div>
         <div class="flex gap-2">
           <UButton size="sm" variant="outline" class="flex-1" icon="lucide:message-square">对话体验</UButton>
+          <UButton size="sm" variant="outline" icon="lucide:edit" @click="editAgent(agent)" />
           <UButton size="sm" variant="ghost" icon="lucide:file-text">日志</UButton>
         </div>
       </UCard>
