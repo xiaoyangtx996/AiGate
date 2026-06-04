@@ -5,9 +5,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     env: process.env.NODE_ENV,
-    adminEmail: process.env.NUXT_ADMIN_EMAIL,
     githubToken: process.env.GITHUB_TOKEN,
-    haloToken: process.env.HALO_TOKEN,
     public: {
       apiBase: '/api',
       appName: process.env.NUXT_APP_NAME || 'AiGate',
@@ -50,6 +48,7 @@ export default defineNuxtConfig({
     defaultLocale: 'zh-CN',
     strategy: 'no_prefix',
     baseUrl: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
+    vueI18n: 'i18n.config.ts',
     detectBrowserLanguage: {
       useCookie: true,
       cookieKey: 'i18n_redirected',
@@ -64,9 +63,32 @@ export default defineNuxtConfig({
   experimental: {
     normalizePageNames: true,
   },
+  vite: {
+    optimizeDeps: {
+      include: [
+        'better-auth/client/plugins',
+        'better-auth/vue',
+        'clsx',
+        'dayjs',
+        'dayjs/plugin/relativeTime',
+        'dayjs/plugin/updateLocale',
+        'dayjs/plugin/utc',
+        'enum-plus',
+        'es-toolkit',
+        'motion-v',
+        'pinia-plugin-persistedstate',
+        'tailwind-merge',
+        'tailwindcss/colors',
+        'zod',
+      ],
+    },
+  },
   nitro: {
     rollupConfig: {
       plugins: [vue()],
     },
+    middleware: [
+      '~/server/middleware/error-handler.ts',
+    ],
   },
 })
