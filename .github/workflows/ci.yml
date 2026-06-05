@@ -14,6 +14,21 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aigate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -55,11 +70,11 @@ jobs:
           path: AiGate-app/coverage/
           retention-days: 14
 
-      # E2E tests require a running dev server and browser dependencies.
-      # Run locally with `pnpm dev` + `pnpm test:e2e`, or enable this step
-      # after adding Playwright browser install and webServer to playwright.config.ts.
-      # - name: E2E
-      #   run: pnpm exec playwright install --with-deps chromium && pnpm test:e2e
+      - name: E2E
+        run: pnpm exec playwright install chromium --with-deps && pnpm test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
+          BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
 
       - name: Build
         run: pnpm build
