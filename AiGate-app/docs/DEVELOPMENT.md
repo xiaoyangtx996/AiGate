@@ -103,10 +103,24 @@ docker run -d \
 
 应用默认监听 `0.0.0.0:3000`。生产环境请通过 `-e` 或 `--env-file` 注入 `.env.example` 中列出的全部必要变量。
 
+### Sentry
+
+在 `.env` 中设置 `SENTRY_DSN` 即可启用前后端错误上报（见 [MONITORING.md](./MONITORING.md)）。本地开发可留空。
+
 ### CI/CD
 
 - **CI**（`.github/workflows/ci.yml`）：lint、单元测试、E2E、构建；覆盖率上传至 Codecov（需配置 `CODECOV_TOKEN` secret）。
-- **Deploy**（`.github/workflows/deploy.yml`）：main 分支推送后构建应用并打包 Docker 镜像（占位，需接入实际 registry 与部署目标）。
+- **Deploy**（`.github/workflows/deploy.yml`）：main 分支推送后构建应用、打包 Docker 镜像并推送至 `ghcr.io/<owner>/<repo>/aigate:latest`。
+- **Release**（`.github/workflows/release.yml`）：推送 `v*` 标签（如 `v1.7.1`）时构建并推送 `ghcr.io/<owner>/<repo>/aigate:<tag>`。
+
+发布流程示例：
+
+```bash
+git tag v1.7.1
+git push origin v1.7.1
+```
+
+GitHub Actions 将自动构建镜像并推送到 GHCR。生产部署目标（Vercel、K8s、PM2 等）可在 `deploy.yml` 的 Deploy 步骤中按需接入。
 
 ## API 文档
 

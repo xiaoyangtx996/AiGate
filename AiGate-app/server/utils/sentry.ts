@@ -1,29 +1,40 @@
-/**
- * Sentry 轻量封装：未安装 @sentry/node 时仅在有 DSN 时 console.error 并预留集成点。
- */
+import * as Sentry from '@sentry/node'
 
 interface ICaptureContext {
   event?: import('h3').H3Event
   extra?: Record<string, unknown>
 }
 
-function isSentryEnabled(): boolean {
+let initialized = false
+
+function ensureSentryInit(): boolean {
   const config = useRuntimeConfig()
-  return Boolean(config.sentryDsn)
+  if (!config.sentryDsn)
+    return false
+
+  if (!initialized) {
+    Sentry.init({
+      dsn: config.sentryDsn,
+      environment: config.env || process.env.NODE_ENV,
+    })
+    initialized = true
+  }
+
+  return true
 }
 
 export function captureException(error: unknown, context?: ICaptureContext): void {
-  if (!isSentryEnabled())
+  if (!ensureSentryInit())
     return
 
-  console.error('[Sentry placeholder] captureException:', error, context)
-  // TODO: 安装 @sentry/node 或 @sentry/nuxt 后调用 Sentry.captureException(error, { extra: context })
+  Sentry.captureException(error, {
+    extra: context?.extra,
+  })
 }
 
 export function captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'error'): void {
-  if (!isSentryEnabled())
+  if (!ensureSentryInit())
     return
 
-  console.error('[Sentry placeholder] captureMessage:', { message, level })
-  // TODO: 安装 SDK 后调用 Sentry.captureMessage(message, level)
+  Sentry.captureMessage(message, level)
 }

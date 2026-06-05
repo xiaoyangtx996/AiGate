@@ -13,6 +13,7 @@ export default defineNuxtConfig({
       appDesc: process.env.NUXT_APP_DESC || 'Enterprise AI Management Platform',
       appDomain: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
       env: process.env.NODE_ENV,
+      sentryDsn: process.env.SENTRY_DSN || '',
     },
   },
   app: {
