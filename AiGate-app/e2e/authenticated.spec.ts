@@ -8,6 +8,9 @@ const PROTECTED_PAGES = [
   '/aigate/dashboard',
   '/aigate/agents',
   '/aigate/api-keys',
+  '/aigate/prompts',
+  '/aigate/channels',
+  '/aigate/alerts',
 ]
 
 test.describe('Authenticated business flows', () => {

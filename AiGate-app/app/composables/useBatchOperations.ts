@@ -1,3 +1,5 @@
+import { toggleIdInSet } from '@/utils/batch'
+
 export function useBatchOperations<T extends { id: string }>(options: {
   onDelete?: (items: T[]) => Promise<void>
 }) {
@@ -14,12 +16,7 @@ export function useBatchOperations<T extends { id: string }>(options: {
   }
 
   function toggleSelect(id: string) {
-    const next = new Set(selectedIds.value)
-    if (next.has(id))
-      next.delete(id)
-    else
-      next.add(id)
-    selectedIds.value = next
+    selectedIds.value = toggleIdInSet(selectedIds.value, id)
   }
 
   function toggleSelectAll(ids: string[]) {
