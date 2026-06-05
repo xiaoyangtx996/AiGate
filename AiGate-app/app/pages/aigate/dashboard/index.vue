@@ -3,16 +3,16 @@ const { getDashboard } = useAigateApi()
 const { t } = useI18n()
 
 const timeRange = ref('7d')
-const timeRangeOptions = [
-  { label: '近 7 天', value: '7d' },
-  { label: '近 30 天', value: '30d' },
-  { label: '近 90 天', value: '90d' },
-]
+const timeRangeOptions = computed(() => [
+  { label: p('range7d'), value: '7d' },
+  { label: p('range30d'), value: '30d' },
+  { label: p('range90d'), value: '90d' },
+])
 
 const { data, pending: loading, refresh } = await useAsyncData('aigate-dashboard', async () => {
   const res = await getDashboard({ range: timeRange.value })
   return res.data || {}
-}, { watch: [timeRange] })
+}, { watch: [timeRange], dedupe: 'defer' })
 
 const overview = computed(() => data.value?.overview || {})
 const trend = computed(() => data.value?.trend?.daily || [])
@@ -20,12 +20,15 @@ const modelBreakdown = computed(() => data.value?.modelBreakdown || [])
 const statusDistribution = computed(() => data.value?.statusDistribution || {})
 const quotaStatus = computed(() => data.value?.quotaStatus || [])
 
+interface TrendPoint { date: string, tokens: number }
+interface ModelPoint { model: string, tokens: number }
+
 const trendData = computed(() => ({
-  labels: trend.value.map((d: any) => d.date),
+  labels: trend.value.map((d: TrendPoint) => d.date),
   datasets: [
     {
-      label: 'Token 用量',
-      data: trend.value.map((d: any) => d.tokens),
+      label: p('tokenUsageLabel'),
+      data: trend.value.map((d: TrendPoint) => d.tokens),
       borderColor: 'rgb(59, 130, 246)',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
       fill: true,
@@ -34,11 +37,11 @@ const trendData = computed(() => ({
 }))
 
 const modelData = computed(() => ({
-  labels: modelBreakdown.value.map((m: any) => m.model),
+  labels: modelBreakdown.value.map((m: ModelPoint) => m.model),
   datasets: [
     {
-      label: 'Token 用量',
-      data: modelBreakdown.value.map((m: any) => m.tokens),
+      label: p('tokenUsageLabel'),
+      data: modelBreakdown.value.map((m: ModelPoint) => m.tokens),
       backgroundColor: [
         'rgb(59, 130, 246)',
         'rgb(16, 185, 129)',
@@ -141,7 +144,7 @@ const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
             <UProgress :model-value="org.usedPercentage" :color="getQuotaColor(org.usedPercentage)" />
           </div>
           <div class="w-16 text-right text-sm font-mono">{{ org.usedPercentage }}%</div>
-          <UBadge v-if="org.isWarning" color="warning" variant="subtle" size="xs">预警</UBadge>
+          <UBadge v-if="org.isWarning" color="warning" variant="subtle" size="xs">{{ p('quotaWarning') }}</UBadge>
         </div>
       </div>
     </UCard>

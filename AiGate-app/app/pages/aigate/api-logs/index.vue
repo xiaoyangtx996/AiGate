@@ -47,7 +47,14 @@ const p = (key: string) => t(`pages.aigate.apiLogs.${key}`)
 <template>
   <div class="space-y-4">
     <HeaderContent :loading :refresh :handle-export />
-    <UTable :loading :data="list" :columns="[
+    <TableSkeleton v-if="loading" :cols="6" :rows="8" />
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:scroll-text"
+      :title="p('emptyTitle')"
+      :description="p('emptyDescription')"
+    />
+    <UTable v-else :data="list" :columns="[
       { accessorKey: 'createdAt', header: p('time') },
       { accessorKey: 'model', header: p('model') },
       { accessorKey: 'totalTokens', header: p('tokens') },

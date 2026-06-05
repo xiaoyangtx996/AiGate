@@ -5,6 +5,7 @@ export interface MockEventOptions {
   context?: Record<string, unknown>
   query?: Record<string, string | undefined>
   body?: unknown
+  params?: Record<string, string>
 }
 
 export function createMockEvent(options: MockEventOptions = {}) {
@@ -13,6 +14,7 @@ export function createMockEvent(options: MockEventOptions = {}) {
     node: { req: { url: '/' } },
     _query: options.query ?? {},
     _body: options.body,
+    _params: options.params ?? {},
   }
 }
 

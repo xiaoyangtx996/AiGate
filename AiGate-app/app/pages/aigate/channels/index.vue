@@ -91,11 +91,11 @@ async function handleHealthCheck(channelId?: string) {
     const res = await checkChannelHealth(channelId)
     if (res.data?.results) {
       const healthy = res.data.results.filter((r: any) => r.healthy).length
-      successToast(`健康检测完成：${healthy}/${res.data.results.length} 正常`)
+      successToast(p('healthCheckDone', { healthy, total: res.data.results.length }))
       healthCheckResult.value = res.data
       showHealthDetail.value = true
     } else if (res.data) {
-      successToast(`渠道 ${res.data.name}: ${res.data.healthy ? '正常' : '异常'}`)
+      successToast(res.data.healthy ? p('healthSingleOk', { name: res.data.name }) : p('healthSingleFail', { name: res.data.name }))
       healthCheckResult.value = { results: [res.data] }
       showHealthDetail.value = true
     }
@@ -122,7 +122,7 @@ function handleExport() {
   )
 }
 
-const p = (key: string) => t(`pages.aigate.channels.${key}`)
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.channels.${key}`, params ?? {})
 </script>
 
 <template>
@@ -157,10 +157,10 @@ const p = (key: string) => t(`pages.aigate.channels.${key}`)
       { accessorKey: 'actions', header: $t('common.action') },
     ]">
       <template #status-cell="{ row }">
-        <UBadge :color="statusColor[row.original.status] as any" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
+        <UBadge :color="(statusColor[row.original.status] || 'neutral') as 'success' | 'neutral' | 'warning'" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
       </template>
       <template #health-cell="{ row }">
-        <UBadge :color="healthColor[row.original.health] as any" variant="subtle" size="sm">{{ row.original.health }}</UBadge>
+        <UBadge :color="(healthColor[row.original.health] || 'neutral') as 'success' | 'warning' | 'error'" variant="subtle" size="sm">{{ row.original.health }}</UBadge>
       </template>
       <template #actions-cell="{ row }">
         <div class="flex gap-1">

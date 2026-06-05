@@ -1,9 +1,20 @@
 ﻿<script setup lang="ts">
+interface OrgNode {
+  id: string
+  name: string
+  parentId: string | null
+  level: string
+  tokenLimit: number
+  tokenUsed: number
+  children?: OrgNode[]
+}
+
 const { getOrgTree } = useAigateApi()
+const { t } = useI18n()
 
 const { data: tree, pending: loading } = await useAsyncData('aigate-org-tree', async () => {
   const res = await getOrgTree()
-  return res.data ?? []
+  return (res.data ?? []) as OrgNode[]
 })
 
 const expandedIds = ref<Set<string>>(new Set())
@@ -13,7 +24,7 @@ function toggleExpand(id: string) {
   else expandedIds.value.add(id)
 }
 
-function expandAll(nodes: any[]) {
+function expandAll(nodes: OrgNode[]) {
   for (const node of nodes) {
     expandedIds.value.add(node.id)
     if (node.children?.length) expandAll(node.children)
@@ -33,7 +44,7 @@ function getQuotaPercent(used: number, limit: number) {
   return limit > 0 ? Math.round((used / limit) * 100) : 0
 }
 
-function getQuotaColor(pct: number) {
+function getQuotaColor(pct: number): 'error' | 'warning' | 'success' {
   return pct > 90 ? 'error' : pct > 70 ? 'warning' : 'success'
 }
 
@@ -43,20 +54,29 @@ const levelIcons: Record<string, string> = {
   department: 'lucide:folder',
   project: 'lucide:folder-open',
 }
+
+const p = (key: string) => t(`pages.aigate.organizations.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">组织架构</h2>
+      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
       <div class="flex gap-2">
-        <UButton size="sm" variant="outline" icon="lucide:chevrons-down" @click="tree && expandAll(tree)">全部展开</UButton>
-        <UButton size="sm" variant="outline" icon="lucide:chevrons-up" @click="collapseAll">全部折叠</UButton>
+        <UButton size="sm" variant="outline" icon="lucide:chevrons-down" @click="tree && expandAll(tree)">{{ p('expandAll') }}</UButton>
+        <UButton size="sm" variant="outline" icon="lucide:chevrons-up" @click="collapseAll">{{ p('collapseAll') }}</UButton>
       </div>
     </div>
 
-    <UCard :loading="loading">
-      <div v-if="tree?.length" class="space-y-2">
+    <TableSkeleton v-if="loading" :cols="3" :rows="4" />
+    <EmptyState
+      v-else-if="!tree?.length"
+      icon="lucide:building-2"
+      :title="p('emptyTitle')"
+      :description="p('emptyDescription')"
+    />
+    <UCard v-else>
+      <div class="space-y-2">
         <template v-for="node in tree" :key="node.id">
           <div
             class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
@@ -112,11 +132,6 @@ const levelIcons: Record<string, string> = {
             </div>
           </div>
         </template>
-      </div>
-
-      <div v-else class="text-center py-12 text-muted">
-        <UIcon name="lucide:building-2" class="text-4xl mb-2" />
-        <p>暂无组织数据</p>
       </div>
     </UCard>
   </div>

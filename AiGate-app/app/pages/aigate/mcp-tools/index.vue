@@ -22,8 +22,19 @@ const { data, pending: loading, refresh } = await useAsyncData(
 const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 
+interface McpToolRow {
+  id: string
+  name: string
+  description?: string
+  type: string
+  endpoint?: string
+  status: string
+  healthStatus?: string
+  usageCount?: number
+}
+
 const open = ref(false)
-const editData = ref<any>(null)
+const editData = ref<McpToolRow | null>(null)
 const saveLoading = ref(false)
 
 const form = reactive({
@@ -44,7 +55,7 @@ function handleAdd() {
   open.value = true
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: McpToolRow) {
   editData.value = row
   form.name = row.name || ''
   form.description = row.description || ''
@@ -77,20 +88,24 @@ async function handleSubmit() {
   }
 }
 
-const healthColor: Record<string, string> = { healthy: 'success', degraded: 'warning', down: 'error' }
+const healthColor: Record<string, 'success' | 'warning' | 'error'> = { healthy: 'success', degraded: 'warning', down: 'error' }
 const testingId = ref<string | null>(null)
 
-async function handleTest(tool: any) {
+async function handleTest(tool: McpToolRow) {
   testingId.value = tool.id
   try {
     const res = await testMcpTool({ id: tool.id })
-    successToast(res.data?.healthy ? `连接正常 (${res.data.latency}ms)` : `连接失败: ${res.data?.error || '未知错误'}`)
+    successToast(
+      res.data?.healthy
+        ? p('testOk', { latency: res.data.latency })
+        : p('testFail', { error: res.data?.error || t('common.requestError') }),
+    )
     refresh()
   }
   finally { testingId.value = null }
 }
 
-const p = (key: string) => t(`pages.aigate.mcpTools.${key}`)
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.mcpTools.${key}`, params ?? {})
 </script>
 
 <template>
@@ -99,14 +114,21 @@ const p = (key: string) => t(`pages.aigate.mcpTools.${key}`)
       <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="() => { page = 1; refresh() }" />
       <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <AgentCardSkeleton v-if="loading" :count="6" />
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:wrench"
+      :title="p('emptyTitle')"
+      :description="p('emptyDescription')"
+    />
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <UCard v-for="tool in list" :key="tool.id" class="hover:border-primary transition-colors">
         <div class="flex items-start justify-between mb-3">
           <div>
             <h3 class="font-bold">{{ tool.name }}</h3>
             <p class="text-sm text-muted">{{ tool.description }}</p>
           </div>
-          <UBadge :color="healthColor[tool.healthStatus || 'healthy'] as any" variant="subtle" size="sm">{{ tool.healthStatus || 'unknown' }}</UBadge>
+          <UBadge :color="healthColor[tool.healthStatus || 'healthy'] || 'neutral'" variant="subtle" size="sm">{{ tool.healthStatus || 'unknown' }}</UBadge>
         </div>
         <div class="flex items-center justify-between text-sm">
           <UBadge variant="outline" size="xs">{{ tool.type }}</UBadge>
@@ -120,12 +142,7 @@ const p = (key: string) => t(`pages.aigate.mcpTools.${key}`)
       </UCard>
     </div>
 
-    <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
-      <UIcon name="lucide:wrench" class="text-4xl mb-2" />
-      <p>{{ $t('common.noData') }}</p>
-    </div>
-
-    <div v-if="total > 0" class="flex justify-end">
+    <div v-if="total > 0 && !loading" class="flex justify-end">
       <UPagination
         v-model:page="page"
         :items-per-page="pageSize"
@@ -139,26 +156,26 @@ const p = (key: string) => t(`pages.aigate.mcpTools.${key}`)
       </template>
       <template #body>
         <div class="space-y-4">
-          <UFormField label="名称" required>
-            <UInput v-model="form.name" placeholder="如：GitHub MCP" />
+          <UFormField :label="p('name')" required>
+            <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
           </UFormField>
-          <UFormField label="描述">
-            <UInput v-model="form.description" placeholder="描述这个工具的用途" />
+          <UFormField :label="p('description')">
+            <UInput v-model="form.description" :placeholder="p('descriptionPlaceholder')" />
           </UFormField>
           <UFormField :label="p('type')">
             <USelect v-model="form.type" :items="[
-              { label: 'SSE', value: 'sse' },
-              { label: 'Streamable HTTP', value: 'streamable_http' },
-              { label: 'Stdio', value: 'stdio' },
+              { label: p('typeSse'), value: 'sse' },
+              { label: p('typeStreamable'), value: 'streamable_http' },
+              { label: p('typeStdio'), value: 'stdio' },
             ]" />
           </UFormField>
-          <UFormField label="端点">
-            <UInput v-model="form.endpoint" placeholder="https://mcp.github.com/sse" />
+          <UFormField :label="p('endpoint')">
+            <UInput v-model="form.endpoint" :placeholder="p('endpointPlaceholder')" />
           </UFormField>
-          <UFormField label="状态">
+          <UFormField :label="p('status')">
             <USelect v-model="form.status" :items="[
-              { label: '启用', value: 'enabled' },
-              { label: '禁用', value: 'disabled' },
+              { label: p('enabled'), value: 'enabled' },
+              { label: p('disabled'), value: 'disabled' },
             ]" />
           </UFormField>
         </div>

@@ -1,12 +1,25 @@
 <script setup lang="ts">
+interface ChannelRoute {
+  id: string
+  name: string
+  vendor: string
+  endpoint: string
+  priority: number
+  weight: number
+  status: string
+  health: string
+  models?: string[]
+}
+
 const { getChannelList } = useAigateApi()
+const { t } = useI18n()
 
 const { data, pending: loading } = await useAsyncData('gateway-routes', async () => {
   const res = await getChannelList()
-  return res.data ?? []
+  return (res.data ?? []) as ChannelRoute[]
 })
 
-const routes = computed(() => (data.value || []).map((c: any) => ({
+const routes = computed(() => (data.value || []).map(c => ({
   id: c.id,
   name: c.name,
   vendor: c.vendor,
@@ -15,8 +28,10 @@ const routes = computed(() => (data.value || []).map((c: any) => ({
   weight: c.weight ?? 1,
   status: c.status,
   health: c.health,
-  models: (c.models || []).join(', ') || '全部模型',
+  models: (c.models || []).join(', ') || p('allModels'),
 })))
+
+const p = (key: string) => t(`pages.aigate.gateway.${key}`)
 </script>
 
 <template>
@@ -24,20 +39,27 @@ const routes = computed(() => (data.value || []).map((c: any) => ({
     <div class="flex items-center gap-3">
       <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/gateway" />
       <div>
-        <h2 class="text-xl font-bold">路由规则</h2>
-        <p class="text-sm text-muted">渠道优先级与负载分配策略</p>
+        <h2 class="text-xl font-bold">{{ p('routesTitle') }}</h2>
+        <p class="text-sm text-muted">{{ p('routesSubtitle') }}</p>
       </div>
     </div>
 
     <UCard>
-      <UTable :loading="loading" :data="routes" :columns="[
-        { accessorKey: 'name', header: '渠道' },
-        { accessorKey: 'vendor', header: '厂商' },
-        { accessorKey: 'models', header: '模型范围' },
-        { accessorKey: 'priority', header: '优先级' },
-        { accessorKey: 'weight', header: '权重' },
-        { accessorKey: 'status', header: '状态' },
-        { accessorKey: 'health', header: '健康' },
+      <TableSkeleton v-if="loading" :cols="6" :rows="5" />
+      <EmptyState
+        v-else-if="routes.length === 0"
+        icon="lucide:route"
+        :title="$t('common.noData')"
+        :description="p('routesSubtitle')"
+      />
+      <UTable v-else :data="routes" :columns="[
+        { accessorKey: 'name', header: p('routesChannel') },
+        { accessorKey: 'vendor', header: p('vendor') },
+        { accessorKey: 'models', header: p('routesModels') },
+        { accessorKey: 'priority', header: p('priority') },
+        { accessorKey: 'weight', header: p('routesWeight') },
+        { accessorKey: 'status', header: p('status') },
+        { accessorKey: 'health', header: p('health') },
       ]">
         <template #name-cell="{ row }">
           <NuxtLink :to="`/aigate/channels/${row.original.id}`" class="text-primary hover:underline">{{ row.original.name }}</NuxtLink>
@@ -45,6 +67,6 @@ const routes = computed(() => (data.value || []).map((c: any) => ({
       </UTable>
     </UCard>
 
-    <UAlert icon="lucide:info" color="info" title="路由策略" description="Gateway 按渠道优先级（数字越小越优先）选择健康渠道转发请求。可在渠道详情页调整优先级和权重。" />
+    <UAlert icon="lucide:info" color="info" :title="p('routesPolicyTitle')" :description="p('routesPolicyDesc')" />
   </div>
 </template>
