@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.3] - 2026-06-05
+
+### Phase 3/4/5 并行
+- 知识库页：文档列表骨架屏、Modal 按需挂载
+- dashboard/alert handler 分支测试 +5
+- `pnpm test:smoke` 脚本，冒烟结果自动写入 `page-smoke-test-result-latest.txt`
+
+---
+
 ## [1.8.2] - 2026-06-05
 
 ### 测试

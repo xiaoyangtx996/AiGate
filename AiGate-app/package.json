@@ -24,6 +24,7 @@
         "prepare": "husky",
         "test": "vitest",
         "test:coverage": "vitest run --coverage",
+        "test:smoke": "node scripts/page-smoke-test.mjs",
         "test:e2e": "playwright test"
     },
     "dependencies": {

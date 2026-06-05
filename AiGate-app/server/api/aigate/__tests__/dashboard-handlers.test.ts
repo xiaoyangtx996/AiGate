@@ -386,4 +386,34 @@ describe('aigate dashboard index.get', () => {
 
     expect(mockSelect).toHaveBeenCalledTimes(14)
   })
+
+  it('should return 90d range label in response', async () => {
+    setupDashboardDbMocks({
+      orgs: [],
+      keys: [],
+      channels: [],
+      logs: [],
+      dailyUsage: [],
+      modelUsage: [],
+      statusRows: [],
+    })
+
+    const response = await dashboardHandler(createMockEvent({ query: { range: '90d' } }))
+
+    expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+    expect(response.data?.range).toBe('90d')
+  })
+
+  it('should return error when db query fails', async () => {
+    mockSelect.mockImplementation(() => {
+      throw new Error('db unavailable')
+    })
+
+    const response = await dashboardHandler(createMockEvent({
+      context: { principal: { organizationId: 'db-error-org-unique' } },
+      query: { range: '7d' },
+    }))
+
+    expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+  })
 })

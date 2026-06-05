@@ -40,6 +40,7 @@ function formatSize(bytes: number) { return bytes > 1000000 ? `${(bytes / 100000
 
 const selectedKb = ref<KnowledgeBaseRow | null>(null)
 const documents = ref<KbDocument[]>([])
+const docsLoading = ref(false)
 const showCreate = ref(false)
 const showEdit = ref(false)
 const createForm = reactive({ name: '', description: '', embeddingModel: 'text-embedding-3-small' })
@@ -51,11 +52,13 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.kno
 
 async function selectKb(kb: KnowledgeBaseRow) {
   selectedKb.value = kb
+  docsLoading.value = true
   try {
     const res = await getKbDocuments(kb.id)
     documents.value = (res.data?.documents || []) as KbDocument[]
   }
   catch { documents.value = [] }
+  finally { docsLoading.value = false }
 }
 
 async function handleCreate() {
@@ -237,7 +240,8 @@ async function handleDeleteDoc(docId: string) {
           <template #header>
             <h3 class="font-bold">{{ p('docList') }}</h3>
           </template>
-          <div v-if="documents.length > 0" class="space-y-2">
+          <TableSkeleton v-if="docsLoading" :cols="1" :rows="3" />
+          <div v-else-if="documents.length > 0" class="space-y-2">
             <div v-for="doc in documents" :key="doc.id" class="flex items-center gap-3 p-3 rounded-lg border">
               <UIcon name="lucide:file-text" class="text-muted" />
               <div class="flex-1">
@@ -268,7 +272,7 @@ async function handleDeleteDoc(docId: string) {
       />
     </div>
 
-    <UModal v-model:open="showEdit">
+    <UModal v-if="showEdit" v-model:open="showEdit">
       <template #header>
         <h3 class="text-lg font-bold">{{ p('editTitle') }}</h3>
       </template>
@@ -296,7 +300,7 @@ async function handleDeleteDoc(docId: string) {
       </template>
     </UModal>
 
-    <UModal v-model:open="showCreate">
+    <UModal v-if="showCreate" v-model:open="showCreate">
       <template #header>
         <h3 class="text-lg font-bold">{{ p('createTitle') }}</h3>
       </template>

@@ -109,5 +109,55 @@ describe('aigate alert handlers', () => {
 
       expect(response.data).toEqual(items)
     })
+
+    it('should filter alerts by keyword', async () => {
+      const items = [{ id: 'alert-2', title: 'Rate limit hit' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await alertListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '1', pageSize: '10', keyword: 'rate' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items,
+        total: 1,
+        page: 1,
+        pageSize: 10,
+      })
+    })
+
+    it('should return empty paginated result when no alerts match', async () => {
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 0 }]))
+        .mockReturnValueOnce(createListSelectChain([]))
+
+      const response = await alertListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '1', pageSize: '20' },
+      }))
+
+      expect(response.data).toEqual({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+      })
+    })
+
+    it('should return error when db query fails', async () => {
+      mockSelect.mockImplementation(() => {
+        throw new Error('connection lost')
+      })
+
+      const response = await alertListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+      }))
+
+      expect(response.code).not.toBe(RESPONSE_CODE.SUCCESS)
+    })
   })
 })

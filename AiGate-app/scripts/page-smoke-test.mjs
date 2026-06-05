@@ -212,6 +212,22 @@ async function main() {
   console.log('\n=== SUMMARY ===')
   console.log(`Total: ${results.length}, Passed: ${results.length - failed.length}, Failed: ${failed.length}`)
 
+  const summary = [
+    `# Page smoke test — ${new Date().toISOString()}`,
+    `Total: ${results.length}, Passed: ${results.length - failed.length}, Failed: ${failed.length}`,
+    '',
+    ...results.map(formatResult),
+  ].join('\n')
+
+  if (process.env.WRITE_RESULT !== '0') {
+    const { writeFileSync } = await import('node:fs')
+    const { dirname, join } = await import('node:path')
+    const { fileURLToPath } = await import('node:url')
+    const outPath = join(dirname(fileURLToPath(import.meta.url)), 'page-smoke-test-result-latest.txt')
+    writeFileSync(outPath, summary, 'utf8')
+    console.log(`\nWrote ${outPath}`)
+  }
+
   if (failed.length) {
     console.log('\nFailed pages:')
     for (const f of failed) {

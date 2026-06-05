@@ -45,8 +45,15 @@ pnpm exec vitest run
 # 监听模式（开发时）
 pnpm test
 
-# 生成覆盖率报告（门槛见 vitest.config.ts，当前约 18%–20%）
+# 生成覆盖率报告（门槛见 vitest.config.ts，当前约 92%）
 pnpm test:coverage
+```
+
+页面冒烟测试（需本地 dev 服务 `pnpm dev`）：
+
+```bash
+pnpm test:smoke
+# 结果写入 scripts/page-smoke-test-result-latest.txt
 ```
 
 覆盖率 HTML 报告输出至 `coverage/index.html`（已加入 `.gitignore`）。
