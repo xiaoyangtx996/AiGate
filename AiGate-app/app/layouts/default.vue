@@ -177,7 +177,9 @@ onMounted(() => {
         </UDashboardToolbar>
       </template>
       <template #body>
-        <slot />
+        <ErrorBoundary>
+          <slot />
+        </ErrorBoundary>
       </template>
     </UDashboardPanel>
   </UDashboardGroup>

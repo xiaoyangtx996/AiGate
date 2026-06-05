@@ -1,52 +1,141 @@
 ﻿<script setup lang="ts">
+interface AgentRow {
+  id: string
+  name: string
+  description?: string
+  status: string
+  builtin?: boolean
+  tags?: string[]
+}
+
 const { getAgentList, delAgent } = useAigateApi()
 const { successToast } = useAppToast()
+const { t } = useI18n()
 const router = useRouter()
+
 const { data, pending: loading, refresh } = await useAsyncData('aigate-agents', async () => {
   const res = await getAgentList()
-  return res.data ?? []
+  return (res.data ?? []) as AgentRow[]
 })
+
 const list = computed(() => data.value || [])
-async function handleDelete(id: string) { await delAgent(id); successToast(); refresh() }
+
+const {
+  selectedCount,
+  hasSelection,
+  isSelected,
+  toggleSelect,
+  batchDelete,
+} = useBatchOperations<AgentRow>({
+  onDelete: async (items) => {
+    await Promise.all(items.map(item => delAgent(item.id)))
+    refresh()
+  },
+})
+
+async function handleDelete(id: string) {
+  await delAgent(id)
+  successToast()
+  refresh()
+}
+
 const statusColor: Record<string, string> = { active: 'success', inactive: 'neutral', archived: 'warning' }
-function editAgent(row: any) {
+
+function statusLabel(status: string) {
+  return status === 'active' ? p('running') : p('draft')
+}
+
+function editAgent(row: AgentRow) {
   return router.push(`/aigate/agents/edit/${row.id}`)
 }
 
-function chatWithAgent(row: any) {
+function chatWithAgent(row: AgentRow) {
   return router.push({ path: '/aigate/agents/chat', query: { agentId: row.id } })
 }
+
+const p = (key: string) => t(`pages.aigate.agents.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">Agent 引擎</h2>
-      <UButton icon="lucide:plus" to="/aigate/agents/create">编排 Agent</UButton>
+      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
+      <UButton icon="lucide:plus" to="/aigate/agents/create">{{ p('create') }}</UButton>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <AgentCardSkeleton v-if="loading" />
+
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UCard v-for="agent in list" :key="agent.id" :class="agent.builtin ? 'border-primary' : ''">
-        <div class="flex items-start justify-between mb-3">
-          <div>
-            <h3 class="text-lg font-bold flex items-center gap-2">
-              {{ agent.name }}
-              <UBadge v-if="agent.builtin" color="primary" variant="solid" size="xs">内置</UBadge>
-            </h3>
-            <p class="text-sm text-muted mt-1">{{ agent.description }}</p>
+        <div class="relative">
+          <div v-if="!agent.builtin" class="absolute top-0 left-0 z-10">
+            <UCheckbox
+              :model-value="isSelected(agent.id)"
+              @update:model-value="toggleSelect(agent.id)"
+            />
           </div>
-          <UBadge :color="statusColor[agent.status] as any" variant="subtle" size="sm">
-            {{ agent.status === 'active' ? '运行中' : '草稿' }}
-          </UBadge>
-        </div>
-        <div class="flex flex-wrap gap-1 mb-3">
-          <UBadge v-for="tag in (agent.tags || [])" :key="tag" variant="outline" size="xs">{{ tag }}</UBadge>
-        </div>
-        <div class="flex gap-2">
-          <UButton size="sm" variant="outline" class="flex-1" icon="lucide:message-square" @click="chatWithAgent(agent)">对话体验</UButton>
-          <UButton size="sm" variant="outline" icon="lucide:edit" @click="editAgent(agent)" />
-          <UButton size="sm" variant="ghost" icon="lucide:file-text" :to="`/aigate/agents/${agent.id}/logs`" />
+          <div class="flex items-start justify-between mb-3" :class="!agent.builtin ? 'pl-7' : ''">
+            <div>
+              <h3 class="text-lg font-bold flex items-center gap-2">
+                {{ agent.name }}
+                <UBadge v-if="agent.builtin" color="primary" variant="solid" size="xs">{{ p('builtin') }}</UBadge>
+              </h3>
+              <p class="text-sm text-muted mt-1">{{ agent.description }}</p>
+            </div>
+            <UBadge :color="statusColor[agent.status] as any" variant="subtle" size="sm">
+              {{ statusLabel(agent.status) }}
+            </UBadge>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-3">
+            <UBadge v-for="tag in (agent.tags || [])" :key="tag" variant="outline" size="xs">{{ tag }}</UBadge>
+          </div>
+          <div class="flex gap-2">
+            <UButton size="sm" variant="outline" class="flex-1" icon="lucide:message-square" @click="chatWithAgent(agent)">
+              {{ p('chat') }}
+            </UButton>
+            <UButton size="sm" variant="outline" icon="lucide:edit" @click="editAgent(agent)" />
+            <UButton size="sm" variant="ghost" icon="lucide:file-text" :to="`/aigate/agents/${agent.id}/logs`" />
+            <UButton
+              v-if="!agent.builtin"
+              size="sm"
+              variant="ghost"
+              color="error"
+              icon="lucide:trash-2"
+              @click="handleDelete(agent.id)"
+            />
+          </div>
         </div>
       </UCard>
     </div>
+
+    <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
+      <UIcon name="lucide:bot" class="text-4xl mb-2" />
+      <p>{{ $t('common.noData') }}</p>
+    </div>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="translate-y-4 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-4 opacity-0"
+    >
+      <div
+        v-if="hasSelection"
+        class="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-lg border border-default bg-default px-5 py-3 shadow-lg"
+      >
+        <span class="text-sm font-medium">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
+        <UButton
+          size="sm"
+          color="error"
+          variant="soft"
+          icon="lucide:trash-2"
+          @click="batchDelete(list.filter(item => !item.builtin))"
+        >
+          {{ $t('common.batchDelete') }}
+        </UButton>
+      </div>
+    </Transition>
   </div>
 </template>

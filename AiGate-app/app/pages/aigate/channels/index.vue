@@ -1,7 +1,10 @@
 ﻿<script setup lang="ts">
+import HeaderContent from './components/HeaderContent.vue'
+
 const { getChannelList, insertChannel, updateChannel, delChannel, checkChannelHealth } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const { exportToCSV } = useExport()
 
 const keyword = ref('')
 const page = ref(1)
@@ -105,18 +108,34 @@ async function handleHealthCheck(channelId?: string) {
 const statusColor: Record<string, string> = { enabled: 'success', disabled: 'neutral' }
 const healthColor: Record<string, string> = { healthy: 'success', degraded: 'warning', down: 'error' }
 
+function handleExport() {
+  exportToCSV(
+    list.value.map(item => ({
+      name: item.name,
+      vendor: item.vendor,
+      endpoint: item.endpoint,
+      status: item.status,
+      health: item.health,
+      qps: item.qps,
+    })),
+    'channels-export',
+  )
+}
+
 const p = (key: string) => t(`pages.aigate.channels.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="() => { page = 1; refresh() }" />
-        <UButton :loading="healthChecking" icon="lucide:heart-pulse" variant="outline" size="sm" @click="handleHealthCheck()">{{ p('healthCheck') }}</UButton>
-      </div>
-      <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
-    </div>
+    <HeaderContent
+      v-model="keyword"
+      :loading
+      :health-checking
+      :refresh="() => { page = 1; refresh() }"
+      :handle-add
+      :handle-export
+      :handle-health-check="() => handleHealthCheck()"
+    />
 
     <UTable :loading :data="list" :columns="[
       { accessorKey: 'name', header: p('name') },

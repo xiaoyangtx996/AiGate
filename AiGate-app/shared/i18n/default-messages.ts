@@ -20,6 +20,7 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
     common: {
       required: '此项为必填', placeholder: '请输入', select: '请选择', cancel: '取消', save: '保存', inSave: '保存中...', sort: '排序', icon: '图标', enabled: '启用', yes: '是', no: '否', action: '操作', actionSuccess: '操作成功', actionFailed: '操作失败', deleteSuccess: '删除成功', saveSuccess: '保存成功', confirmDeleteTitle: '确认删除', confirmDeleteDescription: '删除后无法恢复，是否继续？', confirmDelete: '确认删除', inDelete: '删除中...', confirm: '确认', noData: '暂无数据', searchKeyword: '搜索关键词', columnVisibility: '列显示', parent: '上级', parentHelp: '留空表示顶级', selectAll: '全选', batchDelete: '批量删除', exportCsv: '导出 CSV', selectedCount: '已选择 {count} 项', total: '共 {total} 条，当前 {from}-{to}', pageSize: '每页 {size} 条', requestError: '请求失败，请稍后重试', createdAt: '创建时间',
     },
+    errorBoundary: { title: '页面加载出错', description: '抱歉，当前页面遇到了问题。您可以尝试重新加载。', retry: '重试' },
     layout: { searchMenu: '搜索菜单', friendLink: '友情链接', github: 'GitHub', blog: '博客', lastMethod: '上次登录方式', switchAccount: '切换账号' },
     menu: {
       workspace: '工作台', dashboard: '运营概览',
@@ -33,13 +34,23 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       title: '首页',
       hub: { overview: { start: '快速开始' }, releases: { title: '版本发布', desc: '查看 AiGate 的版本更新记录' } },
       aigate: {
-        channels: { name: '名称', vendor: '供应商', endpoint: '端点', status: '状态', health: '健康', qps: 'QPS', search: '搜索渠道...', add: '添加渠道', healthCheck: '全部检测' },
+        channels: {
+          title: '渠道管理', name: '名称', vendor: '供应商', endpoint: '端点', status: '状态', health: '健康', qps: 'QPS',
+          search: '搜索渠道...', add: '添加渠道', healthCheck: '全部检测',
+          healthDetailTitle: '健康检查详情', healthSummary: '总计: {total} | 正常: {healthy} | 异常: {unhealthy}',
+          healthy: '正常', unhealthy: '异常', latency: '延迟', statusCode: '状态码', error: '错误', timestamp: '时间', close: '关闭',
+          enabled: '启用', disabled: '禁用', vendorPlaceholder: '选择供应商', endpointPlaceholder: 'https://api.openai.com/v1',
+          namePlaceholder: '如：OpenAI 主渠道', apiKey: 'API Key', apiKeyPlaceholder: 'sk-...', other: '其他',
+        },
         apiKeys: { name: '名称', key: '密钥', env: '环境', status: '状态', calls: '调用次数', search: '搜索密钥...', add: '创建密钥', bindRoles: '绑定角色' },
         apiLogs: { time: '时间', model: '模型', tokens: 'Tokens', latency: '延迟', cost: '费用', status: '状态', refresh: '刷新' },
         models: { name: '名称', provider: '供应商', type: '类型', context: '上下文', inputPrice: '输入价格', outputPrice: '输出价格', search: '搜索模型...' },
         billing: { org: '组织', period: '账期', tokenUsage: 'Token 用量', cost: '费用', status: '状态', dueDate: '到期日', generate: '生成当月账单' },
         alerts: { title: '告警中心', unread: '条未读', check: '检测告警' },
-        agents: { title: 'Agent 引擎', create: '编排 Agent', builtin: '内置', running: '运行中', draft: '草稿', chat: '对话体验', logs: '日志' },
+        agents: {
+          title: 'Agent 引擎', create: '编排 Agent', builtin: '内置', running: '运行中', draft: '草稿',
+          chat: '对话体验', logs: '日志', edit: '编辑', delete: '删除',
+        },
         prompts: { title: '提示词库', create: '创建提示词', category: '分类', usage: '次使用' },
         mcpTools: { search: '搜索工具...', add: '添加工具', type: '类型', calls: '次调用', config: '配置' },
         knowledgeBase: { title: '知识库', create: '创建', docs: '文档', size: '大小', embeddingModel: '嵌入模型', docList: '文档列表', noDocs: '暂无文档', selectKb: '选择一个知识库查看详情' },
@@ -67,6 +78,7 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
     common: {
       required: 'This field is required', placeholder: 'Please enter', select: 'Please select', cancel: 'Cancel', save: 'Save', inSave: 'Saving...', sort: 'Sort', icon: 'Icon', enabled: 'Enabled', yes: 'Yes', no: 'No', action: 'Actions', actionSuccess: 'Success', actionFailed: 'Operation failed', deleteSuccess: 'Deleted successfully', saveSuccess: 'Saved successfully', confirmDeleteTitle: 'Confirm delete', confirmDeleteDescription: 'This action cannot be undone. Continue?', confirmDelete: 'Delete', inDelete: 'Deleting...', confirm: 'Confirm', noData: 'No data', searchKeyword: 'Search keyword', columnVisibility: 'Columns', parent: 'Parent', parentHelp: 'Leave empty for top level', selectAll: 'Select all', batchDelete: 'Batch delete', exportCsv: 'Export CSV', selectedCount: '{count} selected', total: '{from}-{to} of {total}', pageSize: '{size} / page', requestError: 'Request failed. Please try again.', createdAt: 'Created at',
     },
+    errorBoundary: { title: 'Something went wrong', description: 'Sorry, this page encountered an error. You can try reloading.', retry: 'Retry' },
     layout: { searchMenu: 'Search menu', friendLink: 'Links', github: 'GitHub', blog: 'Blog', lastMethod: 'Last sign-in method', switchAccount: 'Switch account' },
     menu: {
       workspace: 'Workspace', dashboard: 'Dashboard',
@@ -80,13 +92,23 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       title: 'Home',
       hub: { overview: { start: 'Get Started' }, releases: { title: 'Releases', desc: 'View AiGate release notes' } },
       aigate: {
-        channels: { name: 'Name', vendor: 'Vendor', endpoint: 'Endpoint', status: 'Status', health: 'Health', qps: 'QPS', search: 'Search channels...', add: 'Add Channel', healthCheck: 'Check All' },
+        channels: {
+          title: 'Channels', name: 'Name', vendor: 'Vendor', endpoint: 'Endpoint', status: 'Status', health: 'Health', qps: 'QPS',
+          search: 'Search channels...', add: 'Add Channel', healthCheck: 'Check All',
+          healthDetailTitle: 'Health Check Details', healthSummary: 'Total: {total} | Healthy: {healthy} | Unhealthy: {unhealthy}',
+          healthy: 'Healthy', unhealthy: 'Unhealthy', latency: 'Latency', statusCode: 'Status Code', error: 'Error', timestamp: 'Time', close: 'Close',
+          enabled: 'Enabled', disabled: 'Disabled', vendorPlaceholder: 'Select vendor', endpointPlaceholder: 'https://api.openai.com/v1',
+          namePlaceholder: 'e.g. OpenAI Primary', apiKey: 'API Key', apiKeyPlaceholder: 'sk-...', other: 'Other',
+        },
         apiKeys: { name: 'Name', key: 'Key', env: 'Environment', status: 'Status', calls: 'Calls', search: 'Search keys...', add: 'Create Key', bindRoles: 'Bind Roles' },
         apiLogs: { time: 'Time', model: 'Model', tokens: 'Tokens', latency: 'Latency', cost: 'Cost', status: 'Status', refresh: 'Refresh' },
         models: { name: 'Name', provider: 'Provider', type: 'Type', context: 'Context', inputPrice: 'Input Price', outputPrice: 'Output Price', search: 'Search models...' },
         billing: { org: 'Organization', period: 'Period', tokenUsage: 'Token Usage', cost: 'Cost', status: 'Status', dueDate: 'Due Date', generate: 'Generate Bill' },
         alerts: { title: 'Alert Center', unread: 'unread', check: 'Check Alerts' },
-        agents: { title: 'Agent Engine', create: 'Create Agent', builtin: 'Built-in', running: 'Running', draft: 'Draft', chat: 'Chat', logs: 'Logs' },
+        agents: {
+          title: 'Agent Engine', create: 'Create Agent', builtin: 'Built-in', running: 'Running', draft: 'Draft',
+          chat: 'Chat', logs: 'Logs', edit: 'Edit', delete: 'Delete',
+        },
         prompts: { title: 'Prompt Library', create: 'Create Prompt', category: 'Category', usage: 'uses' },
         mcpTools: { search: 'Search tools...', add: 'Add Tool', type: 'Type', calls: 'calls', config: 'Configure' },
         knowledgeBase: { title: 'Knowledge Base', create: 'Create', docs: 'documents', size: 'Size', embeddingModel: 'Embedding Model', docList: 'Documents', noDocs: 'No documents', selectKb: 'Select a knowledge base to view details' },
