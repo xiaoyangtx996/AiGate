@@ -38,4 +38,13 @@ test.describe('Smoke', () => {
     expect(response?.status()).toBeLessThan(500)
     await expect(page).toHaveURL(/\/auth\/sign-in/)
   })
+
+  test('api docs page is reachable', async ({ page }) => {
+    const response = await page.goto('/docs/api')
+    expect(response).not.toBeNull()
+    const status = response?.status() ?? 0
+    expect(status === 200 || status === 302).toBeTruthy()
+    expect(status).toBeLessThan(500)
+    await expect(page).toHaveURL(/\/docs\/api/)
+  })
 })

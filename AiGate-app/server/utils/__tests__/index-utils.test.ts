@@ -5,6 +5,7 @@ import {
   convertFlatDataToTree,
   responseError,
   responseSuccess,
+  transformToLangTree,
 } from '../index'
 
 describe('index utils', () => {
@@ -106,6 +107,57 @@ describe('index utils', () => {
 
     it('should return empty array for empty input', () => {
       expect(convertFlatDataToTree([])).toEqual([])
+    })
+  })
+
+  describe('transformToLangTree', () => {
+    it('should map nested tree nodes to locale objects', () => {
+      const nodes = [
+        {
+          id: '1',
+          name: 'common',
+          en: null,
+          zh: null,
+          children: [
+            { id: '2', name: 'save', en: 'Save', zh: '保存', children: [] },
+            { id: '3', name: 'cancel', en: 'Cancel', zh: '取消', children: [] },
+          ],
+        },
+        {
+          id: '4',
+          name: 'title',
+          en: 'Dashboard',
+          zh: '仪表盘',
+          children: [],
+        },
+      ] as InternalizationTree[]
+
+      const result = transformToLangTree(nodes)
+
+      expect(result.en).toEqual({
+        common: { save: 'Save', cancel: 'Cancel' },
+        title: 'Dashboard',
+      })
+      expect(result['zh-CN']).toEqual({
+        common: { save: '保存', cancel: '取消' },
+        title: '仪表盘',
+      })
+    })
+
+    it('should return empty locale objects for empty input', () => {
+      expect(transformToLangTree([])).toEqual({ en: {}, 'zh-CN': {} })
+    })
+
+    it('should skip missing locale values on leaf nodes', () => {
+      const nodes = [
+        { id: '1', name: 'onlyEn', en: 'Hello', zh: null, children: [] },
+        { id: '2', name: 'onlyZh', en: null, zh: '你好', children: [] },
+      ] as InternalizationTree[]
+
+      const result = transformToLangTree(nodes)
+
+      expect(result.en).toEqual({ onlyEn: 'Hello' })
+      expect(result['zh-CN']).toEqual({ onlyZh: '你好' })
     })
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseListPagination, shouldReturnPaginatedResponse } from '../pagination'
 
-describe('list pagination helpers', () => {
+describe('pagination helpers', () => {
   describe('parseListPagination', () => {
     it('should use defaults when query params are missing', () => {
       expect(parseListPagination({})).toEqual({
@@ -20,6 +20,11 @@ describe('list pagination helpers', () => {
     })
 
     it('should clamp pageSize between 1 and 100', () => {
+      expect(parseListPagination({ page: '1', pageSize: '-5' })).toEqual({
+        page: 1,
+        pageSize: 1,
+        offset: 0,
+      })
       expect(parseListPagination({ page: '1', pageSize: '0' })).toEqual({
         page: 1,
         pageSize: 1,
