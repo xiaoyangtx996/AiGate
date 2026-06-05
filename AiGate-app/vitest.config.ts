@@ -33,10 +33,10 @@ export default defineConfig({
         'server/**/*.d.ts',
       ],
       thresholds: {
-        lines: 50,
-        functions: 50,
+        lines: 55,
+        functions: 55,
         branches: 38,
-        statements: 50,
+        statements: 55,
       },
     },
   },

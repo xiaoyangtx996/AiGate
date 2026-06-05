@@ -22,7 +22,7 @@ const { data, pending: loading, refresh } = await useAsyncData(
 
 const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
-const statusColor: Record<string, string> = { success: 'success', error: 'error', rate_limited: 'warning' }
+const statusColor: Record<string, 'success' | 'error' | 'warning'> = { success: 'success', error: 'error', rate_limited: 'warning' }
 
 function formatLatency(ms: number) { return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms` }
 
@@ -75,7 +75,7 @@ const p = (key: string) => t(`pages.aigate.apiLogs.${key}`)
         <span class="font-mono">${{ (row.original.cost / 10000).toFixed(4) }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UBadge :color="statusColor[row.original.status] as any" variant="subtle" size="sm">
+        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">
           {{ row.original.statusCode || 200 }}
         </UBadge>
       </template>

@@ -67,6 +67,8 @@ function getQuotaColor(pct: number) {
   return pct > 90 ? 'error' : pct > 70 ? 'warning' : 'success'
 }
 
+const DashboardCharts = defineAsyncComponent(() => import('@/components/aigate/DashboardCharts.vue'))
+
 const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
 </script>
 
@@ -107,31 +109,26 @@ const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
       </UCard>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <UCard>
-        <template #header>
-          <h3 class="font-bold">{{ p('tokenTrend') }}</h3>
+    <ClientOnly>
+      <Suspense>
+        <DashboardCharts
+          :trend-data="trendData"
+          :model-data="modelData"
+          :trend-title="p('tokenTrend')"
+          :model-title="p('modelDist')"
+          :no-trend="p('noTrend')"
+          :no-model="p('noModel')"
+          :has-trend="trend.length > 0"
+          :has-model="modelBreakdown.length > 0"
+        />
+        <template #fallback>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TableSkeleton :cols="1" :rows="6" />
+            <TableSkeleton :cols="1" :rows="6" />
+          </div>
         </template>
-        <div v-if="trend.length > 0" class="h-64">
-          <LineChart :data="trendData" />
-        </div>
-        <div v-else class="h-64 flex items-center justify-center text-muted">
-          <p>{{ p('noTrend') }}</p>
-        </div>
-      </UCard>
-
-      <UCard>
-        <template #header>
-          <h3 class="font-bold">{{ p('modelDist') }}</h3>
-        </template>
-        <div v-if="modelBreakdown.length > 0" class="h-64">
-          <BarChart :data="modelData" />
-        </div>
-        <div v-else class="h-64 flex items-center justify-center text-muted">
-          <p>{{ p('noModel') }}</p>
-        </div>
-      </UCard>
-    </div>
+      </Suspense>
+    </ClientOnly>
 
     <UCard v-if="quotaStatus.length > 0">
       <template #header>

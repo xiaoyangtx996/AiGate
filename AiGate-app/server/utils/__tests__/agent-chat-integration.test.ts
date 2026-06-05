@@ -5,6 +5,7 @@ const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
 const mockSelectChannel = vi.fn()
 const mockProxyToChannel = vi.fn()
+const mockProxyToChannelStream = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
@@ -24,10 +25,10 @@ vi.mock('@/db/schema', () => ({
 vi.mock('#server/utils/gateway', () => ({
   selectChannel: (...args: unknown[]) => mockSelectChannel(...args),
   proxyToChannel: (...args: unknown[]) => mockProxyToChannel(...args),
-  proxyToChannelStream: vi.fn(),
+  proxyToChannelStream: (...args: unknown[]) => mockProxyToChannelStream(...args),
 }))
 
-import { getAgentWithConfig, getUserConversations, sendAgentMessage } from '#server/utils/agent-chat'
+import { getAgentWithConfig, getUserConversations, sendAgentMessage, streamAgentMessage } from '#server/utils/agent-chat'
 
 function createAgentSelectChain(result: unknown[]) {
   return {
@@ -74,6 +75,31 @@ function createUpdateChain() {
       where: vi.fn().mockResolvedValue(undefined),
     }),
   }
+}
+
+function createSSEBody(chunks: string[]) {
+  const encoder = new TextEncoder()
+  let index = 0
+  return {
+    getReader: () => ({
+      read: async () => {
+        if (index >= chunks.length) {
+          return { done: true, value: undefined }
+        }
+        return { done: false, value: encoder.encode(chunks[index++]) }
+      },
+    }),
+  }
+}
+
+function setupAgentStreamMocks(agent: Record<string, unknown>) {
+  mockSelect
+    .mockReturnValueOnce(createAgentSelectChain([agent]))
+    .mockReturnValueOnce(createAgentSelectChain([agent]))
+    .mockReturnValueOnce(createMessageSelectChain([]))
+  mockInsert.mockReturnValue(createInsertChain([{ id: 'conv-1', agentId: 'agent-1', userId: 'user-1' }]))
+  mockUpdate.mockReturnValue(createUpdateChain())
+  mockSelectChannel.mockResolvedValue({ id: 'ch-1', endpoint: 'https://api.example.com/v1', vendor: 'openai', priority: 1, status: 'enabled', health: 'healthy' })
 }
 
 describe('agent-chat integration', () => {
@@ -154,6 +180,40 @@ describe('agent-chat integration', () => {
       expect(result.message).toBe('Hi there')
       expect(result.conversationId).toBe('conv-1')
       expect(mockProxyToChannel).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('streamAgentMessage', () => {
+    it('should yield start, delta and done events from SSE stream', async () => {
+      const agent = { id: 'agent-1', name: 'Bot', model: 'gpt-4o', systemPrompt: 'Be helpful', temperature: 30, maxTokens: 4096, organizationId: 'org-1' }
+      setupAgentStreamMocks(agent)
+      mockProxyToChannelStream.mockResolvedValue({
+        ok: true,
+        body: createSSEBody([
+          'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n',
+          'data: [DONE]\n\n',
+        ]),
+      })
+
+      const events: Array<{ type: string, content?: string, message?: string }> = []
+      for await (const event of streamAgentMessage('agent-1', 'user-1', 'hello')) {
+        events.push(event)
+      }
+
+      expect(events[0]).toMatchObject({ type: 'start', conversationId: 'conv-1' })
+      expect(events.some(event => event.type === 'delta' && event.content === 'Hi')).toBe(true)
+      expect(events.at(-1)).toMatchObject({ type: 'done', message: 'Hi' })
+      expect(mockProxyToChannelStream).toHaveBeenCalledTimes(1)
+    })
+
+    it('should throw 404 when agent is missing', async () => {
+      mockSelect.mockReturnValue(createAgentSelectChain([]))
+
+      const iterator = streamAgentMessage('missing', 'user-1', 'hello')
+      await expect(iterator.next()).rejects.toMatchObject({
+        statusCode: 404,
+        message: 'Agent not found',
+      })
     })
   })
 })

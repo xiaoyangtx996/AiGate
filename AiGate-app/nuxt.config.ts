@@ -75,6 +75,11 @@ export default defineNuxtConfig({
   },
   experimental: {
     normalizePageNames: true,
+    defaults: {
+      nuxtLink: {
+        prefetchOn: 'interaction',
+      },
+    },
   },
   vite: {
     optimizeDeps: {

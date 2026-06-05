@@ -25,6 +25,7 @@ vi.mock('#server/utils/alert-notify', () => ({
 import {
   generateKeyExpiryAlerts,
   generateQuotaAlerts,
+  generateRuleBasedAlerts,
   runAlertChecks,
 } from '#server/utils/alerts'
 
@@ -99,6 +100,51 @@ describe('alerts integration', () => {
 
       expect(mockInsert).toHaveBeenCalledTimes(1)
       expect(mockNotify).toHaveBeenCalledWith('alert-2')
+    })
+  })
+
+  describe('generateRuleBasedAlerts', () => {
+    it('should create quota alert when rule threshold is met', async () => {
+      const rules = [{ id: 'r1', name: 'Quota Rule', type: 'quota_warning', enabled: true, organizationId: null, condition: { threshold: 80 } }]
+      const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 850 }
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([org]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-rule-1' }]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-1')
+    })
+
+    it('should create key expiry alert from rule threshold days', async () => {
+      const rules = [{ id: 'r2', name: 'Key Rule', type: 'key_expiring', enabled: true, organizationId: null, condition: { threshold: 7 } }]
+      const expiresAt = new Date(Date.now() + 2 * 86400000)
+      const key = { id: 'key-2', name: 'Dev Key', status: 'active', expiresAt, organizationId: 'org-1', userId: 'user-1' }
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([key]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-rule-2' }]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-2')
+    })
+
+    it('should skip when organization filter does not match', async () => {
+      const rules = [{ id: 'r3', name: 'Org Rule', type: 'quota_warning', enabled: true, organizationId: 'org-other', condition: { threshold: 80 } }]
+      const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 900 }
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([org]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).not.toHaveBeenCalled()
     })
   })
 

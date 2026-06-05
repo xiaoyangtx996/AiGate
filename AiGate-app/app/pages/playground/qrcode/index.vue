@@ -78,7 +78,7 @@ const qr = useQrcode("${value.value}", {
     </UCard>
     <UCard title="useQrcode Composable" class="w-full" :ui="{ body: 'flex justify-center' }">
       <div class="w-80">
-        <img class="w-full h-full" :src="qr" alt="QR Code">
+        <NuxtImg class="w-full h-full" :src="qr" alt="QR Code" />
       </div>
       <template #footer>
         <MDC :value="md1" />
