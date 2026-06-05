@@ -15,6 +15,7 @@ logs
 
 # Test coverage
 coverage
+test-results/
 
 # Misc
 .DS_Store

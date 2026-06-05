@@ -3,11 +3,22 @@ const { getBillingList, generateBilling } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
 
-const { data, pending: loading, refresh } = await useAsyncData('aigate-billing', async () => {
-  const res = await getBillingList()
-  return res.data ?? []
-})
-const list = computed(() => data.value || [])
+const page = ref(1)
+const pageSize = ref(20)
+
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-billing',
+  async () => {
+    const res = await getBillingList({ page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 20 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+const list = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 const generating = ref(false)
 
 async function handleGenerate() {
@@ -58,5 +69,12 @@ const p = (key: string) => t(`pages.aigate.billing.${key}`)
         <UButton size="xs" variant="ghost" icon="lucide:eye" :to="`/aigate/billing/${row.original.id}`" />
       </template>
     </UTable>
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
+    </div>
   </div>
 </template>
