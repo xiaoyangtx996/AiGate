@@ -76,6 +76,16 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
 
     <AgentCardSkeleton v-if="loading" />
 
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:bot"
+      :title="$t('common.noData')"
+    >
+      <template #action>
+        <UButton icon="lucide:plus" to="/aigate/agents/create">{{ p('create') }}</UButton>
+      </template>
+    </EmptyState>
+
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UCard v-for="agent in list" :key="agent.id" :class="agent.builtin ? 'border-primary' : ''">
         <div class="relative">
@@ -117,11 +127,6 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
           </div>
         </div>
       </UCard>
-    </div>
-
-    <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
-      <UIcon name="lucide:bot" class="text-4xl mb-2" />
-      <p>{{ $t('common.noData') }}</p>
     </div>
 
     <div v-if="total > 0" class="flex justify-end">

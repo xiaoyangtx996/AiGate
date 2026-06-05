@@ -137,7 +137,17 @@ const p = (key: string) => t(`pages.aigate.channels.${key}`)
       :handle-health-check="() => handleHealthCheck()"
     />
 
-    <UTable :loading :data="list" :columns="[
+    <TableSkeleton v-if="loading" :cols="7" />
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:radio-tower"
+      :title="$t('common.noData')"
+    >
+      <template #action>
+        <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
+      </template>
+    </EmptyState>
+    <UTable v-else :data="list" :columns="[
       { accessorKey: 'name', header: p('name') },
       { accessorKey: 'vendor', header: p('vendor') },
       { accessorKey: 'endpoint', header: p('endpoint') },

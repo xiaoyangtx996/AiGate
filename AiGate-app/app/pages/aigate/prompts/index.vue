@@ -150,6 +150,15 @@ async function handleImportFile(e: Event) {
     </div>
 
     <TableSkeleton v-if="loading" :cols="5" />
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:message-square-text"
+      :title="$t('common.noData')"
+    >
+      <template #action>
+        <UButton icon="lucide:plus" @click="handleAdd">{{ p('create') }}</UButton>
+      </template>
+    </EmptyState>
     <UTable
       v-else
       :data="list"
@@ -195,11 +204,6 @@ async function handleImportFile(e: Event) {
         </div>
       </template>
     </UTable>
-
-    <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
-      <UIcon name="lucide:message-square-text" class="text-4xl mb-2" />
-      <p>{{ $t('common.noData') }}</p>
-    </div>
 
     <Transition
       enter-active-class="transition duration-200 ease-out"
