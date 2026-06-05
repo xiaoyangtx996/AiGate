@@ -1,6 +1,32 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { RESPONSE_CODE } from '@/enums'
+import { createMockEvent } from './nitro-test-utils'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
+
+const mockSelect = vi.fn()
+
+vi.mock('@/db/drizzle', () => ({
+  db: {
+    select: (...args: unknown[]) => mockSelect(...args),
+  },
+}))
+
+vi.mock('@/db/schema', () => ({
+  organization: { id: 'id', name: 'name', tokenLimit: 'tokenLimit', tokenUsed: 'tokenUsed' },
+  apiKey: { organizationId: 'organizationId', status: 'status', expiresAt: 'expiresAt' },
+  channel: { status: 'status', health: 'health' },
+  apiLog: {
+    organizationId: 'organizationId',
+    totalTokens: 'totalTokens',
+    createdAt: 'createdAt',
+    model: 'model',
+    cost: 'cost',
+    status: 'status',
+  },
+}))
+
+import dashboardHandler from '../dashboard/index.get'
 
 function parseRangeDays(range?: string): number {
   if (range === '30d') return 30
@@ -60,6 +86,79 @@ function parseDashboardPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
   const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20))
   return { page, pageSize, offset: (page - 1) * pageSize }
+}
+
+function createSimpleSelectChain(result: unknown[]) {
+  return { from: vi.fn().mockResolvedValue(result) }
+}
+
+function createWhereSelectChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
+function createLogLimitChain(result: unknown[], withWhere = true) {
+  const limit = vi.fn().mockResolvedValue(result)
+  const orderBy = vi.fn().mockReturnValue({ limit })
+  if (withWhere) {
+    return {
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({ orderBy }),
+      }),
+    }
+  }
+  return { from: vi.fn().mockReturnValue({ orderBy }) }
+}
+
+function createGroupByOrderChain(result: unknown[], withLimit = false) {
+  const orderBy = withLimit
+    ? vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue(result) })
+    : vi.fn().mockResolvedValue(result)
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        groupBy: vi.fn().mockReturnValue({ orderBy }),
+      }),
+    }),
+  }
+}
+
+function createGroupByChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        groupBy: vi.fn().mockResolvedValue(result),
+      }),
+    }),
+  }
+}
+
+function setupDashboardDbMocks(options: {
+  orgs?: unknown[]
+  keys?: unknown[]
+  channels?: unknown[]
+  logs?: unknown[]
+  dailyUsage?: unknown[]
+  modelUsage?: unknown[]
+  statusRows?: unknown[]
+  scoped?: boolean
+}) {
+  const scoped = options.scoped ?? false
+  mockSelect
+    .mockReturnValueOnce(createSimpleSelectChain(options.orgs ?? []))
+    .mockReturnValueOnce(scoped
+      ? createWhereSelectChain(options.keys ?? [])
+      : createSimpleSelectChain(options.keys ?? []))
+    .mockReturnValueOnce(createSimpleSelectChain(options.channels ?? []))
+    .mockReturnValueOnce(scoped
+      ? createLogLimitChain(options.logs ?? [], true)
+      : createLogLimitChain(options.logs ?? [], false))
+    .mockReturnValueOnce(createGroupByOrderChain(options.dailyUsage ?? []))
+    .mockReturnValueOnce(createGroupByOrderChain(options.modelUsage ?? [], true))
+    .mockReturnValueOnce(createGroupByChain(options.statusRows ?? []))
 }
 
 describe('aigate dashboard pure logic', () => {
@@ -178,3 +277,113 @@ describe('aigate dashboard pure logic', () => {
   })
 })
 
+describe('aigate dashboard index.get', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('should aggregate dashboard metrics scoped to organization', async () => {
+    const now = Date.now()
+    setupDashboardDbMocks({
+      scoped: true,
+      orgs: [
+        { id: 'org-1', name: 'Alpha', tokenLimit: 1000, tokenUsed: 950 },
+        { id: 'org-2', name: 'Beta', tokenLimit: 0, tokenUsed: 0 },
+      ],
+      keys: [
+        { status: 'active', expiresAt: new Date(now + 2 * 86400000) },
+        { status: 'revoked', expiresAt: null },
+      ],
+      channels: [
+        { status: 'enabled', health: 'healthy' },
+        { status: 'disabled', health: 'unhealthy' },
+      ],
+      logs: [{ totalTokens: 100 }, { totalTokens: 50 }],
+      dailyUsage: [{ date: '2026-06-04', tokens: 150, requests: 10, cost: 5 }],
+      modelUsage: [{ model: 'gpt-4', tokens: 120, requests: 8, cost: 4 }],
+      statusRows: [{ status: 'success', count: 9 }, { status: 'error', count: 1 }],
+    })
+
+    const response = await dashboardHandler(createMockEvent({
+      context: { principal: { organizationId: 'org-1' } },
+      query: { range: '7d' },
+    }))
+
+    expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+    expect(response.data).toMatchObject({
+      range: '7d',
+      overview: {
+        totalTokens: 150,
+        activeKeys: 1,
+        expiringSoon: 1,
+        totalChannels: 2,
+        activeChannels: 1,
+        healthyChannels: 1,
+        totalOrganizations: 2,
+      },
+      trend: {
+        daily: [{ date: '2026-06-04', tokens: 150, requests: 10, cost: 5 }],
+      },
+      modelBreakdown: [{ model: 'gpt-4', tokens: 120, requests: 8, cost: 4 }],
+      statusDistribution: { success: 9, error: 1 },
+      quotaStatus: [{
+        organizationId: 'org-1',
+        organizationName: 'Alpha',
+        usedPercentage: 95,
+        isWarning: true,
+      }],
+    })
+    expect(mockSelect).toHaveBeenCalledTimes(7)
+  })
+
+  it('should return cached dashboard payload on repeated requests', async () => {
+    setupDashboardDbMocks({
+      orgs: [{ id: 'org-1', name: 'Alpha', tokenLimit: 100, tokenUsed: 10 }],
+      keys: [{ status: 'active' }],
+      channels: [{ status: 'enabled', health: 'healthy' }],
+      logs: [{ totalTokens: 20 }],
+      dailyUsage: [],
+      modelUsage: [],
+      statusRows: [],
+    })
+
+    const event = createMockEvent({ query: { range: '30d' } })
+    const first = await dashboardHandler(event)
+    const second = await dashboardHandler(event)
+
+    expect(first.code).toBe(RESPONSE_CODE.SUCCESS)
+    expect(second.data).toEqual(first.data)
+    expect(mockSelect).toHaveBeenCalledTimes(7)
+  })
+
+  it('should use separate cache keys per range', async () => {
+    setupDashboardDbMocks({
+      orgs: [],
+      keys: [],
+      channels: [],
+      logs: [],
+      dailyUsage: [],
+      modelUsage: [],
+      statusRows: [],
+    })
+    setupDashboardDbMocks({
+      orgs: [],
+      keys: [],
+      channels: [],
+      logs: [],
+      dailyUsage: [],
+      modelUsage: [],
+      statusRows: [],
+    })
+
+    await dashboardHandler(createMockEvent({ query: { range: '7d' } }))
+    await dashboardHandler(createMockEvent({ query: { range: '90d' } }))
+
+    expect(mockSelect).toHaveBeenCalledTimes(14)
+  })
+})
