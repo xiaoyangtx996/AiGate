@@ -204,4 +204,15 @@ describe('gateway proxy handler', () => {
     expect(mockInsert).toHaveBeenCalled()
     expect(mockUpdate).toHaveBeenCalled()
   })
+
+  it('should return 502 when upstream proxy fails', async () => {
+    mockProxyToChannel.mockRejectedValue(new Error('Connection refused'))
+
+    await expect(gatewayProxyHandler(createEvent({ authHeader: 'Bearer valid' }) as never)).rejects.toMatchObject({
+      statusCode: 502,
+      message: 'Upstream error',
+    })
+
+    expect(mockInsert).toHaveBeenCalled()
+  })
 })

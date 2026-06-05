@@ -1,6 +1,9 @@
 ﻿<script setup lang="ts">
 const { getOrgList, insertOrg, updateOrg } = useAigateApi()
 const { successToast } = useAppToast()
+const { t } = useI18n()
+
+const p = (key: string) => t(`pages.aigate.dashboard.organization.${key}`)
 
 const { data, pending: loading, refresh } = await useAsyncData('aigate-orgs', async () => {
   const res = await getOrgList()
@@ -8,13 +11,13 @@ const { data, pending: loading, refresh } = await useAsyncData('aigate-orgs', as
 })
 const list = computed(() => data.value || [])
 const open = ref(false)
-const editData = ref<any>(null)
+const editData = ref<{ id?: string; parentId?: string } | null>(null)
 const saveLoading = ref(false)
 
 function handleAdd(parentId?: string) { editData.value = parentId ? { parentId } : null; open.value = true }
-function handleEdit(row: any) { editData.value = row; open.value = true }
+function handleEdit(row: { id: string }) { editData.value = row; open.value = true }
 
-async function handleSubmit(values: any) {
+async function handleSubmit(values: Record<string, unknown>) {
   saveLoading.value = true
   try {
     if (editData.value?.id) await updateOrg({ ...values, id: editData.value.id })
@@ -33,8 +36,8 @@ function getQuotaColor(used: number, limit: number) {
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">组织与配额</h2>
-      <UButton icon="lucide:plus" @click="handleAdd()">新增组织</UButton>
+      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
+      <UButton icon="lucide:plus" @click="handleAdd()">{{ p('add') }}</UButton>
     </div>
     <UCard v-for="org in list" :key="org.id">
       <div class="flex items-center justify-between mb-3">
@@ -47,7 +50,7 @@ function getQuotaColor(used: number, limit: number) {
       </div>
       <div v-if="org.tokenLimit" class="space-y-2">
         <div class="flex justify-between text-sm">
-          <span class="text-muted">Token 配额</span>
+          <span class="text-muted">{{ p('tokenQuota') }}</span>
           <span class="font-mono">{{ (org.tokenUsed / 1000000).toFixed(1) }}M / {{ (org.tokenLimit / 1000000).toFixed(1) }}M</span>
         </div>
         <UProgress :model-value="Math.round((org.tokenUsed / org.tokenLimit) * 100)" :color="getQuotaColor(org.tokenUsed, org.tokenLimit)" />

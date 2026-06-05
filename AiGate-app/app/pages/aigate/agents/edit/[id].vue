@@ -14,7 +14,10 @@ const route = useRoute()
 const router = useRouter()
 const { getAgent, updateAgent } = useAigateApi()
 const { successToast, errorToast } = useAppToast()
+const { t } = useI18n()
 const id = computed(() => route.params.id as string)
+
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.agents.form.${key}`, params ?? {})
 
 const { data: agent, pending: loading } = await useAsyncData(
   () => `agent-${id.value}`,
@@ -67,11 +70,11 @@ async function handleSave() {
   saving.value = true
   try {
     await updateAgent({ id: id.value, ...form })
-    successToast('Agent 更新成功')
+    successToast(p('updateSuccess'))
     router.push('/aigate/agents')
   }
   catch {
-    errorToast('更新失败')
+    errorToast(p('updateFail'))
   }
   finally { saving.value = false }
 }
@@ -89,7 +92,7 @@ const models = [
   <div class="max-w-2xl mx-auto space-y-6">
     <div class="flex items-center gap-3">
       <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/agents" />
-      <h2 class="text-xl font-bold">编辑 Agent</h2>
+      <h2 class="text-xl font-bold">{{ p('editTitle') }}</h2>
     </div>
 
     <UCard>
@@ -97,48 +100,48 @@ const models = [
         <UButton loading variant="ghost" />
       </div>
       <div v-else-if="agent" class="space-y-4">
-        <UFormField label="Agent 名称" required>
-          <UInput v-model="form.name" placeholder="如：项目助手、代码审查 Agent" />
+        <UFormField :label="p('name')" required>
+          <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
         </UFormField>
 
-        <UFormField label="描述">
-          <UTextarea v-model="form.description" placeholder="描述这个 Agent 的用途" :rows="2" />
+        <UFormField :label="p('description')">
+          <UTextarea v-model="form.description" :placeholder="p('descriptionPlaceholder')" :rows="2" />
         </UFormField>
 
-        <UFormField label="模型">
+        <UFormField :label="p('model')">
           <USelect v-model="form.model" :items="models" />
         </UFormField>
 
-        <UFormField label="系统提示词">
-          <UTextarea v-model="form.systemPrompt" placeholder="定义 Agent 的行为和能力..." :rows="6" />
+        <UFormField :label="p('systemPrompt')">
+          <UTextarea v-model="form.systemPrompt" :placeholder="p('systemPromptPlaceholder')" :rows="6" />
         </UFormField>
 
         <div class="grid grid-cols-2 gap-4">
-          <UFormField :label="`温度: ${(form.temperature / 100).toFixed(2)}`">
+          <UFormField :label="p('temperature', { value: (form.temperature / 100).toFixed(2) })">
             <UInput v-model.number="form.temperature" type="range" :min="0" :max="100" :step="1" />
           </UFormField>
-          <UFormField label="最大输出 Token">
+          <UFormField :label="p('maxTokens')">
             <UInput v-model.number="form.maxTokens" type="number" :min="256" :max="32768" />
           </UFormField>
         </div>
 
-        <UFormField label="标签">
+        <UFormField :label="p('tags')">
           <div class="flex gap-2 mb-2 flex-wrap">
             <UBadge v-for="tag in form.tags" :key="tag" variant="subtle" class="cursor-pointer" @click="removeTag(tag)">
               {{ tag }} ×
             </UBadge>
           </div>
-          <UInput v-model="tagInput" placeholder="输入标签后回车" @keyup.enter="addTag" />
+          <UInput v-model="tagInput" :placeholder="p('tagPlaceholder')" @keyup.enter="addTag" />
         </UFormField>
       </div>
       <div v-else class="text-center py-8 text-muted">
-        未找到 Agent
+        {{ p('notFound') }}
       </div>
     </UCard>
 
     <div class="flex justify-end gap-2">
-      <UButton variant="ghost" to="/aigate/agents">取消</UButton>
-      <UButton :loading="saving" :disabled="!form.name" icon="lucide:save" @click="handleSave">保存修改</UButton>
+      <UButton variant="ghost" to="/aigate/agents">{{ $t('common.cancel') }}</UButton>
+      <UButton :loading="saving" :disabled="!form.name" icon="lucide:save" @click="handleSave">{{ p('saveChanges') }}</UButton>
     </div>
   </div>
 </template>

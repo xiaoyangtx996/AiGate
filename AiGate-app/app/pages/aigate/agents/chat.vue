@@ -1,15 +1,19 @@
 ﻿<script setup lang="ts">
 type ChatMessage = { role: string; content: string; time: string }
 type ChatConversation = { id: string; agentId: string; title: string; lastMessage: string; updatedAt: string; messages: ChatMessage[] }
+type AgentItem = { id: string; name: string; description?: string; model?: string }
 
 const route = useRoute()
+const { t } = useI18n()
 const { getAgentList, getAgentConversations } = useAigateApi()
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.agents.chatPage.${key}`, params ?? {})
+
 const { data } = await useAsyncData('aigate-agents-chat', async () => {
   const res = await getAgentList()
   return res.data ?? []
 })
 const agents = computed(() => data.value || [])
-const selectedAgent = ref<any>(null)
+const selectedAgent = ref<AgentItem | null>(null)
 const messages = ref<ChatMessage[]>([])
 const inputText = ref('')
 const sending = ref(false)
@@ -17,7 +21,6 @@ const conversationId = ref<string | undefined>()
 const conversations = ref<ChatConversation[]>([])
 const messagesEnd = ref<HTMLElement | null>(null)
 
-// 从 localStorage 加载对话历史
 onMounted(async () => {
   const saved = localStorage.getItem('aigate-chat-history')
   if (saved) {
@@ -35,14 +38,13 @@ onMounted(async () => {
   }
 })
 
-// 自动滚动到底部
 watch(messages, () => {
   nextTick(() => {
     messagesEnd.value?.scrollIntoView({ behavior: 'smooth' })
   })
 }, { deep: true })
 
-async function selectAgent(agent: any) {
+async function selectAgent(agent: AgentItem) {
   selectedAgent.value = agent
   messages.value = []
   conversationId.value = undefined
@@ -59,20 +61,20 @@ async function startNewConversation() {
 }
 
 async function sendMessage() {
-  if (!inputText.value.trim() || sending.value) return
+  if (!inputText.value.trim() || sending.value || !selectedAgent.value) return
   const userMsg = { role: 'user', content: inputText.value.trim(), time: new Date().toISOString() }
   messages.value.push(userMsg)
   const msg = inputText.value.trim()
   inputText.value = ''
   sending.value = true
 
-  // 添加一个空的 assistant 消息占位
   messages.value.push({ role: 'assistant', content: '', time: new Date().toISOString() })
 
   const lastMessage = messages.value[messages.value.length - 1]
+  const agent = selectedAgent.value
 
   try {
-    const response = await fetch(`/api/aigate/agent/${selectedAgent.value.id}/chat`, {
+    const response = await fetch(`/api/aigate/agent/${agent.id}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: msg, conversationId: conversationId.value, stream: true }),
@@ -114,24 +116,26 @@ async function sendMessage() {
               throw new Error(parsed.message || 'Stream error')
             }
           }
-          catch (e: any) {
-            if (e?.message && !e.message.includes('JSON')) throw e
+          catch (e: unknown) {
+            const err = e as { message?: string }
+            if (err?.message && !err.message.includes('JSON')) throw e
           }
         }
       }
 
-      saveToLocalStorage(conversationId.value, selectedAgent.value.id, msg, reply)
+      saveToLocalStorage(conversationId.value, agent.id, msg, reply)
     }
     else {
       const res = await response.json()
       conversationId.value = res.data?.conversationId
-      const reply = res.data?.message || '暂无回复'
+      const reply = res.data?.message || p('noReply')
       if (lastMessage) lastMessage.content = reply
-      saveToLocalStorage(conversationId.value, selectedAgent.value.id, msg, reply)
+      saveToLocalStorage(conversationId.value, agent.id, msg, reply)
     }
   }
-  catch (err: any) {
-    const errorMsg = `请求失败: ${err?.message || '请检查网关配置'}`
+  catch (err: unknown) {
+    const message = err instanceof Error ? err.message : p('checkGateway')
+    const errorMsg = p('requestFailed', { message })
     if (lastMessage) lastMessage.content = errorMsg
   }
   finally { sending.value = false }
@@ -211,14 +215,14 @@ function deleteConversation(convId: string, e: Event) {
 function exportConversation() {
   if (messages.value.length === 0) return
 
-  let md = '# 对话导出\n\n'
-  md += `**时间**: ${new Date().toLocaleString()}\n`
+  let md = `# ${p('exportTitle')}\n\n`
+  md += `**${p('exportTime')}**: ${new Date().toLocaleString()}\n`
   md += `**Agent**: ${selectedAgent.value?.name || 'Unknown'}\n`
-  md += `**模型**: ${selectedAgent.value?.model || 'gpt-4o'}\n\n`
+  md += `**${p('exportModel')}**: ${selectedAgent.value?.model || 'gpt-4o'}\n\n`
   md += '---\n\n'
 
   for (const msg of messages.value) {
-    const role = msg.role === 'user' ? '用户' : 'Assistant'
+    const role = msg.role === 'user' ? p('exportUser') : 'Assistant'
     md += `### ${role}\n\n${msg.content}\n\n---\n\n`
   }
 
@@ -235,7 +239,7 @@ function exportConversation() {
 <template>
   <div class="flex h-[calc(100vh-120px)] gap-4">
     <div class="w-72 shrink-0 space-y-2">
-      <h3 class="text-lg font-bold mb-3">选择 Agent</h3>
+      <h3 class="text-lg font-bold mb-3">{{ p('selectAgent') }}</h3>
       <UCard
         v-for="agent in agents" :key="agent.id"
         :class="selectedAgent?.id === agent.id ? 'border-primary' : 'cursor-pointer hover:border-primary/50'"
@@ -252,7 +256,7 @@ function exportConversation() {
 
       <template v-if="conversations.length > 0">
         <div class="flex items-center justify-between mt-4">
-          <h4 class="text-sm font-bold text-muted">历史对话</h4>
+          <h4 class="text-sm font-bold text-muted">{{ p('history') }}</h4>
           <UButton size="xs" variant="ghost" icon="lucide:x" @click="conversations = []" />
         </div>
         <div class="space-y-1">
@@ -263,7 +267,7 @@ function exportConversation() {
           >
             <UIcon name="lucide:message-square" class="shrink-0" />
             <div class="flex-1 min-w-0">
-              <p class="truncate">{{ conv.title || '未命名对话' }}</p>
+              <p class="truncate">{{ conv.title || p('untitled') }}</p>
               <p class="text-xs text-muted truncate">{{ conv.lastMessage }}</p>
             </div>
             <UButton size="xs" variant="ghost" icon="lucide:trash-2"
@@ -287,9 +291,9 @@ function exportConversation() {
           </div>
           <div class="flex gap-2">
             <UButton size="xs" variant="outline" icon="lucide:download" @click="exportConversation" :disabled="messages.length === 0">
-              导出
+              {{ p('export') }}
             </UButton>
-            <UButton size="xs" variant="outline" icon="lucide:plus" @click="startNewConversation">新对话</UButton>
+            <UButton size="xs" variant="outline" icon="lucide:plus" @click="startNewConversation">{{ p('newChat') }}</UButton>
           </div>
         </div>
 
@@ -310,7 +314,7 @@ function exportConversation() {
         </div>
 
         <div class="flex gap-2">
-          <UInput v-model="inputText" placeholder="输入消息..." class="flex-1" @keyup.enter="sendMessage" :disabled="sending" />
+          <UInput v-model="inputText" :placeholder="p('inputPlaceholder')" class="flex-1" @keyup.enter="sendMessage" :disabled="sending" />
           <UButton :disabled="!inputText.trim() || sending" @click="sendMessage" :loading="sending">
             <UIcon name="lucide:send" />
           </UButton>
@@ -321,7 +325,7 @@ function exportConversation() {
         <div class="flex-1 flex items-center justify-center text-muted">
           <div class="text-center">
             <UIcon name="lucide:bot" class="text-4xl mb-2" />
-            <p>选择一个 Agent 开始对话</p>
+            <p>{{ p('selectPrompt') }}</p>
           </div>
         </div>
       </template>
