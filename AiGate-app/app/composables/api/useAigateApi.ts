@@ -76,6 +76,7 @@ export function useAigateApi() {
   const getPromptList = (params?: Record<string, unknown>) => get('/aigate/prompt', params, cacheConfig.list)
   const insertPrompt = (body: unknown) => post('/aigate/prompt', body)
   const updatePrompt = ({ id, ...body }: { id: string } & Record<string, unknown>) => put(`/aigate/prompt/${id}`, body)
+  const delPrompt = (id: string) => del(`/aigate/prompt/${id}`)
   const getPromptVersions = (id: string) => get(`/aigate/prompt/${id}/versions`)
   const restorePromptVersion = (id: string, versionId: string) => post(`/aigate/prompt/${id}/versions/${versionId}/restore`)
   const exportPrompts = () => get('/aigate/prompt/export')

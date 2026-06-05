@@ -32,6 +32,7 @@ describe('API Route Policy', () => {
       expect(apiRoutePolicy.isPublicRoute('/api/common/releases')).toBe(true)
       expect(apiRoutePolicy.isPublicRoute('/api/gateway')).toBe(true)
       expect(apiRoutePolicy.isPublicRoute('/api/gateway/v1/chat/completions')).toBe(true)
+      expect(apiRoutePolicy.isPublicRoute('/api/openapi')).toBe(true)
     })
 
     it('should identify internal and locale public routes', () => {

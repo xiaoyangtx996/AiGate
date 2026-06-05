@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
       return responseSuccess(null, `每个用户最多持有 ${limit.max} 个活跃密钥`, 400)
     }
     const body = await readBody(event)
-    const parsed = insertApiKeySchema.parse(body)
-    const keyValue = parsed.key || generateApiKey('dev')
+    const parsed = insertApiKeySchema.omit({ key: true, userId: true }).parse(body)
+    const keyValue = generateApiKey(parsed.env ?? 'dev')
     const [res] = await db.insert(apiKey).values({
       ...parsed,
       key: keyValue,

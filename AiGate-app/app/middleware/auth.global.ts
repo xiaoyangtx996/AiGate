@@ -22,9 +22,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // 判断是否权限页面
   const isAuth = to.path.startsWith('/auth/')
+  const isPublicDoc = to.path.startsWith('/docs/')
 
   // 未登录访问私有页面
-  if (!isLoggedIn && !isAuth) {
+  if (!isLoggedIn && !isAuth && !isPublicDoc) {
     return navigateTo('/auth/sign-in')
   }
 })

@@ -41,9 +41,7 @@ export default defineEventHandler(async (event) => {
   const uaResult = parser.getResult()
   const { device, os, browser } = uaResult
 
-  const headers = Object.fromEntries(
-    Array.from(event.node.req.headers.entries())
-  )
+  const headers = getRequestHeaders(event)
 
   try {
     await db.insert(logs).values({

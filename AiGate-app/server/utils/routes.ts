@@ -11,6 +11,7 @@ const publicRoutes = [
   '/api/_',
   '/api/common/releases',
   '/api/gateway',
+  '/api/openapi',
   '/api/system-settings/internalization/locales',
 ]
 

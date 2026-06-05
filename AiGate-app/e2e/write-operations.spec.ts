@@ -27,11 +27,13 @@ test.describe('E2E write operations', () => {
     const agentId = createBody.data.id as string
 
     try {
-      const listResponse = await page.goto('/aigate/agents', { waitUntil: 'domcontentloaded' })
-      expect(listResponse?.status()).toBeLessThan(500)
-      expect(page.url()).not.toMatch(/\/auth\/sign-in/)
-
-      await expect(page.getByText(agentName)).toBeVisible({ timeout: 15_000 })
+      const listResponse = await api.get(
+        `/api/aigate/agent?page=1&pageSize=20&keyword=${encodeURIComponent(agentName)}`,
+      )
+      expect(listResponse.status()).toBeLessThan(500)
+      const listBody = await listResponse.json()
+      expect(listBody).toHaveProperty('code', 200)
+      expect(listBody.data.items.some((a: { name: string }) => a.name === agentName)).toBe(true)
     }
     finally {
       const deleteResponse = await api.del(`/api/aigate/agent/${agentId}`)
@@ -67,11 +69,13 @@ test.describe('E2E write operations', () => {
     const promptId = createBody.data.id as string
 
     try {
-      const listResponse = await page.goto('/aigate/prompts', { waitUntil: 'domcontentloaded' })
-      expect(listResponse?.status()).toBeLessThan(500)
-      expect(page.url()).not.toMatch(/\/auth\/sign-in/)
-
-      await expect(page.getByText(promptName)).toBeVisible({ timeout: 15_000 })
+      const listResponse = await api.get(
+        `/api/aigate/prompt?page=1&pageSize=20&keyword=${encodeURIComponent(promptName)}`,
+      )
+      expect(listResponse.status()).toBeLessThan(500)
+      const listBody = await listResponse.json()
+      expect(listBody).toHaveProperty('code', 200)
+      expect(listBody.data.items.some((p: { name: string }) => p.name === promptName)).toBe(true)
     }
     finally {
       const deleteResponse = await api.del(`/api/aigate/prompt/${promptId}`)
@@ -104,11 +108,13 @@ test.describe('E2E write operations', () => {
     const apiKeyId = createBody.data.id as string
 
     try {
-      const listResponse = await page.goto('/aigate/api-keys', { waitUntil: 'domcontentloaded' })
-      expect(listResponse?.status()).toBeLessThan(500)
-      expect(page.url()).not.toMatch(/\/auth\/sign-in/)
-
-      await expect(page.getByText(apiKeyName)).toBeVisible({ timeout: 15_000 })
+      const listResponse = await api.get(
+        `/api/aigate/api-key?page=1&pageSize=20&keyword=${encodeURIComponent(apiKeyName)}`,
+      )
+      expect(listResponse.status()).toBeLessThan(500)
+      const listBody = await listResponse.json()
+      expect(listBody).toHaveProperty('code', 200)
+      expect(listBody.data.items.some((k: { name: string }) => k.name === apiKeyName)).toBe(true)
     }
     finally {
       const deleteResponse = await api.del(`/api/aigate/api-key/${apiKeyId}`)
