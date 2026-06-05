@@ -170,6 +170,18 @@ describe('gateway proxy handler', () => {
     })
   })
 
+  it('should reject when api key lacks write scope for POST', async () => {
+    mockCheckApiKeyScopes.mockReturnValue(false)
+
+    await expect(gatewayProxyHandler(createEvent({
+      authHeader: 'Bearer valid',
+      method: 'POST',
+    }) as never)).rejects.toMatchObject({
+      statusCode: 403,
+      message: 'API key lacks required scope for this method',
+    })
+  })
+
   it('should reject when no upstream channel available', async () => {
     mockSelectChannel.mockResolvedValue(null)
 

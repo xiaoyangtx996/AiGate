@@ -84,6 +84,7 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         agents: {
           title: 'Agent 引擎', create: '编排 Agent', builtin: '内置', running: '运行中', draft: '草稿',
           chat: '对话体验', edit: '编辑', delete: '删除',
+          emptyTitle: '暂无 Agent', emptyDescription: '还没有创建 Agent，点击右上角开始编排',
           logs: {
             title: 'Agent 日志', refresh: '刷新', time: '时间', model: '模型', provider: '供应商', status: '状态',
             tokens: 'Tokens', cost: '费用', latency: '延迟', error: '错误',
@@ -103,6 +104,11 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
             history: '版本历史', current: '当前版本', selectTool: '选择 MCP 工具', selectToolDesc: '从左侧列表选择一个工具查看版本历史',
             emptyTools: '暂无 MCP 工具', emptyToolsDesc: '还没有配置 MCP 工具',
             emptyVersions: '暂无版本记录', emptyVersionsDesc: '该工具还没有发布过版本',
+          },
+          marketplace: {
+            title: 'MCP 工具市场', subtitle: '从预设目录一键安装 MCP 工具', search: '搜索工具...', install: '安装',
+            installDone: '安装成功', emptyTitle: '暂无预设工具', emptyDescription: '工具市场目录为空，请稍后再试',
+            noMatch: '未找到匹配工具', noMatchDesc: '请尝试其他关键词搜索',
           },
         },
         knowledgeBase: {
@@ -222,6 +228,7 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         agents: {
           title: 'Agent Engine', create: 'Create Agent', builtin: 'Built-in', running: 'Running', draft: 'Draft',
           chat: 'Chat', edit: 'Edit', delete: 'Delete',
+          emptyTitle: 'No agents', emptyDescription: 'No agents created yet. Click Create Agent to get started.',
           logs: {
             title: 'Agent Logs', refresh: 'Refresh', time: 'Time', model: 'Model', provider: 'Provider', status: 'Status',
             tokens: 'Tokens', cost: 'Cost', latency: 'Latency', error: 'Error',
@@ -241,6 +248,11 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
             history: 'Version History', current: 'Current', selectTool: 'Select an MCP Tool', selectToolDesc: 'Pick a tool from the list to view version history.',
             emptyTools: 'No MCP tools', emptyToolsDesc: 'No MCP tools configured yet.',
             emptyVersions: 'No versions', emptyVersionsDesc: 'This tool has no published versions yet.',
+          },
+          marketplace: {
+            title: 'MCP Marketplace', subtitle: 'Install MCP tools from preset catalog', search: 'Search tools...', install: 'Install',
+            installDone: 'Installed successfully', emptyTitle: 'No presets', emptyDescription: 'The marketplace catalog is empty. Try again later.',
+            noMatch: 'No matching tools', noMatchDesc: 'Try a different search keyword.',
           },
         },
         knowledgeBase: {

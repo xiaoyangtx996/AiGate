@@ -50,7 +50,7 @@ async function handleDelete(id: string) {
   refresh()
 }
 
-const statusColor: Record<string, string> = { active: 'success', inactive: 'neutral', archived: 'warning' }
+const statusColor: Record<string, 'success' | 'neutral' | 'warning'> = { active: 'success', inactive: 'neutral', archived: 'warning' }
 
 function statusLabel(status: string) {
   return status === 'active' ? p('running') : p('draft')
@@ -79,7 +79,8 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
     <EmptyState
       v-else-if="list.length === 0"
       icon="lucide:bot"
-      :title="$t('common.noData')"
+      :title="p('emptyTitle')"
+      :description="p('emptyDescription')"
     >
       <template #action>
         <UButton icon="lucide:plus" to="/aigate/agents/create">{{ p('create') }}</UButton>
@@ -103,7 +104,7 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
               </h3>
               <p class="text-sm text-muted mt-1">{{ agent.description }}</p>
             </div>
-            <UBadge :color="statusColor[agent.status] as any" variant="subtle" size="sm">
+            <UBadge :color="statusColor[agent.status] || 'neutral'" variant="subtle" size="sm">
               {{ statusLabel(agent.status) }}
             </UBadge>
           </div>

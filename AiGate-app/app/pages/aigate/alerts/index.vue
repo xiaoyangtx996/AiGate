@@ -74,7 +74,7 @@ async function handleCheckAlerts() {
   finally { checking.value = false }
 }
 
-const severityColor: Record<string, string> = { info: 'info', warning: 'warning', critical: 'error' }
+const severityColor: Record<string, 'info' | 'warning' | 'error'> = { info: 'info', warning: 'warning', critical: 'error' }
 const severityIcon: Record<string, string> = { info: 'lucide:info', warning: 'lucide:alert-triangle', critical: 'lucide:alert-octagon' }
 
 const p = (key: string) => t(`pages.aigate.alerts.${key}`)
@@ -129,7 +129,7 @@ const typeLabel = (type: string) => t(`pages.aigate.alerts.types.${type}`, type)
               <h3 class="font-bold">{{ a.title }}</h3>
               <div class="flex items-center gap-2">
                 <UBadge variant="outline" size="xs">{{ typeLabel(a.type) }}</UBadge>
-                <UBadge :color="severityColor[a.severity] as any" variant="subtle" size="xs">{{ a.severity }}</UBadge>
+                <UBadge :color="severityColor[a.severity] || 'info'" variant="subtle" size="xs">{{ a.severity }}</UBadge>
               </div>
             </div>
             <p class="text-sm text-muted mt-1">{{ a.message }}</p>

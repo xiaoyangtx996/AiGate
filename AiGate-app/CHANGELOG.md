@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.5] - 2026-06-05
+
+### 测试
+- **318** 项单元/集成测试，覆盖率 **60.9%**（阈值 58%）
+- 新增 `api-key-integration`、`delete-handlers`（alert/channel 删除）、gateway scope 403 测试
+
+### UX / i18n
+- MCP 市场页全量 i18n、EmptyState 与骨架屏
+- Agents 列表空状态文案、Alerts/Agents Badge 去 `as any`
+
+---
+
 ## [1.7.4] - 2026-06-05
 
 ### 测试
