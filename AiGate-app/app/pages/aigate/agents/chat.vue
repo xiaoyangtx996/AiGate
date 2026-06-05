@@ -21,7 +21,10 @@ const conversationId = ref<string | undefined>()
 const conversations = ref<ChatConversation[]>([])
 const messagesEnd = ref<HTMLElement | null>(null)
 
+const LazyMdc = defineAsyncComponent(() => import('@nuxtjs/mdc/runtime/components/MDC.vue'))
+
 onMounted(async () => {
+  void import('@nuxtjs/mdc/runtime/components/MDC.vue')
   const saved = localStorage.getItem('aigate-chat-history')
   if (saved) {
     try {
@@ -300,7 +303,14 @@ function exportConversation() {
         <div class="flex-1 overflow-y-auto space-y-3 mb-4 px-1">
           <div v-for="(msg, i) in messages" :key="i" :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
             <div :class="msg.role === 'user' ? 'bg-primary text-white' : 'bg-muted'" class="max-w-[70%] rounded-lg px-4 py-2">
-              <MDC v-if="msg.role === 'assistant'" :value="msg.content" />
+              <ClientOnly v-if="msg.role === 'assistant'">
+                <Suspense>
+                  <LazyMdc :value="msg.content" />
+                  <template #fallback>
+                    <p class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
+                  </template>
+                </Suspense>
+              </ClientOnly>
               <p v-else class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
               <p class="text-xs opacity-60 mt-1">{{ new Date(msg.time).toLocaleTimeString() }}</p>
             </div>

@@ -5,11 +5,13 @@ import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
+const mockUpdate = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
     select: (...args: unknown[]) => mockSelect(...args),
     insert: (...args: unknown[]) => mockInsert(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
   },
 }))
 
@@ -47,6 +49,7 @@ vi.mock('#server/utils/validation', () => {
 
 import agentListHandler from '../agent/index.get'
 import agentPostHandler from '../agent/index.post'
+import agentPutHandler from '../agent/[id].put'
 
 function parseAgentPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -81,6 +84,16 @@ function createInsertChain(result: unknown[]) {
   return {
     values: vi.fn().mockReturnValue({
       returning: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
+function createUpdateChain(result: unknown[]) {
+  return {
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue(result),
+      }),
     }),
   }
 }
@@ -132,6 +145,49 @@ describe('aigate agent handlers', () => {
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
       expect(mockInsert).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('agent [id].put', () => {
+    it('should return 404 when agent not found', async () => {
+      mockUpdate.mockReturnValue(createUpdateChain([]))
+
+      const response = await agentPutHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'missing' },
+        body: { name: 'Updated' },
+      }))
+
+      expect(response.code).toBe(404)
+      expect(response.msg).toBe('资源不存在或无权操作')
+    })
+
+    it('should update agent scoped to organization', async () => {
+      const updated = { id: 'agent-1', name: 'Renamed Bot', organizationId: 'org-1' }
+      mockUpdate.mockReturnValue(createUpdateChain([updated]))
+
+      const response = await agentPutHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'agent-1' },
+        body: { name: 'Renamed Bot' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual(updated)
+      expect(mockUpdate).toHaveBeenCalledTimes(1)
+    })
+
+    it('should update agent by id when principal has no organization', async () => {
+      const updated = { id: 'agent-2', name: 'Global Bot' }
+      mockUpdate.mockReturnValue(createUpdateChain([updated]))
+
+      const response = await agentPutHandler(createMockEvent({
+        params: { id: 'agent-2' },
+        body: { name: 'Global Bot' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual(updated)
     })
   })
 

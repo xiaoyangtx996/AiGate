@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { prompt, promptVersion } from '@/db/schema'
 

@@ -32,7 +32,19 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
     },
     pages: {
       title: '首页',
-      hub: { overview: { start: '快速开始' }, releases: { title: '版本发布', desc: '查看 AiGate 的版本更新记录' } },
+      hub: {
+        overview: {
+          start: '快速开始',
+          features: {
+            architecture: { title: '现代化全栈架构', description: '基于 Nuxt.js + Better-auth + Nuxt UI + Drizzle ORM + PostgreSQL，构建高性能、类型安全的全栈应用，开发体验与运行效率兼备。' },
+            auth: { title: '开箱即用的认证系统', description: '集成 Better-auth，支持多策略身份验证、会话管理与权限控制，为应用提供安全可靠的用户体系。' },
+            theme: { title: '可视化主题配置中心', description: '内置 18 种主题主色、明暗模式、圆角档位与路由动画，满足多品牌与个性化展示需求。' },
+            menuI18n: { title: '动态菜单与国际化支持', description: '菜单管理、角色权限、多语言（中/英）一键切换，灵活适配企业级后台与多地域业务场景。' },
+          },
+        },
+        releases: { title: '版本发布', desc: '查看 AiGate 的版本更新记录' },
+      },
+      docs: { api: { title: 'API 文档', description: '基于 OpenAPI 3.0 的 AiGate REST API 规范。原始 JSON：' } },
       aigate: {
         channels: {
           title: '渠道管理', name: '名称', vendor: '供应商', endpoint: '端点', status: '状态', health: '健康', qps: 'QPS',
@@ -203,7 +215,19 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
     },
     pages: {
       title: 'Home',
-      hub: { overview: { start: 'Get Started' }, releases: { title: 'Releases', desc: 'View AiGate release notes' } },
+      hub: {
+        overview: {
+          start: 'Get Started',
+          features: {
+            architecture: { title: 'Modern Full-Stack Architecture', description: 'Built on Nuxt.js + Better-auth + Nuxt UI + Drizzle ORM + PostgreSQL for a high-performance, type-safe full-stack app with great developer experience and runtime efficiency.' },
+            auth: { title: 'Authentication Out of the Box', description: 'Better-auth integration with multi-strategy authentication, session management, and access control for a secure user system.' },
+            theme: { title: 'Visual Theme Config Center', description: '18 theme colors, light/dark mode, border-radius levels, and route transitions for multi-brand and personalized UI.' },
+            menuI18n: { title: 'Dynamic Menus & i18n', description: 'Menu management, role permissions, and one-click zh/en switching for enterprise backends and multi-region workloads.' },
+          },
+        },
+        releases: { title: 'Releases', desc: 'View AiGate release notes' },
+      },
+      docs: { api: { title: 'API Documentation', description: 'OpenAPI 3.0 specification for the AiGate REST API. Raw JSON:' } },
       aigate: {
         channels: {
           title: 'Channels', name: 'Name', vendor: 'Vendor', endpoint: 'Endpoint', status: 'Status', health: 'Health', qps: 'QPS',

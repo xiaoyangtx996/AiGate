@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.8] - 2026-06-05
+
+### 测试
+- **352** 项测试（目标 346+），覆盖率 **70.1%**（阈值 65%）
+- 新增 prompt/agent/billing/mcp/alert-rule handler 测试
+- 修复 prompt restore 缺少 `desc` import
+
+### UX / 性能
+- hub/overview、docs/api i18n
+- agents/chat MDC 组件懒加载 + ClientOnly/Suspense
+
+---
+
 ## [1.7.7] - 2026-06-05
 
 ### 测试

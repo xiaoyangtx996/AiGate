@@ -3,26 +3,28 @@ import type { ButtonProps, PageCardProps } from '@nuxt/ui'
 import pkg from '@@/package.json'
 
 const config = useRuntimeConfig()
+const { t } = useI18n()
+const f = (key: string) => t(`pages.hub.overview.features.${key}`)
 
-const features = ref<PageCardProps[]>([
+const features = computed<PageCardProps[]>(() => [
   {
-    title: '现代化全栈架构',
-    description: '基于 Nuxt.js + Better-auth + Nuxt UI + Drizzle ORM + PostgreSQL，构建高性能、类型安全的全栈应用，开发体验与运行效率兼备。',
+    title: f('architecture.title'),
+    description: f('architecture.description'),
     icon: 'i-heroicons-server-stack',
   },
   {
-    title: '开箱即用的认证系统',
-    description: '集成 Better-auth，支持多策略身份验证、会话管理与权限控制，为应用提供安全可靠的用户体系。',
+    title: f('auth.title'),
+    description: f('auth.description'),
     icon: 'i-heroicons-lock-closed',
   },
   {
-    title: '可视化主题配置中心',
-    description: '内置 18 种主题主色、明暗模式、圆角档位与路由动画，满足多品牌与个性化展示需求。',
+    title: f('theme.title'),
+    description: f('theme.description'),
     icon: 'i-heroicons-paint-brush',
   },
   {
-    title: '动态菜单与国际化支持',
-    description: '菜单管理、角色权限、多语言（中/英）一键切换，灵活适配企业级后台与多地域业务场景。',
+    title: f('menuI18n.title'),
+    description: f('menuI18n.description'),
     icon: 'i-heroicons-language',
   },
 ])

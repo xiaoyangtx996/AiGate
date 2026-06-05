@@ -1,8 +1,10 @@
 <script setup lang="ts">
 const specUrl = '/api/openapi'
+const { t } = useI18n()
+const p = (key: string) => t(`pages.docs.api.${key}`)
 
 useHead({
-  title: 'API 文档',
+  title: computed(() => p('title')),
   link: [
     {
       rel: 'stylesheet',
@@ -46,8 +48,8 @@ function loadScript(src: string) {
 <template>
   <div class="space-y-4">
     <UPageHeader
-      title="API 文档"
-      description="基于 OpenAPI 3.0 的 AiGate REST API 规范。原始 JSON："
+      :title="p('title')"
+      :description="p('description')"
     >
       <template #links>
         <UButton

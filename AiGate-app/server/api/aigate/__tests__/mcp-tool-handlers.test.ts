@@ -3,10 +3,17 @@ import { RESPONSE_CODE } from '@/enums'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
+const mockInsert = vi.fn()
+const mockUpdate = vi.fn()
+const mockFetch = vi.fn()
+
+vi.stubGlobal('fetch', mockFetch)
 
 vi.mock('@/db/drizzle', () => ({
   db: {
     select: (...args: unknown[]) => mockSelect(...args),
+    insert: (...args: unknown[]) => mockInsert(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
   },
 }))
 
@@ -16,11 +23,19 @@ vi.mock('@/db/schema', () => ({
     organizationId: 'organizationId',
     name: 'name',
     status: 'status',
+    type: 'type',
+    config: 'config',
     createdAt: 'createdAt',
+  },
+  insertMcpToolSchema: {
+    parse: (data: unknown) => data,
   },
 }))
 
 import mcpToolListHandler from '../mcp-tool/index.get'
+import mcpToolMarketplaceHandler from '../mcp-tool/marketplace.get'
+import mcpToolInstallHandler from '../mcp-tool/install.post'
+import mcpToolTestHandler from '../mcp-tool/test.post'
 
 function parseMcpToolPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -47,6 +62,30 @@ function createListSelectChain(result: unknown[]) {
           }),
         }),
       }),
+    }),
+  }
+}
+
+function createToolSelectChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
+function createInsertChain(result: unknown[]) {
+  return {
+    values: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
+function createUpdateChain() {
+  return {
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
     }),
   }
 }
@@ -127,6 +166,106 @@ describe('aigate mcp-tool handlers', () => {
       }))
 
       expect(response.data).toEqual(items)
+    })
+  })
+
+  describe('mcp-tool marketplace.get', () => {
+    it('should return marketplace presets', async () => {
+      const response = await mcpToolMarketplaceHandler(createMockEvent())
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(Array.isArray(response.data)).toBe(true)
+      expect(response.data.length).toBeGreaterThan(0)
+      expect(response.data[0]).toHaveProperty('id')
+      expect(response.data[0]).toHaveProperty('name')
+    })
+  })
+
+  describe('mcp-tool install.post', () => {
+    it('should return 404 when preset not found', async () => {
+      const response = await mcpToolInstallHandler(createMockEvent({
+        body: { presetId: 'nonexistent-preset' },
+      }))
+
+      expect(response.code).toBe(404)
+      expect(response.msg).toBe('预设工具不存在')
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should install preset tool with organization scope', async () => {
+      const installed = { id: 'tool-new', name: 'GitHub MCP', status: 'active', organizationId: 'org-1' }
+      mockInsert.mockReturnValue(createInsertChain([installed]))
+
+      const response = await mcpToolInstallHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { presetId: 'preset-github' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual(installed)
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('mcp-tool test.post', () => {
+    it('should report unhealthy when no endpoint configured', async () => {
+      const response = await mcpToolTestHandler(createMockEvent({
+        body: {},
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({ healthy: false, error: 'No endpoint configured' })
+    })
+
+    it('should report tool not found when id does not exist', async () => {
+      mockSelect.mockReturnValue(createToolSelectChain([]))
+
+      const response = await mcpToolTestHandler(createMockEvent({
+        body: { id: 'missing' },
+      }))
+
+      expect(response.data).toEqual({ healthy: false, error: 'Tool not found' })
+    })
+
+    it('should report healthy when endpoint responds with success status', async () => {
+      mockFetch.mockResolvedValue({ status: 200 })
+
+      const response = await mcpToolTestHandler(createMockEvent({
+        body: { endpoint: 'https://mcp.example.com/sse', type: 'sse' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data.healthy).toBe(true)
+      expect(response.data.status).toBe(200)
+      expect(typeof response.data.latency).toBe('number')
+    })
+
+    it('should update health status when testing existing tool by id', async () => {
+      mockSelect.mockReturnValue(createToolSelectChain([{
+        id: 'tool-1',
+        type: 'sse',
+        config: { endpoint: 'https://mcp.example.com/' },
+      }]))
+      mockFetch.mockResolvedValue({ status: 200 })
+      mockUpdate.mockReturnValue(createUpdateChain())
+
+      const response = await mcpToolTestHandler(createMockEvent({
+        body: { id: 'tool-1' },
+      }))
+
+      expect(response.data.healthy).toBe(true)
+      expect(mockUpdate).toHaveBeenCalledTimes(1)
+    })
+
+    it('should report unhealthy when endpoint returns server error', async () => {
+      mockFetch.mockResolvedValue({ status: 503 })
+
+      const response = await mcpToolTestHandler(createMockEvent({
+        body: { endpoint: 'https://mcp.example.com/sse' },
+      }))
+
+      expect(response.data.healthy).toBe(false)
+      expect(response.data.status).toBe(503)
     })
   })
 })
