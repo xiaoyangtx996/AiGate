@@ -71,6 +71,7 @@ jobs:
           BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
 
       - name: Build Docker image
+        working-directory: ${{ github.workspace }}
         run: |
           IMAGE=ghcr.io/${{ github.repository }}/aigate:${{ github.ref_name }}
           docker build -f AiGate-app/Dockerfile -t "$IMAGE" AiGate-app
