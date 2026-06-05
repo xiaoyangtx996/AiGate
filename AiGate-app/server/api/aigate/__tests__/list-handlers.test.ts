@@ -35,6 +35,13 @@ vi.mock('@/db/schema', () => ({
     organizationId: 'organizationId',
     createdAt: 'createdAt',
   },
+  channel: {
+    organizationId: 'organizationId',
+    name: 'name',
+    vendor: 'vendor',
+    status: 'status',
+    priority: 'priority',
+  },
   user: {
     id: 'id',
     name: 'name',
@@ -47,6 +54,7 @@ import apiKeyListHandler from '../api-key/index.get'
 import alertListHandler from '../alert/index.get'
 import mcpToolListHandler from '../mcp-tool/index.get'
 import memberListHandler from '../member/index.get'
+import channelListHandler from '../channel/index.get'
 
 function parseListPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -202,6 +210,60 @@ describe('aigate list handlers', () => {
         total: 1,
         page: 3,
         pageSize: 5,
+      })
+    })
+  })
+
+  describe('channel index.get', () => {
+    it('should return paginated channels scoped to organization with filters', async () => {
+      const items = [{ id: 'ch-1', name: 'OpenAI', vendor: 'openai', status: 'active' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await channelListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '2', pageSize: '10', keyword: 'open', status: 'active' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items,
+        total: 1,
+        page: 2,
+        pageSize: 10,
+      })
+      expect(mockSelect).toHaveBeenCalledTimes(2)
+    })
+
+    it('should return raw array when page query is missing', async () => {
+      const items = [{ id: 'ch-1', name: 'OpenAI' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await channelListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+      }))
+
+      expect(response.data).toEqual(items)
+    })
+
+    it('should clamp page size and default pagination values', async () => {
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 0 }]))
+        .mockReturnValueOnce(createListSelectChain([]))
+
+      const response = await channelListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '0', pageSize: '500' },
+      }))
+
+      expect(response.data).toEqual({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 100,
       })
     })
   })
