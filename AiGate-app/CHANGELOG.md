@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.2] - 2026-06-05
+
+### 测试与质量
+
+- 233 项单元测试、覆盖率约 32%（阈值 30%）
+- E2E：登录后业务流程、Agent/Prompt/API Key 写操作
+
+### 工程化
+
+- Sentry SDK、GHCR 发布流水线、Docker/K8s 部署文档
+- Release 工作流：打 `v*` 标签前执行 test:coverage
+
+---
+
 ## AiGate Phase 2–6 变更摘要（2026-06）
 
 > 以下为 AiGate 全面优化计划 Phase 2–6 的主要交付摘要，详细计划见 `docs/superpowers/plans/`。
