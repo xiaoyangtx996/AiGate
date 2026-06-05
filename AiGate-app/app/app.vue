@@ -1,27 +1,32 @@
 <script setup lang="ts">
 import * as locales from '@nuxt/ui/locale'
+import { merge } from 'es-toolkit'
 
 const menuStore = useMenuStore()
 const appStore = useAppStore()
 
-const { locale, setLocaleMessage } = useI18n()
+const { locale, setLocaleMessage, getLocaleMessage } = useI18n()
 const { getLocales } = useSystemApi()
-const { data: localeRes } = await useAsyncData('locales', () => getLocales())
-const code = localeRes.value?.code
+const { data: localeRes } = useAsyncData('locales', () => getLocales(), { lazy: true })
 
-if (code && isSuccess(code)) {
-  const data = localeRes.value?.data
+watch(localeRes, (res) => {
+  const code = res?.code
+  if (!code || !isSuccess(code)) return
+  const data = res.data
+  if (!data) return
   for (const key in data) {
-    setLocaleMessage(key, data[key as Locale])
+    const localeKey = key as Locale | 'zh'
+    setLocaleMessage(localeKey, merge({}, getLocaleMessage(localeKey), data[localeKey]))
   }
-}
+}, { immediate: true })
 
 const localeMap = {
   'en': 'en',
   'zh-CN': 'zh_cn',
+  'zh': 'zh_cn',
 } as const
 
-const uiLocale = computed(() => locales[localeMap[locale.value]])
+const uiLocale = computed(() => locales[localeMap[locale.value as keyof typeof localeMap] ?? 'zh_cn'])
 
 const lang = computed(() => uiLocale.value.code)
 const dir = computed(() => uiLocale.value.dir)

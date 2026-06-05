@@ -1,7 +1,6 @@
 ﻿import { db } from '@/db/drizzle'
 import { insertAgentSchema, agent } from '@/db/schema'
-import { validateBody, ValidationError } from '@/utils/validation'
-import { responseError, responseSuccess } from '@/utils'
+import { validateBody, ValidationError } from '#server/utils/validation'
 
 export default defineEventHandler(async (event) => {
   try {

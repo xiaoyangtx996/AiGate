@@ -36,7 +36,7 @@ const items = computed(() => ([
     {
       label: $t('layout.github'),
       icon: 'simple-icons:github',
-      to: pkg.git.url,
+      to: pkg.git?.url ?? 'https://github.com',
       target: '_blank',
     },
     {

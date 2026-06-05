@@ -1,8 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { document, knowledgeBase } from '@/db/schema'
-import { responseError, responseSuccess } from '@/server/utils'
-
 const allowedTypes = new Set([
   'application/pdf',
   'text/plain',

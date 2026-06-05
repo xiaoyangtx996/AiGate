@@ -1,13 +1,8 @@
-/*
- * @Author: 白雾茫茫丶<baiwumm.com>
- * @Date: 2026-04-30 17:47:12
- * @LastEditors: 白雾茫茫丶<baiwumm.com>
- * @LastEditTime: 2026-05-07 10:25:43
- * @Description: 获取 i18n 数据
- */
 import { asc, desc } from 'drizzle-orm'
+import { merge } from 'es-toolkit'
 import { db } from '@/db/drizzle'
 import { internalization } from '@/db/schema'
+import { defaultLocaleMessages } from '~~/shared/i18n/default-messages'
 
 export default defineEventHandler(async () => {
   try {
@@ -19,10 +14,13 @@ export default defineEventHandler(async () => {
         desc(internalization.sort),
       )
 
-    // 将数据转成树形结构
     const localesTree = convertFlatDataToTree(data)
-    // 转成层级对象
-    const result = transformToLangTree(localesTree as InternalizationTree[])
+    const dbMessages = transformToLangTree(localesTree as InternalizationTree[])
+    const result = {
+      en: merge(defaultLocaleMessages.en, dbMessages.en ?? {}),
+      'zh-CN': merge(defaultLocaleMessages['zh-CN'], dbMessages['zh-CN'] ?? {}),
+      zh: merge(defaultLocaleMessages['zh-CN'], dbMessages['zh-CN'] ?? {}),
+    }
 
     return responseSuccess(result)
   }

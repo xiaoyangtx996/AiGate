@@ -47,6 +47,14 @@ async function handleBatchDelete() {
 }
 
 const raw = computed(() => PERMISSIONS.raw(PERMISSIONS.BATCH_DELETE))
+
+function handleExport() {
+  const params = new URLSearchParams()
+  if (query.value.userId) params.set('userId', query.value.userId)
+  if (query.value.method) params.set('method', query.value.method)
+  const qs = params.toString()
+  window.open(`/api/system-settings/operation-log/export${qs ? `?${qs}` : ''}`, '_blank')
+}
 </script>
 
 <template>
@@ -81,6 +89,7 @@ const raw = computed(() => PERMISSIONS.raw(PERMISSIONS.BATCH_DELETE))
         :placeholder="i18nLog('method')"
       />
       <AutoFormSearchButton :loading @refresh="refresh" />
+      <UButton icon="lucide:download" variant="outline" @click="handleExport">导出 CSV</UButton>
       <UButton
         v-if="selectedRows.length"
         :label="i18nPermissions(raw.label)"

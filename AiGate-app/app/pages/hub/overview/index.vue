@@ -30,7 +30,7 @@ const features = ref<PageCardProps[]>([
 const links = computed<ButtonProps[]>(() => [
   {
     label: 'Github',
-    to: pkg.git.url,
+    to: pkg.git?.url ?? 'https://github.com',
     target: '_blank',
     icon: 'simple-icons:github',
   },

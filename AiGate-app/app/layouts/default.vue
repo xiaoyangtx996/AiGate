@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { CommandPaletteGroup, CommandPaletteItem, NavigationMenuItem } from '@nuxt/ui'
 import pkg from '~~/package.json'
 import { useMenuStore } from '@/stores/useMenuStore'
@@ -14,13 +14,12 @@ const { menuItems } = useMenu()
 const appScrollContainer = useAppScrollContainer()
 
 const skeletonWidths = computed(() => {
-  return Array.from({ length: 6 }, () => {
+  return Array({ length: 6 }, () => {
     const widths = ['w-[70%]', 'w-[75%]', 'w-[80%]', 'w-[85%]', 'w-[90%]']
     return widths[Math.floor(Math.random() * widths.length)]
   })
 })
 
-// 动态标题
 const title = computed(() => {
   if (!menuStore.menuPathMap) {
     return ''
@@ -40,7 +39,7 @@ const groups = computed(() => [{
     {
       label: $t('layout.github'),
       icon: 'simple-icons:github',
-      to: pkg.git.url,
+      to: pkg.git?.url ?? 'https://github.com',
       target: '_blank',
     },
     {
@@ -70,7 +69,6 @@ watch(
     if (!menu)
       return
 
-    // 🚨 关键修复点
     if (tabStore.ignoreNextAdd) {
       tabStore.ignoreNextAdd = false
       return
@@ -168,6 +166,7 @@ onMounted(() => {
           </template>
           <template #right>
             <div class="flex items-center gap-2">
+              <ThemePresetSelector />
               <FullScreen />
               <ThemePicker />
             </div>

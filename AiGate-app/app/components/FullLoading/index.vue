@@ -1,9 +1,15 @@
 <script setup lang="ts">
 const ready = useState('app-ready', () => false)
 
-onNuxtReady(() => {
+function markReady() {
   ready.value = true
-})
+}
+
+onMounted(markReady)
+
+if (import.meta.client) {
+  setTimeout(markReady, 2500)
+}
 </script>
 
 <template>

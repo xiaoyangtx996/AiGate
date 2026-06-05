@@ -1,27 +1,43 @@
 ﻿<script setup lang="ts">
 const { getApiLogList } = useAigateApi()
-const { data, pending: loading, refresh } = await useAsyncData('aigate-api-logs', async () => {
-  const res = await getApiLogList()
-  return res.data ?? []
-})
-const list = computed(() => data.value || [])
+const { t } = useI18n()
+
+const page = ref(1)
+const pageSize = ref(20)
+
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-api-logs',
+  async () => {
+    const res = await getApiLogList({ page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 20 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+
+const list = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 const statusColor: Record<string, string> = { success: 'success', error: 'error', rate_limited: 'warning' }
 function formatLatency(ms: number) { return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms` }
+
+const p = (key: string) => t(`pages.aigate.apiLogs.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">调用日志</h2>
-      <UButton variant="outline" icon="lucide:refresh-cw" @click="refresh">刷新</UButton>
+      <h2 class="text-xl font-bold">{{ $t('menu.apiLogs') }}</h2>
+      <UButton variant="outline" icon="lucide:refresh-cw" @click="refresh">{{ p('refresh') }}</UButton>
     </div>
     <UTable :loading :data="list" :columns="[
-      { accessorKey: 'createdAt', header: '时间' },
-      { accessorKey: 'model', header: '模型' },
-      { accessorKey: 'totalTokens', header: 'Tokens' },
-      { accessorKey: 'latency', header: '延迟' },
-      { accessorKey: 'cost', header: '费用' },
-      { accessorKey: 'status', header: '状态' },
+      { accessorKey: 'createdAt', header: p('time') },
+      { accessorKey: 'model', header: p('model') },
+      { accessorKey: 'totalTokens', header: p('tokens') },
+      { accessorKey: 'latency', header: p('latency') },
+      { accessorKey: 'cost', header: p('cost') },
+      { accessorKey: 'status', header: p('status') },
     ]">
       <template #createdAt-cell="{ row }">
         <span class="text-sm text-muted">{{ new Date(row.original.createdAt).toLocaleString() }}</span>
@@ -41,5 +57,12 @@ function formatLatency(ms: number) { return ms >= 1000 ? `${(ms / 1000).toFixed(
         </UBadge>
       </template>
     </UTable>
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
+    </div>
   </div>
 </template>

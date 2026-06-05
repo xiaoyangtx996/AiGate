@@ -1,11 +1,16 @@
-﻿import { eq } from 'drizzle-orm'
+﻿import { and, eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { prompt } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
+    const principal = event.context.principal as { organizationId?: string | null } | undefined
     const id = getRouterParam(event, 'id')
-    await db.delete(prompt).where(eq(prompt.id, id!))
+    const where = principal?.organizationId
+      ? and(eq(prompt.id, id!), eq(prompt.organizationId, principal.organizationId))
+      : eq(prompt.id, id!)
+    const [res] = await db.delete(prompt).where(where).returning()
+    if (!res) { return responseSuccess(null, '资源不存在或无权操作', 404) }
     return responseSuccess(null)
   }
   catch (err) { return responseError(err) }

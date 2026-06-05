@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-const { getKnowledgeBaseList, insertKnowledgeBase, delKnowledgeBase, getKbDocuments, delKbDocument } = useAigateApi()
+const { getKnowledgeBaseList, insertKnowledgeBase, updateKnowledgeBase, delKnowledgeBase, getKbDocuments, delKbDocument } = useAigateApi()
 const { successToast, errorToast } = useAppToast()
 const { data, pending: loading, refresh } = await useAsyncData('aigate-kb', async () => {
   const res = await getKnowledgeBaseList()
@@ -13,8 +13,11 @@ function formatSize(bytes: number) { return bytes > 1000000 ? `${(bytes / 100000
 const selectedKb = ref<any>(null)
 const documents = ref<any[]>([])
 const showCreate = ref(false)
+const showEdit = ref(false)
 const createForm = reactive({ name: '', description: '', embeddingModel: 'text-embedding-3-small' })
+const editForm = reactive({ name: '', description: '', embeddingModel: 'text-embedding-3-small' })
 const createLoading = ref(false)
+const editLoading = ref(false)
 
 async function selectKb(kb: any) {
   selectedKb.value = kb
@@ -37,6 +40,27 @@ async function handleCreate() {
     refresh()
   }
   finally { createLoading.value = false }
+}
+
+function handleEdit() {
+  if (!selectedKb.value) return
+  editForm.name = selectedKb.value.name || ''
+  editForm.description = selectedKb.value.description || ''
+  editForm.embeddingModel = selectedKb.value.embeddingModel || 'text-embedding-3-small'
+  showEdit.value = true
+}
+
+async function handleUpdate() {
+  if (!selectedKb.value || !editForm.name) return
+  editLoading.value = true
+  try {
+    await updateKnowledgeBase({ id: selectedKb.value.id, ...editForm })
+    successToast('知识库已更新')
+    selectedKb.value = { ...selectedKb.value, ...editForm }
+    showEdit.value = false
+    refresh()
+  }
+  finally { editLoading.value = false }
 }
 
 const uploading = ref(false)
@@ -125,6 +149,7 @@ async function handleDeleteDoc(docId: string) {
               <h3 class="font-bold">{{ selectedKb.name }}</h3>
               <div class="flex gap-2">
                 <UBadge :color="statusColor[selectedKb.status] as any" variant="subtle">{{ selectedKb.status }}</UBadge>
+                <UButton size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit" />
                 <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(selectedKb.id)" />
               </div>
             </div>
@@ -204,6 +229,34 @@ async function handleDeleteDoc(docId: string) {
         </div>
       </div>
     </div>
+
+    <UModal v-model:open="showEdit">
+      <template #header>
+        <h3 class="text-lg font-bold">编辑知识库</h3>
+      </template>
+      <template #body>
+        <div class="space-y-4">
+          <UFormField label="名称" required>
+            <UInput v-model="editForm.name" placeholder="如：产品文档库" />
+          </UFormField>
+          <UFormField label="描述">
+            <UTextarea v-model="editForm.description" placeholder="描述知识库的用途" :rows="2" />
+          </UFormField>
+          <UFormField label="嵌入模型">
+            <USelect v-model="editForm.embeddingModel" :items="[
+              { label: 'text-embedding-3-small', value: 'text-embedding-3-small' },
+              { label: 'text-embedding-3-large', value: 'text-embedding-3-large' },
+            ]" />
+          </UFormField>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton variant="ghost" @click="showEdit = false">取消</UButton>
+          <UButton :loading="editLoading" :disabled="!editForm.name" @click="handleUpdate">保存</UButton>
+        </div>
+      </template>
+    </UModal>
 
     <UModal v-model:open="showCreate">
       <template #header>

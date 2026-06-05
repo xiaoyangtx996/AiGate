@@ -1,4 +1,16 @@
 ﻿<script setup lang="ts">
+interface ApiKeyRow {
+  id: string
+  name: string
+  key: string
+  env?: string | null
+  status: string
+  calls?: number | null
+  cost?: number | null
+  lastUsed?: string | null
+  roleIds?: string[] | null
+}
+
 const { getApiKeyList, insertApiKey, updateApiKey, delApiKey } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
@@ -6,9 +18,18 @@ const { t } = useI18n()
 const keyword = ref('')
 const { data, pending: loading, refresh } = await useAsyncData('aigate-api-keys', async () => {
   const res = await getApiKeyList({ keyword: keyword.value })
-  return res.data ?? []
+  return (res.data ?? []) as ApiKeyRow[]
 })
 const list = computed(() => data.value || [])
+const stats = computed(() => {
+  const items = list.value
+  return {
+    total: items.length,
+    active: items.filter(item => item.status === 'active').length,
+    calls: items.reduce((sum, item) => sum + (item.calls || 0), 0),
+    cost: items.reduce((sum, item) => sum + (item.cost || 0), 0),
+  }
+})
 const open = ref(false)
 const editData = ref<any>(null)
 const saveLoading = ref(false)
@@ -78,6 +99,14 @@ function maskKey(key: string) {
   return key.length > 16 ? key.substring(0, 12) + '...' + key.substring(key.length - 4) : key
 }
 
+function formatCost(cents?: number | null) {
+  return `¥${((cents || 0) / 100).toFixed(2)}`
+}
+
+function formatLastUsed(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : '-'
+}
+
 const statusColor: Record<string, string> = { active: 'success', revoked: 'error', expired: 'neutral' }
 
 function toggleRole(roleId: string, checked: boolean) {
@@ -98,12 +127,33 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="refresh" />
       <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
     </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <UCard>
+        <p class="text-sm text-muted">总 Key 数</p>
+        <p class="text-2xl font-bold">{{ stats.total }}</p>
+      </UCard>
+      <UCard>
+        <p class="text-sm text-muted">活跃 Key</p>
+        <p class="text-2xl font-bold text-success">{{ stats.active }}</p>
+      </UCard>
+      <UCard>
+        <p class="text-sm text-muted">总调用次数</p>
+        <p class="text-2xl font-bold">{{ stats.calls.toLocaleString() }}</p>
+      </UCard>
+      <UCard>
+        <p class="text-sm text-muted">总费用</p>
+        <p class="text-2xl font-bold">{{ formatCost(stats.cost) }}</p>
+      </UCard>
+    </div>
+
     <UTable :loading :data="list" :columns="[
       { accessorKey: 'name', header: p('name') },
       { accessorKey: 'key', header: p('key') },
       { accessorKey: 'env', header: p('env') },
       { accessorKey: 'status', header: p('status') },
       { accessorKey: 'calls', header: p('calls') },
+      { accessorKey: 'cost', header: '费用' },
+      { accessorKey: 'lastUsed', header: '最后使用' },
       { accessorKey: 'actions', header: $t('common.action') },
     ]">
       <template #key-cell="{ row }">
@@ -114,6 +164,12 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       </template>
       <template #calls-cell="{ row }">
         <span class="font-mono">{{ (row.original.calls || 0).toLocaleString() }}</span>
+      </template>
+      <template #cost-cell="{ row }">
+        <span class="font-mono">{{ formatCost(row.original.cost) }}</span>
+      </template>
+      <template #lastUsed-cell="{ row }">
+        <span class="text-sm text-muted">{{ formatLastUsed(row.original.lastUsed) }}</span>
       </template>
       <template #actions-cell="{ row }">
         <div class="flex gap-1">

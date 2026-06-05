@@ -178,6 +178,7 @@ export const member = pgTable('member', {
 }, t => [
   index('member_user_idx').on(t.userId),
   index('member_org_idx').on(t.organizationId),
+  index('idx_member_user_org').on(t.userId, t.organizationId),
 ])
 export const insertMemberSchema = createInsertSchema(member).omit({ id: true, createdAt: true })
 export const insertOrgSchema = createInsertSchema(organization).omit({ id: true, createdAt: true, updatedAt: true })
@@ -239,6 +240,7 @@ export const apiKey = pgTable('api_key', {
 }, t => [
   index('api_key_user_idx').on(t.userId),
   index('api_key_org_idx').on(t.organizationId),
+  index('idx_api_key_org_status').on(t.organizationId, t.status),
 ])
 export const insertApiKeySchema = createInsertSchema(apiKey).omit({ id: true, createdAt: true, updatedAt: true })
 export const updateApiKeySchema = createUpdateSchema(apiKey).omit({ id: true, createdAt: true, updatedAt: true })
@@ -307,6 +309,7 @@ export const agent = pgTable('agent', {
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
 }, t => [
   index('agent_org_idx').on(t.organizationId),
+  index('idx_agent_org_status').on(t.organizationId, t.status),
 ])
 export const insertAgentSchema = createInsertSchema(agent).omit({ id: true, createdAt: true, updatedAt: true })
 export const updateAgentSchema = createUpdateSchema(agent).omit({ id: true, createdAt: true, updatedAt: true })
@@ -355,6 +358,20 @@ export const insertPromptSchema = createInsertSchema(prompt).omit({ id: true, cr
 export const updatePromptSchema = createUpdateSchema(prompt).omit({ id: true, createdAt: true, updatedAt: true })
 
 /**
+ * @description: 提示词版本历史
+ */
+export const promptVersion = pgTable('prompt_version', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  promptId: text('prompt_id').notNull().references(() => prompt.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  version: integer('version').notNull(),
+  createdBy: text('created_by').references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, t => [
+  index('prompt_version_prompt_idx').on(t.promptId),
+])
+
+/**
  * @description: 系统告警
  */
 export const alertTypeEnum = pgEnum('alert_type', ['quota_warning', 'key_expiring', 'error_spike', 'rate_limit', 'system'])
@@ -371,7 +388,25 @@ export const alert = pgTable('alert', {
   resourceId: text('resource_id'),
   read: boolean('read').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-})
+}, t => [
+  index('idx_alert_org_read_created').on(t.organizationId, t.read, t.createdAt),
+])
+
+/**
+ * @description: 告警规则配置
+ */
+export const alertRule = pgTable('alert_rule', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  condition: jsonb('condition').notNull(),
+  enabled: boolean('enabled').default(true).notNull(),
+  notifyChannels: jsonb('notify_channels').$type<string[]>().default([]),
+  organizationId: text('organization_id').references(() => organization.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, t => [
+  index('alert_rule_org_idx').on(t.organizationId),
+])
 
 /**
  * @description: API 调用日志（180 天留存）
@@ -380,6 +415,7 @@ export const apiLog = pgTable('api_log', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
   userId: text('user_id').references(() => user.id),
   apiKeyId: text('api_key_id').references(() => apiKey.id),
+  agentId: text('agent_id').references(() => agent.id),
   organizationId: text('organization_id').references(() => organization.id),
   model: text('model').notNull(),
   provider: text('provider'),
@@ -398,8 +434,12 @@ export const apiLog = pgTable('api_log', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, t => [
   index('api_log_user_idx').on(t.userId),
+  index('api_log_agent_idx').on(t.agentId),
   index('api_log_model_idx').on(t.model),
   index('api_log_created_idx').on(t.createdAt),
+  index('api_log_key_date_idx').on(t.apiKeyId, t.createdAt),
+  index('api_log_org_date_idx').on(t.organizationId, t.createdAt),
+  index('api_log_status_date_idx').on(t.status, t.createdAt),
 ])
 export const insertApiLogSchema = createInsertSchema(apiLog).omit({ id: true, createdAt: true })
 export const updateApiLogSchema = createUpdateSchema(apiLog).omit({ id: true, createdAt: true })

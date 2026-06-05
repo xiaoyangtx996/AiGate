@@ -59,7 +59,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         })
 
         // 重定向到登录页
-        await nuxtApp.runWithContext(() => navigateTo('/login'))
+        await nuxtApp.runWithContext(() => navigateTo('/auth/sign-in'))
       }
 
       toast.add({

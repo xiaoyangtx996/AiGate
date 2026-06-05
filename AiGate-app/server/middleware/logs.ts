@@ -1,12 +1,22 @@
 ﻿import { UAParser } from 'ua-parser-js'
 import { db } from '@/db/drizzle'
 import { logs } from '@/db/schema'
-import { sanitizeLogData, sanitizeHeaders } from '@/server/utils/logs'
+import { sanitizeLogData, sanitizeHeaders } from '#server/utils/logs'
 
 export default defineEventHandler(async (event) => {
   const method = event.method as Methods
   const url = getRequestURL(event)
   const path = url.pathname
+
+  if (path.startsWith('/api')) {
+    const startTime = Date.now()
+    event.node.res.on('finish', () => {
+      const duration = Date.now() - startTime
+      if (duration > 1000) {
+        console.warn(`Slow API request: ${method} ${path} took ${duration}ms`)
+      }
+    })
+  }
 
   if (!path.startsWith('/api') || method === 'GET' || path.startsWith('/api/system-settings/operation-log')) {
     return

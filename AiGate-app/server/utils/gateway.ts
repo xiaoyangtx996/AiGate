@@ -123,3 +123,26 @@ export async function proxyToChannel(channelConfig: ChannelCandidate, path: stri
   const responseBody = await response.text()
   return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: responseBody, latency }
 }
+
+export async function proxyToChannelStream(channelConfig: ChannelCandidate, path: string, method: string, headers: Record<string, string>, body?: any) {
+  const url = `${channelConfig.endpoint.replace(/\/$/, '')}/${path}`
+  const fetchOptions: RequestInit = {
+    method,
+    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...headers },
+  }
+  if (body && method !== 'GET') {
+    fetchOptions.body = JSON.stringify(body)
+  }
+  const response = await fetch(url, fetchOptions)
+  if (!response.ok || !response.body) {
+    const text = await response.text().catch(() => '')
+    throw createError({ statusCode: response.status || 502, statusMessage: text || 'Upstream stream error' })
+  }
+  return response
+}
+
+export function checkApiKeyScopes(keyRecord: { scopes?: string[] | null; roleIds?: string[] | null }, method: string): boolean {
+  const scopes = keyRecord.scopes || ['read', 'write']
+  if (method === 'GET' || method === 'HEAD') return scopes.includes('read')
+  return scopes.includes('write')
+}

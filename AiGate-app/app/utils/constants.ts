@@ -24,7 +24,7 @@ export const colorsToOmit = [
   'white',
   ...neutralColors,
 ] as const
-export const getPrimaryColors = () => Object.keys(omit(colors, colorsToOmit as any))
+export const getPrimaryColors = () => Object.keys(omit(colors, colorsToOmit))
 export function getColor(color: string, shade: number) {
   return (colors[color as keyof typeof colors] as Record<number, string>)?.[shade]
 }

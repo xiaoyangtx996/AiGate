@@ -3,11 +3,24 @@ import { betterAuth } from 'better-auth'
 import { localization } from 'better-auth-localization'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, lastLoginMethod, magicLink, multiSession, username } from 'better-auth/plugins'
-import { Resend } from 'resend'
 import { db } from '@/db/drizzle'
 import * as schema from '@/db/schema'
 
-const resend = new Resend(process.env.NUXT_RESEND_API_KEY || '')
+const socialProviders: Record<string, { clientId: string, clientSecret: string }> = {}
+
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  socialProviders.github = {
+    clientId: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  }
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  socialProviders.google = {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  }
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -18,16 +31,7 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false,
   },
-  socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID || '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-    },
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    },
-  },
+  socialProviders,
   plugins: [
     username(),
     magicLink({

@@ -84,6 +84,10 @@ export default defineNuxtConfig({
     },
   },
   nitro: {
+    compressPublicAssets: {
+      brotli: true,
+      gzip: true,
+    },
     rollupConfig: {
       plugins: [vue()],
     },

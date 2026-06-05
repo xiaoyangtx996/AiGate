@@ -1,5 +1,5 @@
 {
-  "version": "7",
+  "version": "8",
   "dialect": "postgresql",
   "entries": [
     {
@@ -49,6 +49,20 @@
       "version": "7",
       "when": 1779771274373,
       "tag": "0006_empty_klaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "8",
+      "when": 1779771274373,
+      "tag": "0008_add_api_key_role_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "8",
+      "when": 1779771274374,
+      "tag": "0009_phase2_phase3_schema",
       "breakpoints": true
     }
   ]

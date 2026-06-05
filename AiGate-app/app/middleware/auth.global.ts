@@ -7,14 +7,14 @@
  */
 export default defineNuxtRouteMiddleware(async (to) => {
   const { $authClient } = useNuxtApp()
-  const relativeFetch = ((url: string, opts?: any) => {
+  const relativeFetch = ((url: string, opts?: Record<string, unknown>) => {
     try {
       if (url.startsWith('http'))
         url = new URL(url).pathname
     }
     catch {}
     return useFetch(url, opts)
-  }) as any
+  }) as (url: string, opts?: Record<string, unknown>) => ReturnType<typeof useFetch>
 
   // 获取用户会话信息
   const { data: session } = await $authClient.useSession(relativeFetch)

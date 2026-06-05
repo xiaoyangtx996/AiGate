@@ -62,25 +62,70 @@ async function sendMessage() {
   // 添加一个空的 assistant 消息占位
   messages.value.push({ role: 'assistant', content: '', time: new Date().toISOString() })
 
-  try {
-    const res = await chatWithAgent(selectedAgent.value.id, msg, conversationId.value)
-    conversationId.value = res.data?.conversationId
-    const reply = res.data?.message || '暂无回复'
+  const lastMessage = messages.value[messages.value.length - 1]
 
-    const lastMessage = messages.value[messages.value.length - 1]
-    if (lastMessage) {
-      lastMessage.content = reply
+  try {
+    const response = await fetch(`/api/aigate/agent/${selectedAgent.value.id}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, conversationId: conversationId.value, stream: true }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
     }
 
-    // 保存到 localStorage
-    saveToLocalStorage(conversationId.value, selectedAgent.value.id, msg, reply)
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('text/event-stream') && response.body) {
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let reply = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ')) continue
+          const payload = line.slice(6).trim()
+          if (payload === '[DONE]') continue
+          try {
+            const parsed = JSON.parse(payload)
+            if (parsed.type === 'start' && parsed.conversationId) {
+              conversationId.value = parsed.conversationId
+            }
+            if (parsed.type === 'delta' && parsed.content) {
+              reply += parsed.content
+              if (lastMessage) lastMessage.content = reply
+            }
+            if (parsed.type === 'done') {
+              conversationId.value = parsed.conversationId || conversationId.value
+              reply = parsed.message || reply
+              if (lastMessage) lastMessage.content = reply
+            }
+            if (parsed.type === 'error') {
+              throw new Error(parsed.message || 'Stream error')
+            }
+          }
+          catch (e: any) {
+            if (e?.message && !e.message.includes('JSON')) throw e
+          }
+        }
+      }
+
+      saveToLocalStorage(conversationId.value, selectedAgent.value.id, msg, reply)
+    }
+    else {
+      const res = await response.json()
+      conversationId.value = res.data?.conversationId
+      const reply = res.data?.message || '暂无回复'
+      if (lastMessage) lastMessage.content = reply
+      saveToLocalStorage(conversationId.value, selectedAgent.value.id, msg, reply)
+    }
   }
   catch (err: any) {
     const errorMsg = `请求失败: ${err?.message || '请检查网关配置'}`
-    const lastMessage = messages.value[messages.value.length - 1]
-    if (lastMessage) {
-      lastMessage.content = errorMsg
-    }
+    if (lastMessage) lastMessage.content = errorMsg
   }
   finally { sending.value = false }
 }

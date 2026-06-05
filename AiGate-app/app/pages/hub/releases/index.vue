@@ -8,7 +8,7 @@ const appScrollContainer = useAppScrollContainer()
 const links = computed<ButtonProps[]>(() => [
   {
     label: 'Star on Github',
-    to: pkg.git.url,
+    to: pkg.git?.url ?? 'https://github.com',
     color: 'neutral',
     variant: 'subtle',
     icon: 'lucide:star',

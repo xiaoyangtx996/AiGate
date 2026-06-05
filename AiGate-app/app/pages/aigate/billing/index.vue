@@ -1,25 +1,46 @@
-﻿<script setup lang="ts">
-const { getBillingList } = useAigateApi()
-const { data, pending: loading } = await useAsyncData('aigate-billing', async () => {
+<script setup lang="ts">
+const { getBillingList, generateBilling } = useAigateApi()
+const { successToast } = useAppToast()
+const { t } = useI18n()
+
+const { data, pending: loading, refresh } = await useAsyncData('aigate-billing', async () => {
   const res = await getBillingList()
   return res.data ?? []
 })
 const list = computed(() => data.value || [])
+const generating = ref(false)
+
+async function handleGenerate() {
+  generating.value = true
+  try {
+    await generateBilling()
+    successToast('账单生成完成')
+    refresh()
+  }
+  finally { generating.value = false }
+}
+
 const statusColor: Record<string, string> = { pending: 'warning', paid: 'success', overdue: 'error' }
 function formatCost(cents: number) { return `¥${(cents / 100).toFixed(2)}` }
 function formatTokens(n: number) { return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n) }
+
+const p = (key: string) => t(`pages.aigate.billing.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
-    <h2 class="text-xl font-bold">账单管理</h2>
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-bold">{{ $t('menu.billing') }}</h2>
+      <UButton :loading="generating" icon="lucide:calculator" variant="outline" @click="handleGenerate">{{ p('generate') }}</UButton>
+    </div>
     <UTable :loading :data="list" :columns="[
-      { accessorKey: 'organizationName', header: '组织' },
-      { accessorKey: 'period', header: '账期' },
-      { accessorKey: 'tokenUsage', header: 'Token 用量' },
-      { accessorKey: 'cost', header: '费用' },
-      { accessorKey: 'status', header: '状态' },
-      { accessorKey: 'dueDate', header: '到期日' },
+      { accessorKey: 'organizationName', header: p('org') },
+      { accessorKey: 'period', header: p('period') },
+      { accessorKey: 'tokenUsage', header: p('tokenUsage') },
+      { accessorKey: 'cost', header: p('cost') },
+      { accessorKey: 'status', header: p('status') },
+      { accessorKey: 'dueDate', header: p('dueDate') },
+      { id: 'actions', header: '' },
     ]">
       <template #tokenUsage-cell="{ row }">
         <span class="font-mono">{{ formatTokens(row.original.tokenUsage) }}</span>
@@ -32,6 +53,9 @@ function formatTokens(n: number) { return n >= 1000000 ? `${(n / 1000000).toFixe
       </template>
       <template #dueDate-cell="{ row }">
         {{ row.original.dueDate ? new Date(row.original.dueDate).toLocaleDateString() : '-' }}
+      </template>
+      <template #actions-cell="{ row }">
+        <UButton size="xs" variant="ghost" icon="lucide:eye" :to="`/aigate/billing/${row.original.id}`" />
       </template>
     </UTable>
   </div>
