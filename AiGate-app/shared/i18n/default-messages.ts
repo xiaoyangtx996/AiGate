@@ -44,9 +44,14 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         },
         apiKeys: { name: '名称', key: '密钥', env: '环境', status: '状态', calls: '调用次数', search: '搜索密钥...', add: '创建密钥', bindRoles: '绑定角色' },
         apiLogs: { time: '时间', model: '模型', tokens: 'Tokens', latency: '延迟', cost: '费用', status: '状态', refresh: '刷新' },
-        models: { name: '名称', provider: '供应商', type: '类型', context: '上下文', inputPrice: '输入价格', outputPrice: '输出价格', search: '搜索模型...' },
+        models: { title: '模型管理', name: '名称', provider: '供应商', type: '类型', context: '上下文', inputPrice: '输入价格', outputPrice: '输出价格', search: '搜索模型...', emptyTitle: '暂无模型', emptyDescription: '未找到匹配的模型，请尝试其他关键词' },
         billing: { org: '组织', period: '账期', tokenUsage: 'Token 用量', cost: '费用', status: '状态', dueDate: '到期日', generate: '生成当月账单' },
-        alerts: { title: '告警中心', unread: '条未读', check: '检测告警' },
+        alerts: {
+          title: '告警中心', unread: '条未读', check: '检测告警', checkDone: '告警检测完成',
+          rules: '规则配置', markRead: '标记已读', batchMarkRead: '批量标记已读',
+          emptyTitle: '暂无告警', emptyDescription: '系统运行正常，未检测到任何告警',
+          types: { quota_warning: '配额预警', key_expiring: '密钥过期', error_spike: '错误激增', rate_limit: '限流告警', system: '系统告警' },
+        },
         agents: {
           title: 'Agent 引擎', create: '编排 Agent', builtin: '内置', running: '运行中', draft: '草稿',
           chat: '对话体验', logs: '日志', edit: '编辑', delete: '删除',
@@ -102,9 +107,14 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         },
         apiKeys: { name: 'Name', key: 'Key', env: 'Environment', status: 'Status', calls: 'Calls', search: 'Search keys...', add: 'Create Key', bindRoles: 'Bind Roles' },
         apiLogs: { time: 'Time', model: 'Model', tokens: 'Tokens', latency: 'Latency', cost: 'Cost', status: 'Status', refresh: 'Refresh' },
-        models: { name: 'Name', provider: 'Provider', type: 'Type', context: 'Context', inputPrice: 'Input Price', outputPrice: 'Output Price', search: 'Search models...' },
+        models: { title: 'Models', name: 'Name', provider: 'Provider', type: 'Type', context: 'Context', inputPrice: 'Input Price', outputPrice: 'Output Price', search: 'Search models...', emptyTitle: 'No models found', emptyDescription: 'No models match your search. Try a different keyword.' },
         billing: { org: 'Organization', period: 'Period', tokenUsage: 'Token Usage', cost: 'Cost', status: 'Status', dueDate: 'Due Date', generate: 'Generate Bill' },
-        alerts: { title: 'Alert Center', unread: 'unread', check: 'Check Alerts' },
+        alerts: {
+          title: 'Alert Center', unread: 'unread', check: 'Check Alerts', checkDone: 'Alert check completed',
+          rules: 'Rules', markRead: 'Mark read', batchMarkRead: 'Mark selected as read',
+          emptyTitle: 'No alerts', emptyDescription: 'Everything looks good. No alerts detected.',
+          types: { quota_warning: 'Quota Warning', key_expiring: 'Key Expiring', error_spike: 'Error Spike', rate_limit: 'Rate Limit', system: 'System' },
+        },
         agents: {
           title: 'Agent Engine', create: 'Create Agent', builtin: 'Built-in', running: 'Running', draft: 'Draft',
           chat: 'Chat', logs: 'Logs', edit: 'Edit', delete: 'Delete',

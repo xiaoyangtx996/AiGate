@@ -9,6 +9,7 @@ const menuStore = useMenuStore()
 const tabStore = useTabStore()
 
 const open = ref(false)
+const isMac = ref(false)
 const route = useRoute()
 const { menuItems } = useMenu()
 const appScrollContainer = useAppScrollContainer()
@@ -91,6 +92,7 @@ onMounted(async () => {
 
 onMounted(() => {
   appScrollContainer.value = document.querySelector('.app-scroll-container')
+  isMac.value = /Mac|iPhone|iPad|iPod/.test(navigator.platform)
 })
 </script>
 
@@ -108,7 +110,13 @@ onMounted(() => {
       </template>
 
       <template #default="{ collapsed }">
-        <UDashboardSearchButton :collapsed class="bg-transparent ring-default" />
+        <div class="flex items-center gap-1.5">
+          <UDashboardSearchButton :collapsed class="bg-transparent ring-default flex-1" />
+          <div v-if="!collapsed" class="flex shrink-0 items-center gap-0.5 pointer-events-none">
+            <UKbd>{{ isMac ? '⌘' : 'Ctrl' }}</UKbd>
+            <UKbd>K</UKbd>
+          </div>
+        </div>
 
         <div v-if="menuStore.loading" class="grid gap-2">
           <USkeleton

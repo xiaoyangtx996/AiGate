@@ -85,6 +85,7 @@ export function useAigateApi() {
   // Alert
   const getAlertList = (params?: Record<string, unknown>) => get('/aigate/alert', params, cacheConfig.list)
   const markAlertRead = (id: string) => put(`/aigate/alert/${id}`)
+  const delAlert = (id: string) => del(`/aigate/alert/${id}`)
   const runAlertCheck = () => post('/aigate/alert/check')
   const getAlertRules = () => get('/aigate/alert/rule', undefined, cacheConfig.list)
   const insertAlertRule = (body: unknown) => post('/aigate/alert/rule', body)
@@ -116,7 +117,7 @@ export function useAigateApi() {
     getKnowledgeBaseList, insertKnowledgeBase, updateKnowledgeBase, delKnowledgeBase,
     getKbDocuments, uploadKbDocument, delKbDocument,
     getPromptList, insertPrompt, updatePrompt, delPrompt, getPromptVersions, restorePromptVersion, exportPrompts, importPrompts,
-    getAlertList, markAlertRead, runAlertCheck, getAlertRules, insertAlertRule, updateAlertRule, delAlertRule,
+    getAlertList, markAlertRead, delAlert, runAlertCheck, getAlertRules, insertAlertRule, updateAlertRule, delAlertRule,
     getBillingList, getBillingDetail, generateBilling,
     getApiLogList, cleanupApiLogs,
     globalSearch,

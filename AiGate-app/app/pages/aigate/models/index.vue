@@ -15,8 +15,16 @@ const p = (key: string) => t(`pages.aigate.models.${key}`)
 
 <template>
   <div class="space-y-4">
+    <h2 class="text-xl font-bold">{{ p('title') }}</h2>
     <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" />
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <TableSkeleton v-if="loading" :cols="3" :rows="3" />
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:box"
+      :title="p('emptyTitle')"
+      :description="p('emptyDescription')"
+    />
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <UCard v-for="model in list" :key="model.id" class="hover:border-primary transition-colors">
         <div class="flex items-start justify-between mb-3">
           <div>
