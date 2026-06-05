@@ -26,6 +26,7 @@ export default defineConfig({
       include: [
         'server/utils/**/*.ts',
         'server/api/aigate/**/*.ts',
+        'server/api/gateway/**/*.ts',
       ],
       exclude: [
         'server/**/__tests__/**',

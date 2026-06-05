@@ -43,6 +43,14 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
           namePlaceholder: '如：OpenAI 主渠道', apiKey: 'API Key', apiKeyPlaceholder: 'sk-...', other: '其他',
           healthCheckDone: '健康检测完成：{healthy}/{total} 正常',
           healthSingleOk: '渠道 {name}：正常', healthSingleFail: '渠道 {name}：异常',
+          detail: {
+            title: '渠道详情', healthCheck: '健康检查', delete: '删除', confirmDelete: '确定删除该渠道吗？',
+            notFound: '渠道不存在', notFoundDesc: '该渠道不存在或您无权访问',
+            totalRequests: '总请求数', successRate: '成功率', avgLatency: '平均延迟', healthStatus: '健康状态',
+            basicInfo: '基本信息', rateLimit: '限流配置', priority: '优先级', weight: '权重',
+            rateLimitQps: 'Rate Limit QPS', rateLimitTpm: 'Rate Limit TPM', rateLimitRpm: 'Rate Limit RPM', strategy: '策略',
+            models: '模型列表', noModels: '未配置模型', trend24h: '近 24 小时趋势', noTrend: '暂无趋势数据', noTrendDesc: '该渠道还没有足够的调用记录',
+          },
         },
         apiKeys: {
           name: '名称', key: '密钥', env: '环境', status: '状态', calls: '调用次数', search: '搜索密钥...', add: '创建密钥', bindRoles: '绑定角色',
@@ -90,6 +98,12 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
           enabled: '启用', disabled: '禁用', typeSse: 'SSE', typeStreamable: 'Streamable HTTP', typeStdio: 'Stdio',
           emptyTitle: '暂无 MCP 工具', emptyDescription: '还没有配置 MCP 工具，点击右上角添加',
           testOk: '连接正常 ({latency}ms)', testFail: '连接失败: {error}',
+          versions: {
+            title: 'MCP 工具', type: '类型', calls: '调用次数', endpoint: '端点', lastCheck: '最后检查',
+            history: '版本历史', current: '当前版本', selectTool: '选择 MCP 工具', selectToolDesc: '从左侧列表选择一个工具查看版本历史',
+            emptyTools: '暂无 MCP 工具', emptyToolsDesc: '还没有配置 MCP 工具',
+            emptyVersions: '暂无版本记录', emptyVersionsDesc: '该工具还没有发布过版本',
+          },
         },
         knowledgeBase: {
           title: '知识库', name: '名称', description: '描述', create: '创建', docs: '文档', size: '大小', embeddingModel: '嵌入模型', docList: '文档列表',
@@ -167,6 +181,14 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
           namePlaceholder: 'e.g. OpenAI Primary', apiKey: 'API Key', apiKeyPlaceholder: 'sk-...', other: 'Other',
           healthCheckDone: 'Health check done: {healthy}/{total} healthy',
           healthSingleOk: 'Channel {name}: healthy', healthSingleFail: 'Channel {name}: unhealthy',
+          detail: {
+            title: 'Channel Details', healthCheck: 'Health Check', delete: 'Delete', confirmDelete: 'Delete this channel?',
+            notFound: 'Channel not found', notFoundDesc: 'This channel does not exist or you do not have access.',
+            totalRequests: 'Total Requests', successRate: 'Success Rate', avgLatency: 'Avg Latency', healthStatus: 'Health',
+            basicInfo: 'Basic Info', rateLimit: 'Rate Limits', priority: 'Priority', weight: 'Weight',
+            rateLimitQps: 'Rate Limit QPS', rateLimitTpm: 'Rate Limit TPM', rateLimitRpm: 'Rate Limit RPM', strategy: 'Strategy',
+            models: 'Models', noModels: 'No models configured', trend24h: '24h Trend', noTrend: 'No trend data', noTrendDesc: 'Not enough traffic recorded for this channel yet.',
+          },
         },
         apiKeys: {
           name: 'Name', key: 'Key', env: 'Environment', status: 'Status', calls: 'Calls', search: 'Search keys...', add: 'Create Key', bindRoles: 'Bind Roles',
@@ -214,6 +236,12 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
           enabled: 'Enabled', disabled: 'Disabled', typeSse: 'SSE', typeStreamable: 'Streamable HTTP', typeStdio: 'Stdio',
           emptyTitle: 'No MCP tools', emptyDescription: 'No MCP tools configured yet. Click Add Tool to get started.',
           testOk: 'Connected ({latency}ms)', testFail: 'Connection failed: {error}',
+          versions: {
+            title: 'MCP Tools', type: 'Type', calls: 'Calls', endpoint: 'Endpoint', lastCheck: 'Last Check',
+            history: 'Version History', current: 'Current', selectTool: 'Select an MCP Tool', selectToolDesc: 'Pick a tool from the list to view version history.',
+            emptyTools: 'No MCP tools', emptyToolsDesc: 'No MCP tools configured yet.',
+            emptyVersions: 'No versions', emptyVersionsDesc: 'This tool has no published versions yet.',
+          },
         },
         knowledgeBase: {
           title: 'Knowledge Base', name: 'Name', description: 'Description', create: 'Create', docs: 'documents', size: 'Size', embeddingModel: 'Embedding Model', docList: 'Documents',
