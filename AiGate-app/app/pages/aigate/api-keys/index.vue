@@ -202,7 +202,7 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
               { label: '已过期', value: 'expired' },
             ]" />
           </UFormField>
-          <UFormField label="绑定角色">
+          <UFormField label="绑定角色" hint="绑定角色的 Key 仅用于应用内 API，不可直接访问 Gateway 代理">
             <div class="flex flex-wrap gap-2">
               <UCheckbox
                 v-for="role in roles"

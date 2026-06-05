@@ -12,6 +12,10 @@ const statusColor: Record<string, string> = { active: 'success', inactive: 'neut
 function editAgent(row: any) {
   return router.push(`/aigate/agents/edit/${row.id}`)
 }
+
+function chatWithAgent(row: any) {
+  return router.push({ path: '/aigate/agents/chat', query: { agentId: row.id } })
+}
 </script>
 
 <template>
@@ -38,7 +42,7 @@ function editAgent(row: any) {
           <UBadge v-for="tag in (agent.tags || [])" :key="tag" variant="outline" size="xs">{{ tag }}</UBadge>
         </div>
         <div class="flex gap-2">
-          <UButton size="sm" variant="outline" class="flex-1" icon="lucide:message-square" to="/aigate/agents/chat">对话体验</UButton>
+          <UButton size="sm" variant="outline" class="flex-1" icon="lucide:message-square" @click="chatWithAgent(agent)">对话体验</UButton>
           <UButton size="sm" variant="outline" icon="lucide:edit" @click="editAgent(agent)" />
           <UButton size="sm" variant="ghost" icon="lucide:file-text" :to="`/aigate/agents/${agent.id}/logs`" />
         </div>

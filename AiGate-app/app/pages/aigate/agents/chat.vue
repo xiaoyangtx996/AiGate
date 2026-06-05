@@ -2,7 +2,8 @@
 type ChatMessage = { role: string; content: string; time: string }
 type ChatConversation = { id: string; agentId: string; title: string; lastMessage: string; updatedAt: string; messages: ChatMessage[] }
 
-const { getAgentList, chatWithAgent, getAgentConversations } = useAigateApi()
+const route = useRoute()
+const { getAgentList, getAgentConversations } = useAigateApi()
 const { data } = await useAsyncData('aigate-agents-chat', async () => {
   const res = await getAgentList()
   return res.data ?? []
@@ -17,7 +18,7 @@ const conversations = ref<ChatConversation[]>([])
 const messagesEnd = ref<HTMLElement | null>(null)
 
 // 从 localStorage 加载对话历史
-onMounted(() => {
+onMounted(async () => {
   const saved = localStorage.getItem('aigate-chat-history')
   if (saved) {
     try {
@@ -25,6 +26,12 @@ onMounted(() => {
       conversations.value = parsed.conversations || []
     }
     catch { /* ignore */ }
+  }
+
+  const agentId = route.query.agentId as string | undefined
+  if (agentId) {
+    const target = agents.value.find(a => a.id === agentId)
+    if (target) await selectAgent(target)
   }
 })
 
