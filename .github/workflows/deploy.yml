@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying AiGate to production..."
+          echo "Placeholder: wire up your deployment target here."
+          # Vercel:  npx vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+          # Docker:  docker build -t aigate:latest AiGate-app && docker push ...
+          # PM2/SSH: rsync + pm2 reload ecosystem.config.js

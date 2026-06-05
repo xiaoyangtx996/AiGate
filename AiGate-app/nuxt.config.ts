@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     env: process.env.NODE_ENV,
     githubToken: process.env.GITHUB_TOKEN,
+    sentryDsn: process.env.SENTRY_DSN || '',
     public: {
       apiBase: '/api',
       appName: process.env.NUXT_APP_NAME || 'AiGate',
