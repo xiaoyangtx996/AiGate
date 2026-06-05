@@ -1,28 +1,4 @@
-function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(obj)) {
-    const fullKey = prefix ? `${prefix}.${key}` : key
-    if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-      Object.assign(result, flattenObject(value as Record<string, unknown>, fullKey))
-    }
-    else if (Array.isArray(value)) {
-      result[fullKey] = JSON.stringify(value)
-    }
-    else {
-      result[fullKey] = value
-    }
-  }
-  return result
-}
-
-function escapeCsvCell(value: unknown): string {
-  if (value === null || value === undefined)
-    return ''
-  const str = String(value)
-  if (str.includes(',') || str.includes('"') || str.includes('\n'))
-    return `"${str.replace(/"/g, '""')}"`
-  return str
-}
+import { escapeCsvCell, flattenObject } from '@/utils/export'
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)

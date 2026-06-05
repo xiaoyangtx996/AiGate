@@ -45,7 +45,7 @@ pnpm exec vitest run
 # 监听模式（开发时）
 pnpm test
 
-# 生成覆盖率报告（门槛：行/语句 ≥ 8%）
+# 生成覆盖率报告（门槛见 vitest.config.ts，当前约 18%–20%）
 pnpm test:coverage
 ```
 
@@ -57,17 +57,33 @@ pnpm test:coverage
 |------|------|
 | `server/utils/__tests__/` | 工具函数纯逻辑与 mock 测试 |
 | `server/api/aigate/__tests__/` | API handler mock 测试（管理员鉴权、分页查询、MCP 安装等） |
-| `test/` | 通用校验等辅助测试 |
+| `test/` | composable 导出工具、通用校验等辅助测试 |
 
 API handler 测试通过 `vitest.setup.ts` 注入 Nitro 全局（`defineEventHandler`、`getQuery` 等），并对数据库与外部依赖进行 mock，无需启动完整 Nuxt 服务。
 
 ### E2E 测试
 
+使用 [Playwright](https://playwright.dev/) 进行端到端测试。`playwright.config.ts` 会在本地自动启动 `pnpm dev`（端口 5173）；若已有开发服务在运行，将复用现有进程。
+
 ```bash
+# 运行全部 E2E（冒烟 + 认证 + 公开 API 策略）
 pnpm test:e2e
+
+# 仅运行认证相关场景
+pnpm exec playwright test e2e/auth.spec.ts
+
+# 仅运行公开/受保护 API 策略
+pnpm exec playwright test e2e/public-api.spec.ts
+
+# 带 UI 调试
+pnpm exec playwright test --ui
 ```
 
-使用 Playwright 进行端到端冒烟测试，需先启动开发服务。
+| 路径 | 说明 |
+|------|------|
+| `e2e/smoke.spec.ts` | 首页、登录页、OpenAPI、文档页冒烟 |
+| `e2e/auth.spec.ts` | 注册/登录表单可见性、错误密码不崩溃 |
+| `e2e/public-api.spec.ts` | `/api/openapi`、搜索接口鉴权行为 |
 
 ## 说明
 

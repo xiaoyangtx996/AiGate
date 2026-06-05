@@ -96,6 +96,10 @@ export default defineNuxtConfig({
     },
   },
   nitro: {
+    ignore: [
+      '**/__tests__/**',
+      '**/*.test.ts',
+    ],
     compressPublicAssets: {
       brotli: true,
       gzip: true,
