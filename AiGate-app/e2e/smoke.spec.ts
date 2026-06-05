@@ -20,4 +20,22 @@ test.describe('Smoke', () => {
     const title = await page.title()
     expect(title.length).toBeGreaterThan(0)
   })
+
+  test('openapi endpoint returns JSON spec', async ({ request }) => {
+    const response = await request.get('/api/openapi')
+    expect(response.ok()).toBeTruthy()
+    expect(response.headers()['content-type']).toContain('application/json')
+
+    const body = await response.json()
+    expect(body).toHaveProperty('openapi')
+    expect(body).toHaveProperty('info')
+    expect(body).toHaveProperty('paths')
+  })
+
+  test('hub overview redirects unauthenticated users to sign-in', async ({ page }) => {
+    const response = await page.goto('/hub/overview')
+    expect(response).not.toBeNull()
+    expect(response?.status()).toBeLessThan(500)
+    await expect(page).toHaveURL(/\/auth\/sign-in/)
+  })
 })
