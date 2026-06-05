@@ -64,7 +64,7 @@ const stats = computed(() => {
   }
 })
 const open = ref(false)
-const editData = ref<any>(null)
+const editData = ref<ApiKeyRow | null>(null)
 const saveLoading = ref(false)
 
 const roles = ref<Array<{ id: string; name: string }>>([])
@@ -94,7 +94,7 @@ function handleAdd() {
   open.value = true
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: ApiKeyRow) {
   editData.value = row
   form.name = row.name || ''
   form.env = row.env || 'production'
@@ -154,7 +154,7 @@ function formatLastUsed(value?: string | null) {
   return value ? new Date(value).toLocaleString() : '-'
 }
 
-const statusColor: Record<string, string> = { active: 'success', revoked: 'error', expired: 'neutral' }
+const statusColor: Record<string, 'success' | 'error' | 'neutral'> = { active: 'success', revoked: 'error', expired: 'neutral' }
 
 function toggleRole(roleId: string, checked: boolean) {
   if (checked && !form.roleIds.includes(roleId)) {
@@ -180,24 +180,30 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
     />
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <UCard>
-        <p class="text-sm text-muted">总 Key 数</p>
+        <p class="text-sm text-muted">{{ p('totalKeys') }}</p>
         <p class="text-2xl font-bold">{{ stats.total }}</p>
       </UCard>
       <UCard>
-        <p class="text-sm text-muted">活跃 Key</p>
+        <p class="text-sm text-muted">{{ p('activeKeys') }}</p>
         <p class="text-2xl font-bold text-success">{{ stats.active }}</p>
       </UCard>
       <UCard>
-        <p class="text-sm text-muted">总调用次数</p>
+        <p class="text-sm text-muted">{{ p('totalCalls') }}</p>
         <p class="text-2xl font-bold">{{ stats.calls.toLocaleString() }}</p>
       </UCard>
       <UCard>
-        <p class="text-sm text-muted">总费用</p>
+        <p class="text-sm text-muted">{{ p('totalCost') }}</p>
         <p class="text-2xl font-bold">{{ formatCost(stats.cost) }}</p>
       </UCard>
     </div>
 
     <TableSkeleton v-if="loading" />
+    <EmptyState
+      v-else-if="list.length === 0"
+      icon="lucide:key"
+      :title="p('emptyTitle')"
+      :description="p('emptyDescription')"
+    />
     <UTable
       v-else
       :data="list"
@@ -208,8 +214,8 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         { accessorKey: 'env', header: p('env') },
         { accessorKey: 'status', header: p('status') },
         { accessorKey: 'calls', header: p('calls') },
-        { accessorKey: 'cost', header: '费用' },
-        { accessorKey: 'lastUsed', header: '最后使用' },
+        { accessorKey: 'cost', header: p('cost') },
+        { accessorKey: 'lastUsed', header: p('lastUsed') },
         { accessorKey: 'actions', header: $t('common.action') },
       ]"
     >
@@ -230,7 +236,7 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         <code class="text-xs font-mono">{{ maskKey(row.original.key) }}</code>
       </template>
       <template #status-cell="{ row }">
-        <UBadge :color="statusColor[row.original.status] as any" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
+        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
       </template>
       <template #calls-cell="{ row }">
         <span class="font-mono">{{ (row.original.calls || 0).toLocaleString() }}</span>
@@ -289,23 +295,23 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       <template #body>
         <div class="space-y-4">
           <UFormField :label="p('name')" required>
-            <UInput v-model="form.name" placeholder="如：生产环境 Key" />
+            <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
           </UFormField>
           <UFormField :label="p('env')">
             <USelect v-model="form.env" :items="[
-              { label: '生产环境', value: 'production' },
-              { label: '测试环境', value: 'test' },
-              { label: '开发环境', value: 'dev' },
+              { label: p('envProduction'), value: 'production' },
+              { label: p('envTest'), value: 'test' },
+              { label: p('envDev'), value: 'dev' },
             ]" />
           </UFormField>
           <UFormField :label="p('status')">
             <USelect v-model="form.status" :items="[
-              { label: '活跃', value: 'active' },
-              { label: '已撤销', value: 'revoked' },
-              { label: '已过期', value: 'expired' },
+              { label: p('statusActive'), value: 'active' },
+              { label: p('statusRevoked'), value: 'revoked' },
+              { label: p('statusExpired'), value: 'expired' },
             ]" />
           </UFormField>
-          <UFormField label="绑定角色" hint="绑定角色的 Key 仅用于应用内 API，不可直接访问 Gateway 代理">
+          <UFormField :label="p('bindRoles')" :hint="p('bindRolesHint')">
             <div class="flex flex-wrap gap-2">
               <UCheckbox
                 v-for="role in roles"

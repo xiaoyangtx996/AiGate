@@ -44,7 +44,20 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
           healthCheckDone: '健康检测完成：{healthy}/{total} 正常',
           healthSingleOk: '渠道 {name}：正常', healthSingleFail: '渠道 {name}：异常',
         },
-        apiKeys: { name: '名称', key: '密钥', env: '环境', status: '状态', calls: '调用次数', search: '搜索密钥...', add: '创建密钥', bindRoles: '绑定角色' },
+        apiKeys: {
+          name: '名称', key: '密钥', env: '环境', status: '状态', calls: '调用次数', search: '搜索密钥...', add: '创建密钥', bindRoles: '绑定角色',
+          totalKeys: '总 Key 数', activeKeys: '活跃 Key', totalCalls: '总调用次数', totalCost: '总费用', cost: '费用', lastUsed: '最后使用',
+          namePlaceholder: '如：生产环境 Key', envProduction: '生产环境', envTest: '测试环境', envDev: '开发环境',
+          statusActive: '活跃', statusRevoked: '已撤销', statusExpired: '已过期',
+          bindRolesHint: '绑定角色的 Key 仅用于应用内 API，不可直接访问 Gateway 代理',
+          emptyTitle: '暂无 API Key', emptyDescription: '还没有创建密钥，点击右上角创建',
+        },
+        alertRules: {
+          title: '告警规则', add: '新增规则', editTitle: '编辑规则', createTitle: '新增规则',
+          ruleName: '规则名称', type: '类型', threshold: '阈值 (%)', status: '状态', enabled: '启用', disabled: '禁用',
+          confirmDelete: '确定删除该规则？', emptyTitle: '暂无告警规则', emptyDescription: '还没有配置告警规则，点击新增规则开始',
+          types: { quota_warning: '配额预警', key_expiring: '密钥过期', error_spike: '错误激增', rate_limit: '限流告警' },
+        },
         apiLogs: {
           time: '时间', model: '模型', tokens: 'Tokens', latency: '延迟', cost: '费用', status: '状态', refresh: '刷新',
           emptyTitle: '暂无调用日志', emptyDescription: '还没有 API 调用记录，发起一次请求后将在此显示',
@@ -62,7 +75,12 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         },
         agents: {
           title: 'Agent 引擎', create: '编排 Agent', builtin: '内置', running: '运行中', draft: '草稿',
-          chat: '对话体验', logs: '日志', edit: '编辑', delete: '删除',
+          chat: '对话体验', edit: '编辑', delete: '删除',
+          logs: {
+            title: 'Agent 日志', refresh: '刷新', time: '时间', model: '模型', provider: '供应商', status: '状态',
+            tokens: 'Tokens', cost: '费用', latency: '延迟', error: '错误',
+            emptyTitle: '暂无调用日志', emptyDescription: '该 Agent 还没有 API 调用记录',
+          },
         },
         prompts: { title: '提示词库', create: '创建提示词', category: '分类', usage: '次使用' },
         mcpTools: {
@@ -150,7 +168,20 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
           healthCheckDone: 'Health check done: {healthy}/{total} healthy',
           healthSingleOk: 'Channel {name}: healthy', healthSingleFail: 'Channel {name}: unhealthy',
         },
-        apiKeys: { name: 'Name', key: 'Key', env: 'Environment', status: 'Status', calls: 'Calls', search: 'Search keys...', add: 'Create Key', bindRoles: 'Bind Roles' },
+        apiKeys: {
+          name: 'Name', key: 'Key', env: 'Environment', status: 'Status', calls: 'Calls', search: 'Search keys...', add: 'Create Key', bindRoles: 'Bind Roles',
+          totalKeys: 'Total Keys', activeKeys: 'Active Keys', totalCalls: 'Total Calls', totalCost: 'Total Cost', cost: 'Cost', lastUsed: 'Last Used',
+          namePlaceholder: 'e.g. Production Key', envProduction: 'Production', envTest: 'Test', envDev: 'Development',
+          statusActive: 'Active', statusRevoked: 'Revoked', statusExpired: 'Expired',
+          bindRolesHint: 'Role-bound keys are for in-app API only and cannot access the Gateway proxy directly.',
+          emptyTitle: 'No API keys', emptyDescription: 'No keys created yet. Click Create Key to get started.',
+        },
+        alertRules: {
+          title: 'Alert Rules', add: 'Add Rule', editTitle: 'Edit Rule', createTitle: 'Add Rule',
+          ruleName: 'Rule Name', type: 'Type', threshold: 'Threshold (%)', status: 'Status', enabled: 'Enabled', disabled: 'Disabled',
+          confirmDelete: 'Delete this rule?', emptyTitle: 'No alert rules', emptyDescription: 'No rules configured yet. Click Add Rule to create one.',
+          types: { quota_warning: 'Quota Warning', key_expiring: 'Key Expiring', error_spike: 'Error Spike', rate_limit: 'Rate Limit' },
+        },
         apiLogs: {
           time: 'Time', model: 'Model', tokens: 'Tokens', latency: 'Latency', cost: 'Cost', status: 'Status', refresh: 'Refresh',
           emptyTitle: 'No API logs', emptyDescription: 'No API calls recorded yet. Logs will appear here after your first request.',
@@ -168,7 +199,12 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         },
         agents: {
           title: 'Agent Engine', create: 'Create Agent', builtin: 'Built-in', running: 'Running', draft: 'Draft',
-          chat: 'Chat', logs: 'Logs', edit: 'Edit', delete: 'Delete',
+          chat: 'Chat', edit: 'Edit', delete: 'Delete',
+          logs: {
+            title: 'Agent Logs', refresh: 'Refresh', time: 'Time', model: 'Model', provider: 'Provider', status: 'Status',
+            tokens: 'Tokens', cost: 'Cost', latency: 'Latency', error: 'Error',
+            emptyTitle: 'No API logs', emptyDescription: 'This agent has no API call records yet.',
+          },
         },
         prompts: { title: 'Prompt Library', create: 'Create Prompt', category: 'Category', usage: 'uses' },
         mcpTools: {

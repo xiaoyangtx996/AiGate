@@ -182,37 +182,37 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
 
     <UModal v-model:open="showHealthDetail">
       <template #header>
-        <h3 class="text-lg font-bold">健康检查详情</h3>
+        <h3 class="text-lg font-bold">{{ p('healthDetailTitle') }}</h3>
       </template>
       <template #body>
         <div v-if="healthCheckResult" class="space-y-4">
-          <div v-if="healthCheckResult.total !== undefined" class="text-sm text-gray-500">
-            总计: {{ healthCheckResult.total }} | 正常: {{ healthCheckResult.healthy }} | 异常: {{ healthCheckResult.unhealthy }}
+          <div v-if="healthCheckResult.total !== undefined" class="text-sm text-muted">
+            {{ p('healthSummary', { total: healthCheckResult.total, healthy: healthCheckResult.healthy, unhealthy: healthCheckResult.unhealthy }) }}
           </div>
           <div class="space-y-2">
             <div v-for="result in (healthCheckResult.results || [healthCheckResult])" :key="result.channelId"
                  class="border rounded-lg p-4 hover:shadow-md transition-shadow">
               <div class="flex items-center justify-between mb-2">
-                <div class="font-medium">{{ result.name || 'Unknown Channel' }}</div>
+                <div class="font-medium">{{ result.name || '-' }}</div>
                 <UBadge :color="result.healthy ? 'success' : 'error'" variant="subtle">
-                  {{ result.healthy ? '正常' : '异常' }}
+                  {{ result.healthy ? p('healthy') : p('unhealthy') }}
                 </UBadge>
               </div>
-              <div class="text-sm space-y-1 text-gray-600">
+              <div class="text-sm space-y-1 text-muted">
                 <div class="flex justify-between">
-                  <span>延迟:</span>
+                  <span>{{ p('latency') }}:</span>
                   <span class="font-mono">{{ result.latency }}ms</span>
                 </div>
                 <div v-if="result.status" class="flex justify-between">
-                  <span>状态码:</span>
+                  <span>{{ p('statusCode') }}:</span>
                   <span class="font-mono">{{ result.status }}</span>
                 </div>
                 <div v-if="result.error" class="flex justify-between">
-                  <span>错误:</span>
-                  <span class="text-red-500 text-xs break-all">{{ result.error }}</span>
+                  <span>{{ p('error') }}:</span>
+                  <span class="text-error text-xs break-all">{{ result.error }}</span>
                 </div>
                 <div class="flex justify-between text-xs">
-                  <span>时间:</span>
+                  <span>{{ p('timestamp') }}:</span>
                   <span>{{ result.timestamp }}</span>
                 </div>
               </div>
@@ -222,7 +222,7 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
       </template>
       <template #footer>
         <div class="flex justify-end">
-          <UButton variant="ghost" @click="showHealthDetail = false">关闭</UButton>
+          <UButton variant="ghost" @click="showHealthDetail = false">{{ p('close') }}</UButton>
         </div>
       </template>
     </UModal>
@@ -234,26 +234,26 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
       <template #body>
         <div class="space-y-4">
           <UFormField :label="p('name')" required>
-            <UInput v-model="form.name" placeholder="如：OpenAI 主渠道" />
+            <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
           </UFormField>
           <UFormField :label="p('vendor')">
             <USelect v-model="form.vendor" :items="[
               { label: 'OpenAI', value: 'openai' },
               { label: 'Anthropic', value: 'anthropic' },
               { label: 'DeepSeek', value: 'deepseek' },
-              { label: '其他', value: 'other' },
-            ]" placeholder="选择供应商" />
+              { label: p('other'), value: 'other' },
+            ]" :placeholder="p('vendorPlaceholder')" />
           </UFormField>
           <UFormField :label="p('endpoint')" required>
-            <UInput v-model="form.endpoint" placeholder="https://api.openai.com/v1" />
+            <UInput v-model="form.endpoint" :placeholder="p('endpointPlaceholder')" />
           </UFormField>
-          <UFormField label="API Key">
-            <UInput v-model="form.apiKey" type="password" placeholder="sk-..." />
+          <UFormField :label="p('apiKey')">
+            <UInput v-model="form.apiKey" type="password" :placeholder="p('apiKeyPlaceholder')" />
           </UFormField>
           <UFormField :label="p('status')">
             <USelect v-model="form.status" :items="[
-              { label: '启用', value: 'enabled' },
-              { label: '禁用', value: 'disabled' },
+              { label: p('enabled'), value: 'enabled' },
+              { label: p('disabled'), value: 'disabled' },
             ]" />
           </UFormField>
         </div>
