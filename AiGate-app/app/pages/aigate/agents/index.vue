@@ -13,12 +13,23 @@ const { successToast } = useAppToast()
 const { t } = useI18n()
 const router = useRouter()
 
-const { data, pending: loading, refresh } = await useAsyncData('aigate-agents', async () => {
-  const res = await getAgentList()
-  return (res.data ?? []) as AgentRow[]
-})
+const page = ref(1)
+const pageSize = ref(12)
 
-const list = computed(() => data.value || [])
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-agents',
+  async () => {
+    const res = await getAgentList({ page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 12 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+
+const list = computed(() => (data.value?.items ?? []) as AgentRow[])
+const total = computed(() => data.value?.total ?? 0)
 
 const {
   selectedCount,
@@ -111,6 +122,14 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
     <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
       <UIcon name="lucide:bot" class="text-4xl mb-2" />
       <p>{{ $t('common.noData') }}</p>
+    </div>
+
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
     </div>
 
     <Transition

@@ -4,11 +4,23 @@ const { successToast } = useAppToast()
 const { t } = useI18n()
 
 const keyword = ref('')
-const { data, pending: loading, refresh } = await useAsyncData('aigate-mcp-tools', async () => {
-  const res = await getMcpToolList({ keyword: keyword.value })
-  return res.data ?? []
-})
-const list = computed(() => data.value || [])
+const page = ref(1)
+const pageSize = ref(12)
+
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-mcp-tools',
+  async () => {
+    const res = await getMcpToolList({ keyword: keyword.value, page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 12 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+
+const list = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 
 const open = ref(false)
 const editData = ref<any>(null)
@@ -84,7 +96,7 @@ const p = (key: string) => t(`pages.aigate.mcpTools.${key}`)
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="refresh" />
+      <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="() => { page = 1; refresh() }" />
       <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -111,6 +123,14 @@ const p = (key: string) => t(`pages.aigate.mcpTools.${key}`)
     <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
       <UIcon name="lucide:wrench" class="text-4xl mb-2" />
       <p>{{ $t('common.noData') }}</p>
+    </div>
+
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
     </div>
 
     <UModal v-model:open="open">

@@ -19,11 +19,23 @@ const { t } = useI18n()
 const { exportToCSV } = useExport()
 
 const keyword = ref('')
-const { data, pending: loading, refresh } = await useAsyncData('aigate-api-keys', async () => {
-  const res = await getApiKeyList({ keyword: keyword.value })
-  return (res.data ?? []) as ApiKeyRow[]
-})
-const list = computed(() => data.value || [])
+const page = ref(1)
+const pageSize = ref(20)
+
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-api-keys',
+  async () => {
+    const res = await getApiKeyList({ keyword: keyword.value, page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 20 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+
+const list = computed(() => (data.value?.items ?? []) as ApiKeyRow[])
+const total = computed(() => data.value?.total ?? 0)
 const listIds = computed(() => list.value.map(item => item.id))
 
 const {
@@ -45,7 +57,7 @@ const {
 const stats = computed(() => {
   const items = list.value
   return {
-    total: items.length,
+    total: total.value,
     active: items.filter(item => item.status === 'active').length,
     calls: items.reduce((sum, item) => sum + (item.calls || 0), 0),
     cost: items.reduce((sum, item) => sum + (item.cost || 0), 0),
@@ -161,10 +173,10 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
     <HeaderContent
       v-model="keyword"
       :loading
-      :refresh
+      :refresh="() => { page = 1; refresh() }"
       :handle-add
       :handle-export
-      @keyup.enter="refresh"
+      @keyup.enter="() => { page = 1; refresh() }"
     />
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <UCard>
@@ -236,6 +248,14 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         </div>
       </template>
     </UTable>
+
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
+    </div>
 
     <Transition
       enter-active-class="transition duration-200 ease-out"

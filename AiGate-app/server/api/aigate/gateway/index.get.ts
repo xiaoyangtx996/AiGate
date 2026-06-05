@@ -1,12 +1,20 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm'
+import { createCacheKey, getCached, setCached } from '#server/utils/cache'
 import { db } from '@/db/drizzle'
 import { apiKey, apiLog, channel } from '@/db/schema'
+
+const CACHE_TTL_MS = 60 * 1000
 
 export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as { organizationId?: string | null } | undefined
-    const orgFilter = principal?.organizationId ? eq(apiKey.organizationId, principal.organizationId) : undefined
-    const logOrgFilter = principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : undefined
+    const orgId = principal?.organizationId
+    const cacheKey = createCacheKey('gateway', orgId)
+    const cached = getCached<ReturnType<typeof responseSuccess>>(cacheKey)
+    if (cached) return cached
+
+    const orgFilter = orgId ? eq(apiKey.organizationId, orgId) : undefined
+    const logOrgFilter = orgId ? eq(apiLog.organizationId, orgId) : undefined
 
     const keys = orgFilter
       ? await db.select().from(apiKey).where(orgFilter)
@@ -27,7 +35,7 @@ export default defineEventHandler(async (event) => {
       ? Math.round(recentLogs.reduce((s, l) => s + (l.latency || 0), 0) / recentLogs.length)
       : 0
 
-    return responseSuccess({
+    const result = responseSuccess({
       overview: {
         activeKeys: keys.filter(k => k.status === 'active').length,
         totalKeys: keys.length,
@@ -54,6 +62,9 @@ export default defineEventHandler(async (event) => {
         createdAt: l.createdAt,
       })),
     })
+
+    setCached(cacheKey, result, CACHE_TTL_MS)
+    return result
   }
   catch (err) { return responseError(err) }
 })

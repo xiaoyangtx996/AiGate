@@ -2,11 +2,23 @@
 const { getAlertList, markAlertRead, runAlertCheck } = useAigateApi()
 const { successToast } = useAppToast()
 
-const { data, pending: loading, refresh } = await useAsyncData('aigate-alerts', async () => {
-  const res = await getAlertList()
-  return res.data ?? []
-})
-const list = computed(() => data.value || [])
+const page = ref(1)
+const pageSize = ref(20)
+
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-alerts',
+  async () => {
+    const res = await getAlertList({ page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 20 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+
+const list = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 const unreadCount = computed(() => list.value.filter((a: any) => !a.read).length)
 const checking = ref(false)
 
@@ -20,6 +32,7 @@ async function handleCheckAlerts() {
   try {
     await runAlertCheck()
     successToast('告警检测完成')
+    page.value = 1
     refresh()
   }
   finally { checking.value = false }
@@ -61,9 +74,17 @@ const typeLabel: Record<string, string> = { quota_warning: '配额预警', key_e
       </UCard>
     </div>
 
-    <div v-if="list.length === 0" class="text-center py-12 text-muted">
+    <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
       <UIcon name="lucide:check-circle" class="text-4xl mb-2 text-success" />
       <p>暂无告警，系统运行正常</p>
+    </div>
+
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
     </div>
   </div>
 </template>

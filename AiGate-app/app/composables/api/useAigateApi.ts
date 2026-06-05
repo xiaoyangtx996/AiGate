@@ -82,7 +82,7 @@ export function useAigateApi() {
   const importPrompts = (body: unknown) => post('/aigate/prompt/import', body)
 
   // Alert
-  const getAlertList = () => get('/aigate/alert', undefined, cacheConfig.list)
+  const getAlertList = (params?: Record<string, unknown>) => get('/aigate/alert', params, cacheConfig.list)
   const markAlertRead = (id: string) => put(`/aigate/alert/${id}`)
   const runAlertCheck = () => post('/aigate/alert/check')
   const getAlertRules = () => get('/aigate/alert/rule', undefined, cacheConfig.list)
