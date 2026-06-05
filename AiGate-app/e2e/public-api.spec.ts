@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { loginAsTestUser } from './fixtures/auth'
 
 test.setTimeout(60_000)
 
@@ -38,5 +39,24 @@ test.describe('Public API access policy', () => {
     const isApiDenied = status === 401 || status === 302 || status === 403
     const isRedirectToSignIn = /\/auth\/sign-in/.test(page.url())
     expect(isApiDenied || isRedirectToSignIn).toBeTruthy()
+  })
+
+  test('authenticated cookie request to agent API returns success', async ({ page, request }) => {
+    const loggedIn = await loginAsTestUser(page)
+    expect(loggedIn).toBeTruthy()
+
+    const cookies = await page.context().cookies()
+    const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ')
+
+    const response = await request.get('/api/aigate/agent', {
+      headers: cookieHeader ? { cookie: cookieHeader } : {},
+    })
+
+    expect(response.status()).toBeLessThan(500)
+    expect(response.status()).not.toBe(401)
+
+    const body = await response.json()
+    expect(body).toHaveProperty('code', 200)
+    expect(body).toHaveProperty('data')
   })
 })
