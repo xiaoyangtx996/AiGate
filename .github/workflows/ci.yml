@@ -27,14 +27,33 @@ jobs:
           cache: pnpm
           cache-dependency-path: AiGate-app/pnpm-lock.yaml
 
+      - name: Cache Nuxt and Vitest
+        uses: actions/cache@v4
+        with:
+          path: |
+            AiGate-app/.nuxt
+            AiGate-app/node_modules/.cache
+            AiGate-app/node_modules/.vite
+          key: ${{ runner.os }}-build-${{ hashFiles('AiGate-app/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm exec vitest run
+      - name: Test with coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: AiGate-app/coverage/
+          retention-days: 14
 
       # E2E tests require a running dev server and browser dependencies.
       # Run locally with `pnpm dev` + `pnpm test:e2e`, or enable this step
