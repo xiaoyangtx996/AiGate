@@ -29,14 +29,25 @@
 
 ## 数据库迁移
 
-每次发布新版本前，在目标环境执行：
+每次发布新版本前，在目标环境执行 Drizzle 迁移，并应用补充 SQL（Phase 2 表/索引、0008 `role_ids`、Phase 3 索引）：
 
 ```bash
 cd AiGate-app
+export DATABASE_URL="postgresql://user:pass@host:5432/aigate"
 pnpm dlx drizzle-kit migrate
+node scripts/apply-all-migrations.mjs
 ```
 
-CI 与 `database.yml` 工作流使用相同命令；若仅需应用 Phase 3 索引，可运行 `node scripts/apply-phase3-indexes.mjs`。
+`apply-all-migrations.mjs` 会依次执行 Phase 2 表与索引、迁移 `0008_add_api_key_role_ids.sql`、Phase 3 额外索引；可重复运行（`IF NOT EXISTS`）。CI、`release.yml` 与 `e2e.yml` 在 build/E2E 前均会调用该脚本。
+
+`database.yml` 仅校验 Drizzle 迁移；若仅需 Phase 3 索引，可单独运行 `node scripts/apply-phase3-indexes.mjs`。
+
+### v1.7.3 发布说明
+
+- **E2E**：23 项 Playwright 用例全部通过；`ci.yml` 在 build 前自动跑 E2E
+- **迁移**：统一 `apply-all-migrations.mjs`，Release 打 `v*` 标签前与 CI 一致执行 Drizzle + 补充迁移
+- **可选 E2E 工作流**：`e2e.yml` 支持 Actions 手动触发；push 到 `main` 时仅在 commit message 含 `[e2e]` 时运行
+- **镜像**：推送 `v1.7.3` 标签后，`release.yml` 在 `test:coverage` 与迁移通过后构建并推送 `ghcr.io/<owner>/<repo>/aigate:v1.7.3`
 
 ---
 
@@ -157,7 +168,8 @@ pm2 reload ecosystem.config.cjs
 |--------|------|------|
 | `ci.yml` | push/PR → main、develop | lint、测试、迁移、E2E、构建 |
 | `deploy.yml` | push → main | 构建并推送 `aigate:latest` 至 GHCR |
-| `release.yml` | 推送 `v*` 标签 | 测试覆盖率门禁通过后构建并推送 `aigate:<tag>` 至 GHCR |
-| `database.yml` | push → main | 校验数据库迁移 |
+| `release.yml` | 推送 `v*` 标签 | 覆盖率门禁 + 迁移通过后构建并推送 `aigate:<tag>` 至 GHCR |
+| `e2e.yml` | 手动 / push main（commit 含 `[e2e]`） | 独立 Playwright E2E（Postgres + 迁移 + `test:e2e`） |
+| `database.yml` | push → main | 校验 Drizzle 数据库迁移 |
 
 更多开发说明见 [DEVELOPMENT.md](../DEVELOPMENT.md)。

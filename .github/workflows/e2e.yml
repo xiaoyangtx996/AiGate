@@ -1,20 +1,18 @@
-name: Release
+name: E2E
 
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 defaults:
   run:
     working-directory: AiGate-app
 
 jobs:
-  release:
+  e2e:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[e2e]')
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     services:
       postgres:
@@ -44,25 +42,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: AiGate-app/pnpm-lock.yaml
 
-      - name: Cache Nuxt and Vitest
-        uses: actions/cache@v4
-        with:
-          path: |
-            AiGate-app/.nuxt
-            AiGate-app/node_modules/.cache
-            AiGate-app/node_modules/.vite
-          key: ${{ runner.os }}-release-${{ hashFiles('AiGate-app/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-release-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Test with coverage
-        run: pnpm test:coverage
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
-          BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
 
       - name: Run database migrations
         run: pnpm dlx drizzle-kit migrate
@@ -74,22 +55,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
 
-      - name: Build application
-        run: pnpm build
+      - name: E2E
+        run: pnpm exec playwright install chromium --with-deps && pnpm test:e2e
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
           BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
-
-      - name: Build Docker image
-        working-directory: ${{ github.workspace }}
-        run: |
-          IMAGE=ghcr.io/${{ github.repository }}/aigate:${{ github.ref_name }}
-          docker build -f AiGate-app/Dockerfile -t "$IMAGE" AiGate-app
-
-      - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Push to GHCR
-        run: |
-          IMAGE=ghcr.io/${{ github.repository }}/aigate:${{ github.ref_name }}
-          docker push "$IMAGE"
