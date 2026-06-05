@@ -36,6 +36,12 @@ jobs:
       - name: Test
         run: pnpm exec vitest run
 
+      # E2E tests require a running dev server and browser dependencies.
+      # Run locally with `pnpm dev` + `pnpm test:e2e`, or enable this step
+      # after adding Playwright browser install and webServer to playwright.config.ts.
+      # - name: E2E
+      #   run: pnpm exec playwright install --with-deps chromium && pnpm test:e2e
+
       - name: Build
         run: pnpm build
         env:
