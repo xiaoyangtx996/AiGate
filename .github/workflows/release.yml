@@ -16,6 +16,21 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aigate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,8 +44,25 @@ jobs:
           cache: pnpm
           cache-dependency-path: AiGate-app/pnpm-lock.yaml
 
+      - name: Cache Nuxt and Vitest
+        uses: actions/cache@v4
+        with:
+          path: |
+            AiGate-app/.nuxt
+            AiGate-app/node_modules/.cache
+            AiGate-app/node_modules/.vite
+          key: ${{ runner.os }}-release-${{ hashFiles('AiGate-app/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-release-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Test with coverage
+        run: pnpm test:coverage
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
+          BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
 
       - name: Build application
         run: pnpm build

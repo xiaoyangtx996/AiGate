@@ -1,6 +1,11 @@
 # AiGate 生产部署指南
 
-本文档说明 AiGate 在生产环境的常见部署方式：Docker Compose、GHCR 镜像拉取与 PM2 进程管理。
+本文档说明 AiGate 在生产环境的常见部署方式：Docker Compose、GHCR 镜像拉取、Kubernetes 与 PM2 进程管理。
+
+相关文档：
+
+- [Kubernetes 部署模板](./k8s/README.md) — `deployment.yaml` / `service.yaml` 占位清单
+- [GitHub Actions Secrets](./SECRETS.md) — CI/CD 与生产环境密钥配置
 
 ## 环境变量清单
 
@@ -70,19 +75,12 @@ docker pull ghcr.io/<owner>/<repo>/aigate:latest
 
 ### 3. 生产 compose 示例
 
-复制 `docker-compose.yml` 为 `docker-compose.prod.yml`，将 `app.build` 改为镜像引用：
+仓库已提供 [`docker-compose.prod.yml`](../../docker-compose.prod.yml)，使用 GHCR 镜像与 `.env`：
 
-```yaml
-services:
-  app:
-    image: ghcr.io/<owner>/<repo>/aigate:latest
-    restart: unless-stopped
-    ports:
-      - '3000:3000'
-    env_file: .env.production
-    depends_on:
-      postgres:
-        condition: service_healthy
+```bash
+cp .env.example .env   # 填写生产变量
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 > 生产环境请使用外部托管 PostgreSQL（RDS 等），勿将数据库与密钥硬编码在 compose 文件中。
@@ -98,7 +96,21 @@ docker compose -f docker-compose.prod.yml up -d
 
 ---
 
-## 方式二：PM2
+## 方式二：Kubernetes
+
+占位清单见 [`k8s/`](./k8s/README.md)。简要步骤：
+
+```bash
+# 创建 Secret 后
+kubectl apply -f docs/deploy/k8s/deployment.yaml
+kubectl apply -f docs/deploy/k8s/service.yaml
+```
+
+镜像默认 `ghcr.io/<owner>/<repo>/aigate:latest`，端口 `3000`，环境变量来自 `aigate-secrets`。
+
+---
+
+## 方式三：PM2
 
 适用于已有 Node.js 运行环境、不使用容器的场景。
 
@@ -145,7 +157,7 @@ pm2 reload ecosystem.config.cjs
 |--------|------|------|
 | `ci.yml` | push/PR → main、develop | lint、测试、迁移、E2E、构建 |
 | `deploy.yml` | push → main | 构建并推送 `aigate:latest` 至 GHCR |
-| `release.yml` | 推送 `v*` 标签 | 构建并推送 `aigate:<tag>` 至 GHCR |
+| `release.yml` | 推送 `v*` 标签 | 测试覆盖率门禁通过后构建并推送 `aigate:<tag>` 至 GHCR |
 | `database.yml` | push → main | 校验数据库迁移 |
 
 更多开发说明见 [DEVELOPMENT.md](../DEVELOPMENT.md)。

@@ -1,0 +1,17 @@
+# AiGate 生产 Docker Compose 示例
+# 使用 GHCR 预构建镜像，环境变量来自 .env（勿提交生产密钥）
+#
+# 使用前：
+#   1. 复制 .env.example 为 .env 并填写生产值
+#   2. 将下方 image 中的 OWNER/REPO 替换为实际 GitHub 仓库
+#   3. 生产建议使用外部托管 PostgreSQL，可删除 postgres 服务
+#
+# 启动：docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    image: ghcr.io/OWNER/REPO/aigate:latest
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    env_file: .env

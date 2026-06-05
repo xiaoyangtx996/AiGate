@@ -1,5 +1,48 @@
 # Changelog
 
+## AiGate Phase 2–6 变更摘要（2026-06）
+
+> 以下为 AiGate 全面优化计划 Phase 2–6 的主要交付摘要，详细计划见 `docs/superpowers/plans/`。
+
+### Phase 2：核心功能补全
+
+- Agent 编辑、对话流式响应、Markdown 渲染与日志查看
+- Channel 详情、测试增强与 QPS/TPM/RPM 负载配置
+- API Key 权限绑定、IP 白名单与使用统计
+- Knowledge Base 文档上传、Embedding 与分块策略
+- Prompts 版本管理与导入/导出
+- MCP Tools 连接测试、OAuth 配置与市场占位
+- Alerts、Billing、Dashboard、Gateway 与操作日志等页面增强
+
+### Phase 3：性能优化与数据库
+
+- 复合索引迁移（apiLog、channel、member 等）
+- Dashboard 批量查询与 N+1 优化
+- 前端 SWR 缓存、路由懒加载与 `@nuxt/image` 图片优化
+- API 速率限制与响应压缩
+
+### Phase 4：测试覆盖与质量保证
+
+- Vitest 单元/集成测试与覆盖率门禁（阈值 30%+）
+- Playwright E2E（登录、写操作等核心流程）
+- `ci.yml` / `build.yml` 集成 lint、test:coverage、迁移与 E2E
+
+### Phase 5：工程化与 DevOps
+
+- GitHub Actions：`ci.yml`、`deploy.yml`、`release.yml`、`database.yml`
+- Release 门禁：`release.yml` 构建镜像前运行 `test:coverage`
+- 部署文档、K8s 占位清单、`docker-compose.prod.yml` 与 Secrets 说明
+- Sentry 错误监控集成
+
+### Phase 6：用户体验与界面优化
+
+- 全局搜索与高级过滤
+- 批量删除/编辑与操作进度
+- Excel/CSV 导出与数据备份占位
+- 国际化补全与日期/数字格式化
+
+---
+
 ## [1.7.1](https://github.com/baiwumm/better-nuxt/compare/v1.7.0...v1.7.1) (2026-05-22)
 
 ### ✨ Features | 新功能

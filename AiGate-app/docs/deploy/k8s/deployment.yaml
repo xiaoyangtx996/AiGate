@@ -1,0 +1,45 @@
+# AiGate Kubernetes Deployment 占位模板
+# 使用前请将 ghcr.io/OWNER/REPO 替换为实际仓库路径，并创建 aigate-secrets
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aigate
+  labels:
+    app: aigate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aigate
+  template:
+    metadata:
+      labels:
+        app: aigate
+    spec:
+      containers:
+        - name: aigate
+          image: ghcr.io/OWNER/REPO/aigate:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: aigate-secrets
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi
