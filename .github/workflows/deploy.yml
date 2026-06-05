@@ -74,7 +74,16 @@ jobs:
       - name: Deploy to production
         run: |
           echo "Deploying AiGate to production..."
-          echo "Placeholder: wire up your deployment target here."
-          # Vercel:  npx vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
-          # Docker:  kubectl rollout restart deployment/aigate ...
-          # PM2/SSH: rsync + pm2 reload ecosystem.config.js
+          echo ""
+          echo "镜像已推送至: ghcr.io/${{ github.repository }}/aigate:latest"
+          echo ""
+          echo "生产服务器更新流程（Docker Compose）："
+          echo "  1. ssh 登录生产主机，进入部署目录"
+          echo "  2. docker login ghcr.io -u <username> -p <token>"
+          echo "  3. docker compose pull"
+          echo "  4. docker compose up -d"
+          echo ""
+          echo "更新前请执行数据库迁移："
+          echo "  pnpm dlx drizzle-kit migrate"
+          echo ""
+          echo "PM2 部署请参考 AiGate-app/docs/deploy/README.md"

@@ -64,11 +64,13 @@ pnpm preview   # 预览生产构建
 
 构建需正确配置 `DATABASE_URL` 与 `BETTER_AUTH_SECRET`。
 
-## Docker 部署
+## 部署
 
-### 构建镜像
+完整生产部署说明见 **[docs/deploy/README.md](./deploy/README.md)**，涵盖 Docker Compose、GHCR 镜像拉取、PM2 与环境变量清单。
 
-在仓库根目录执行（构建上下文为 `AiGate-app`）：
+### 快速参考
+
+**Docker 构建**（仓库根目录）：
 
 ```bash
 docker build -f AiGate-app/Dockerfile \
@@ -78,30 +80,21 @@ docker build -f AiGate-app/Dockerfile \
   AiGate-app
 ```
 
-或在 `AiGate-app` 目录下：
+**生产更新**（Docker Compose + GHCR）：
 
 ```bash
-cd AiGate-app
-docker build \
-  --build-arg DATABASE_URL="postgresql://user:pass@host:5432/aigate" \
-  --build-arg BETTER_AUTH_SECRET="your-production-secret-min-32-chars" \
-  -t aigate:latest .
+docker compose pull
+docker compose up -d
 ```
 
-### 运行容器
+**PM2**（构建后启动）：
 
 ```bash
-docker run -d \
-  --name aigate \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:pass@host:5432/aigate" \
-  -e BETTER_AUTH_SECRET="your-production-secret-min-32-chars" \
-  -e BETTER_AUTH_URL="https://your-domain.com" \
-  -e SENTRY_DSN="https://xxx@sentry.io/xxx" \
-  aigate:latest
+pnpm build
+pm2 start ecosystem.config.cjs
 ```
 
-应用默认监听 `0.0.0.0:3000`。生产环境请通过 `-e` 或 `--env-file` 注入 `.env.example` 中列出的全部必要变量。
+镜像内置 `HEALTHCHECK`（检测 `:3000`）。发布前务必执行 `pnpm dlx drizzle-kit migrate`。
 
 ### Sentry
 
@@ -109,18 +102,19 @@ docker run -d \
 
 ### CI/CD
 
-- **CI**（`.github/workflows/ci.yml`）：lint、单元测试、E2E、构建；覆盖率上传至 Codecov（需配置 `CODECOV_TOKEN` secret）。
-- **Deploy**（`.github/workflows/deploy.yml`）：main 分支推送后构建应用、打包 Docker 镜像并推送至 `ghcr.io/<owner>/<repo>/aigate:latest`。
-- **Release**（`.github/workflows/release.yml`）：推送 `v*` 标签（如 `v1.7.1`）时构建并推送 `ghcr.io/<owner>/<repo>/aigate:<tag>`。
+| 工作流 | 说明 |
+|--------|------|
+| `ci.yml` | lint、单元测试、**数据库迁移**、E2E、构建；覆盖率上传 Codecov |
+| `deploy.yml` | main 推送后构建并推送 `ghcr.io/<owner>/<repo>/aigate:latest` |
+| `release.yml` | 推送 `v*` 标签时推送 `ghcr.io/<owner>/<repo>/aigate:<tag>` |
+| `database.yml` | main 推送时校验迁移 |
 
-发布流程示例：
+发布标签示例：
 
 ```bash
 git tag v1.7.1
 git push origin v1.7.1
 ```
-
-GitHub Actions 将自动构建镜像并推送到 GHCR。生产部署目标（Vercel、K8s、PM2 等）可在 `deploy.yml` 的 Deploy 步骤中按需接入。
 
 ## API 文档
 

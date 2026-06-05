@@ -1,0 +1,38 @@
+# 依赖与构建产物
+node_modules
+.nuxt
+.output
+dist
+.cache
+
+# 测试与覆盖率
+coverage
+test-results
+playwright-report
+blob-report
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+
+# 版本控制与 IDE
+.git
+.github
+.vscode
+.cursor
+.idea
+
+# 文档与杂项（减小构建上下文）
+docs
+*.md
+!README.md
+.husky
+.claude
+
+# 日志与临时文件
+*.log
+tmp
+temp
+.DS_Store
+Thumbs.db
