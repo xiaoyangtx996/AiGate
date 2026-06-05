@@ -57,7 +57,7 @@ useFaviconFromTheme()
         </ClientOnly>
         <NuxtLayout>
           <NuxtPage
-            :transition="{ name: appStore.transition, mode: 'out-in' }"
+            :transition="{ name: appStore.transition }"
             :keepalive="{ include: menuStore.keepAliveList }"
           />
           <BackTop />

@@ -51,15 +51,20 @@ export default defineNuxtPlugin((nuxtApp) => {
 
       const res = response?._data as IResponse | undefined
 
-      // 401
+      // 401 — 仅在有会话且非登录页时提示并跳转
       if (res?.code === RESPONSE_CODE.UNAUTHORIZED) {
-        toast.add({
-          title: '登录已过期，请重新登录！',
-          color: 'error',
-        })
+        const token = useCookie('better-auth.session-token').value
+        const path = import.meta.client ? window.location.pathname : ''
+        const isAuthPage = path.startsWith('/auth')
 
-        // 重定向到登录页
-        await nuxtApp.runWithContext(() => navigateTo('/auth/sign-in'))
+        if (token && !isAuthPage) {
+          toast.add({
+            title: '登录已过期，请重新登录！',
+            color: 'error',
+          })
+          await nuxtApp.runWithContext(() => navigateTo('/auth/sign-in'))
+        }
+        return
       }
 
       toast.add({

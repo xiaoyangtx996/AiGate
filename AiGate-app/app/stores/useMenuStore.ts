@@ -18,13 +18,24 @@ export const useMenuStore = defineStore('menu-store', () => {
   const { getMenuList } = useSystemApi()
 
   const fetchMenuTree = async () => {
+    const token = useCookie('better-auth.session-token').value
+    if (!token) {
+      menuTree.value = []
+      inited.value = true
+      return
+    }
+
     loading.value = true
     try {
       const res = await getMenuList({ enabled: true })
       menuTree.value = res.data ?? []
     }
+    catch {
+      menuTree.value = []
+    }
     finally {
       loading.value = false
+      inited.value = true
     }
   }
 

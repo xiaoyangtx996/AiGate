@@ -16,12 +16,7 @@ const appScrollContainer = useAppScrollContainer()
 
 const GlobalSearch = defineAsyncComponent(() => import('@/components/GlobalSearch/index.vue'))
 
-const skeletonWidths = computed(() => {
-  return Array({ length: 6 }, () => {
-    const widths = ['w-[70%]', 'w-[75%]', 'w-[80%]', 'w-[85%]', 'w-[90%]']
-    return widths[Math.floor(Math.random() * widths.length)]
-  })
-})
+const skeletonWidths = ['w-[70%]', 'w-[75%]', 'w-[80%]', 'w-[85%]', 'w-[90%]', 'w-[72%]']
 
 const title = computed(() => {
   if (!menuStore.menuPathMap) {

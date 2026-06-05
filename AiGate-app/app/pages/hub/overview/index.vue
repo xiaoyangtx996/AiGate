@@ -2,6 +2,10 @@
 import type { ButtonProps, PageCardProps } from '@nuxt/ui'
 import pkg from '@@/package.json'
 
+definePageMeta({
+  pageTransition: false,
+})
+
 const config = useRuntimeConfig()
 const { t } = useI18n()
 const f = (key: string) => t(`pages.hub.overview.features.${key}`)
@@ -37,7 +41,7 @@ const links = computed<ButtonProps[]>(() => [
     icon: 'simple-icons:github',
   },
   {
-    label: $t('pages.hub.overview.start'),
+    label: t('pages.hub.overview.start'),
     to: '/',
     color: 'neutral',
     variant: 'subtle',
@@ -47,30 +51,41 @@ const links = computed<ButtonProps[]>(() => [
 </script>
 
 <template>
-  <div class="space-y-6">
-    <UPageHero
-      :description="config.public.appDesc"
-      :links="links"
-      :ui="{ container: '!py-0' }"
-    >
-      <template #headline>
-        <UBadge>v{{ pkg.version }}</UBadge>
-      </template>
-      <template #title>
-        Better <span class="text-primary">Nuxt</span>
-      </template>
-    </UPageHero>
-    <UPageSection :ui="{ container: '!py-0' }">
-      <UContainer class="max-w-5xl">
-        <UPageGrid :ui="{ base: 'lg:grid-cols-2' }">
-          <UPageCard
-            v-for="(feature, index) in features"
-            :key="index"
-            variant="soft"
-            v-bind="feature"
-          />
-        </UPageGrid>
-      </UContainer>
-    </UPageSection>
-  </div>
+  <ClientOnly>
+    <div class="space-y-6">
+      <UPageHero
+        :description="config.public.appDesc"
+        :links="links"
+        :ui="{ container: '!py-0' }"
+      >
+        <template #headline>
+          <UBadge>v{{ pkg.version }}</UBadge>
+        </template>
+        <template #title>
+          Better <span class="text-primary">Nuxt</span>
+        </template>
+      </UPageHero>
+      <UPageSection :ui="{ container: '!py-0' }">
+        <UContainer class="max-w-5xl">
+          <UPageGrid :ui="{ base: 'lg:grid-cols-2' }">
+            <UPageCard
+              v-for="(feature, index) in features"
+              :key="index"
+              variant="soft"
+              v-bind="feature"
+            />
+          </UPageGrid>
+        </UContainer>
+      </UPageSection>
+    </div>
+    <template #fallback>
+      <div class="space-y-4 p-6">
+        <USkeleton class="h-8 w-48" />
+        <USkeleton class="h-24 w-full" />
+        <div class="grid gap-4 lg:grid-cols-2">
+          <USkeleton v-for="i in 4" :key="i" class="h-32" />
+        </div>
+      </div>
+    </template>
+  </ClientOnly>
 </template>

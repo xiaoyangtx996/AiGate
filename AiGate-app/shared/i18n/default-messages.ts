@@ -26,6 +26,10 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         results: '搜索结果',
         placeholder: '搜索 Agents、Prompts、Channels、MCP Tools...',
       },
+      sidebarLogo: {
+        version: '版本',
+        title: '技术栈',
+      },
     },
     layout: { searchMenu: '搜索菜单', friendLink: '友情链接', github: 'GitHub', blog: '博客', lastMethod: '上次登录方式', switchAccount: '切换账号' },
     menu: {
@@ -214,6 +218,10 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       globalSearch: {
         results: 'Search results',
         placeholder: 'Search Agents, Prompts, Channels, MCP Tools...',
+      },
+      sidebarLogo: {
+        version: 'Version',
+        title: 'Tech stack',
       },
     },
     layout: { searchMenu: 'Search menu', friendLink: 'Links', github: 'GitHub', blog: 'Blog', lastMethod: 'Last sign-in method', switchAccount: 'Switch account' },

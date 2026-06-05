@@ -49,10 +49,29 @@ const OTHER_PAGES = [
   '/playground/lightbox',
 ]
 
+async function waitForServer(maxMs = 120000) {
+  const start = Date.now()
+  while (Date.now() - start < maxMs) {
+    try {
+      const res = await fetch(`${BASE}/auth/sign-in`)
+      if (res.ok) return true
+    }
+    catch { /* retry */ }
+    await new Promise(r => setTimeout(r, 2000))
+  }
+  return false
+}
+
+const AUTH_HEADERS = {
+  'Content-Type': 'application/json',
+  Origin: BASE,
+  Referer: `${BASE}/auth/sign-up`,
+}
+
 async function ensureUser() {
   const res = await fetch(`${BASE}/api/auth/sign-up/email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: AUTH_HEADERS,
     body: JSON.stringify({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
@@ -105,7 +124,13 @@ async function testPage(page, path, expectAuth = false) {
   page.off('pageerror', onPageError)
 
   const finalUrl = page.url()
-  const title = await page.title()
+  let title = ''
+  try {
+    title = await page.title()
+  }
+  catch {
+    title = '(navigation interrupted)'
+  }
   const bodyText = await page.locator('body').innerText().catch(() => '')
   const hasContent = bodyText.trim().length > 50
 
@@ -127,15 +152,16 @@ async function testPage(page, path, expectAuth = false) {
   }
 }
 
-async function login(page) {
-  await page.goto(`${BASE}/auth/sign-in`, { waitUntil: 'networkidle', timeout: 60000 })
-  const emailInput = page.locator('input[type="email"], input[name="email"]').first()
-  const passwordInput = page.locator('input[type="password"], input[name="password"]').first()
-  await emailInput.waitFor({ state: 'visible', timeout: 15000 })
-  await emailInput.fill(TEST_EMAIL)
-  await passwordInput.fill(TEST_PASSWORD)
-  await page.getByRole('button', { name: /登录|Sign in/i }).click()
-  await page.waitForURL(url => !url.pathname.includes('/auth/sign-in'), { timeout: 30000 }).catch(() => {})
+async function login(page, context) {
+  const res = await context.request.post(`${BASE}/api/auth/sign-in/email`, {
+    headers: { ...AUTH_HEADERS, Referer: `${BASE}/auth/sign-in` },
+    data: { email: TEST_EMAIL, password: TEST_PASSWORD, callbackURL: '/' },
+  })
+  if (!res.ok()) {
+    console.error('Login API:', res.status(), (await res.text()).slice(0, 200))
+    return false
+  }
+  await page.goto(`${BASE}/aigate/dashboard`, { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.waitForTimeout(2000)
   return !page.url().includes('/auth/sign-in')
 }
@@ -148,6 +174,13 @@ function formatResult(r) {
 }
 
 async function main() {
+  console.log('Waiting for dev server...')
+  if (!await waitForServer()) {
+    console.error('Dev server not ready at', BASE)
+    process.exitCode = 1
+    return
+  }
+
   const userResult = await ensureUser()
   console.log('User setup:', userResult)
 
@@ -165,7 +198,7 @@ async function main() {
   }
 
   console.log('\n=== Login ===')
-  const loggedIn = await login(page)
+  const loggedIn = await login(page, context)
   console.log(loggedIn ? 'Login OK' : 'Login FAILED')
 
   if (loggedIn) {
