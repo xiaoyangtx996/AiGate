@@ -99,6 +99,9 @@ export function useAigateApi() {
   const getApiLogList = (params?: Record<string, unknown>) => get('/aigate/api-log', params, cacheConfig.list)
   const cleanupApiLogs = () => post('/aigate/api-log/cleanup')
 
+  // Global Search
+  const globalSearch = (keyword: string) => get('/aigate/search', { keyword })
+
   return {
     getDashboard,
     getOrgList, getOrgTree, insertOrg, updateOrg,
@@ -115,5 +118,6 @@ export function useAigateApi() {
     getAlertList, markAlertRead, runAlertCheck, getAlertRules, insertAlertRule, updateAlertRule, delAlertRule,
     getBillingList, getBillingDetail, generateBilling,
     getApiLogList, cleanupApiLogs,
+    globalSearch,
   }
 }

@@ -142,7 +142,7 @@ onMounted(() => {
       </template>
     </UDashboardSidebar>
 
-    <UDashboardSearch :groups="groups" />
+    <GlobalSearch :menu-groups="groups" />
     <UDashboardPanel id="app-container" :ui="{ body: 'app-scroll-container' }">
       <template #header>
         <UDashboardNavbar>
