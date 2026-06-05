@@ -1,10 +1,10 @@
 # 监控与可观测性
 
-## Sentry 错误追踪（占位配置）
+## Sentry 错误追踪（轻量接入）
 
-AiGate 已在 `nuxt.config.ts` 的 `runtimeConfig` 中预留 `sentryDsn` 字段，默认空字符串表示未启用。
+AiGate 采用**无重型 SDK 依赖**的占位式 Sentry 集成：仅在配置了 `SENTRY_DSN` 时记录错误，便于后续无缝替换为官方 SDK。
 
-### 启用步骤
+### 配置
 
 1. 在 [Sentry](https://sentry.io) 创建项目，复制 **DSN**。
 2. 在 `.env` 或部署平台环境变量中设置：
@@ -13,16 +13,27 @@ AiGate 已在 `nuxt.config.ts` 的 `runtimeConfig` 中预留 `sentryDsn` 字段�
    SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
    ```
 
-3. 安装官方 SDK（后续集成时执行）：
+3. `nuxt.config.ts` 的 `runtimeConfig.sentryDsn` 已映射该变量，默认空字符串表示未启用。
 
-   ```bash
-   pnpm add @sentry/nuxt
-   ```
+### 实现位置
 
-4. 在 `app/plugins/sentry.client.ts` 与 `server/plugins/sentry.server.ts` 中调用 `Sentry.init({ dsn: useRuntimeConfig().sentryDsn })`。
+| 文件 | 职责 |
+|------|------|
+| `server/utils/sentry.ts` | `captureException` / `captureMessage`；DSN 非空时 `console.error` 并预留 `TODO` |
+| `server/plugins/00.sentry.ts` | Nitro `error` 钩子，未捕获异常自动调用 `captureException` |
+
+### 启用完整 SDK（可选）
+
+当需要生产级聚合、告警与性能追踪时：
+
+```bash
+pnpm add @sentry/nuxt
+```
+
+随后在 `server/utils/sentry.ts` 的 `TODO` 处接入 `Sentry.init({ dsn })` 与 `Sentry.captureException`，并可添加 `app/plugins/sentry.client.ts` 处理前端错误。
 
 ### 注意事项
 
-- 未配置 `SENTRY_DSN` 时不应初始化 Sentry，避免开发环境产生无效上报。
-- 生产环境建议同时配置 `tracesSampleRate`（如 `0.1`）控制性能追踪采样率。
-- DSN 可写入 GitHub Actions / Vercel Secrets，勿提交到仓库。
+- 未配置 `SENTRY_DSN` 时不初始化、不上报，避免开发环境无效请求。
+- 生产环境建议配置 `tracesSampleRate`（如 `0.1`）控制性能采样。
+- DSN 写入 GitHub Actions / 部署平台 Secrets，勿提交到仓库。

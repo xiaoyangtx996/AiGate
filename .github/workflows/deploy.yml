@@ -50,20 +50,32 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment: production
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
         run: |
-          echo "Building Docker image..."
-          docker build -f AiGate-app/Dockerfile -t aigate:latest AiGate-app
-          echo "Placeholder: docker push aigate:latest && deploy to your target"
+          IMAGE=ghcr.io/${{ github.repository }}/aigate:latest
+          echo "Building Docker image: $IMAGE"
+          docker build -f AiGate-app/Dockerfile -t "$IMAGE" AiGate-app
+
+      - name: Push to GHCR (placeholder)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}/aigate:latest
+          echo "Placeholder: echo \"\$GITHUB_TOKEN\" | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          echo "Placeholder: docker push $IMAGE"
+          echo "Wire up real push when production registry is ready."
 
       - name: Deploy to production
         run: |
           echo "Deploying AiGate to production..."
           echo "Placeholder: wire up your deployment target here."
           # Vercel:  npx vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
-          # Docker:  docker push aigate:latest && kubectl rollout restart ...
+          # Docker:  kubectl rollout restart deployment/aigate ...
           # PM2/SSH: rsync + pm2 reload ecosystem.config.js

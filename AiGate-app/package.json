@@ -75,6 +75,7 @@
         "@commitlint/cli": "^20.5.3",
         "@commitlint/config-conventional": "^20.5.3",
         "@iconify-json/lucide": "^1.2.109",
+        "@playwright/test": "1.52.0",
         "@release-it/conventional-changelog": "^10.0.6",
         "@types/node": "^25.9.1",
         "@types/pg": "^8.11.0",
@@ -84,14 +85,20 @@
         "drizzle-kit": "^0.31.10",
         "eslint": "^10.4.0",
         "husky": "^9.1.7",
-        "@playwright/test": "1.52.0",
+        "lint-staged": "^15.5.2",
         "playwright": "1.52.0",
+        "prettier": "^3.8.3",
         "release-it": "^19.2.4",
         "tsx": "^4.22.3",
-        "lint-staged": "^15.5.2",
         "vitest": "^2.1.8"
     },
     "lint-staged": {
-        "*.{js,ts,vue}": "eslint --fix"
+        "*.{js,ts,vue}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
     }
 }
