@@ -28,7 +28,7 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       gateway: '网关配置', gatewayOverview: 'Gateway 概览', models: '模型管理', channels: '渠道管理', apiKeys: 'API Key',
       operations: '运营中心', billing: '账单管理', apiLogs: '调用日志', alerts: '告警中心',
       systemSettings: '系统设置', userManage: '用户管理', roleManage: '角色管理', menuManage: '菜单管理', orgStructure: '组织架构', i18n: '国际化', operationLog: '操作日志',
-      hub: 'Hub', hubOverview: '平台概览', releases: '版本发布',
+      hub: 'Hub', hubOverview: '平台概览', releases: '版本发布', apiDocs: 'API 文档',
     },
     pages: {
       title: '首页',
@@ -86,7 +86,7 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       gateway: 'Gateway', gatewayOverview: 'Gateway Overview', models: 'Models', channels: 'Channels', apiKeys: 'API Keys',
       operations: 'Operations', billing: 'Billing', apiLogs: 'API Logs', alerts: 'Alerts',
       systemSettings: 'Settings', userManage: 'Users', roleManage: 'Roles', menuManage: 'Menus', orgStructure: 'Organization', i18n: 'i18n', operationLog: 'Audit Log',
-      hub: 'Hub', hubOverview: 'Overview', releases: 'Releases',
+      hub: 'Hub', hubOverview: 'Overview', releases: 'Releases', apiDocs: 'API Docs',
     },
     pages: {
       title: 'Home',

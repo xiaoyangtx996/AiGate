@@ -63,3 +63,11 @@ pnpm preview   # 预览生产构建
 ```
 
 构建需正确配置 `DATABASE_URL` 与 `BETTER_AUTH_SECRET`。
+
+## API 文档
+
+- 浏览器访问：`http://localhost:5173/docs/api`（Swagger UI，基于 OpenAPI 规范）
+- 原始 JSON：`GET /api/openapi`
+- 侧边栏入口：Hub → API 文档
+
+贡献流程见 [CONTRIBUTING.md](./CONTRIBUTING.md)。

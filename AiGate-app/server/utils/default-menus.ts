@@ -295,6 +295,17 @@ export const defaultMenuSeeds: MenuSeed[] = [
     keepAlive: false,
     permissions: 0,
   },
+  {
+    id: "menu-hub-api-docs",
+    label: "menu.apiDocs",
+    icon: "lucide:book-open-text",
+    to: "/docs/api",
+    parentId: "menu-hub",
+    sort: 3,
+    enabled: true,
+    keepAlive: false,
+    permissions: 0,
+  },
 ]
 
 export async function seedDefaultMenus(db: typeof import("@/db/drizzle").db) {
