@@ -102,5 +102,62 @@ describe('logs utils', () => {
     it('should return empty object for empty headers', () => {
       expect(sanitizeHeaders({})).toEqual({})
     })
+
+    it('should preserve non-sensitive headers unchanged', () => {
+      const result = sanitizeHeaders({
+        accept: 'application/json',
+        'user-agent': 'vitest',
+        'x-request-id': 'req-1',
+      })
+
+      expect(result).toEqual({
+        accept: 'application/json',
+        'user-agent': 'vitest',
+        'x-request-id': 'req-1',
+      })
+    })
+  })
+
+  describe('sanitizeLogData edge cases', () => {
+    it('should redact keys containing sensitive substrings', () => {
+      const result = sanitizeLogData({
+        mySecretValue: 'hidden',
+        refreshToken: 'token-1',
+        clientApiKey: 'key-2',
+        plainField: 'visible',
+      })
+
+      expect(result.mySecretValue).toBe('***REDACTED***')
+      expect(result.refreshToken).toBe('***REDACTED***')
+      expect(result.clientApiKey).toBe('***REDACTED***')
+      expect(result.plainField).toBe('visible')
+    })
+
+    it('should leave null and primitive nested values untouched', () => {
+      const result = sanitizeLogData({
+        meta: {
+          note: null,
+          count: 0,
+          enabled: false,
+        },
+      })
+
+      expect(result.meta).toEqual({
+        note: null,
+        count: 0,
+        enabled: false,
+      })
+    })
+
+    it('should not recurse into arrays even when items look sensitive', () => {
+      const tags = [{ password: 'secret' }]
+      const result = sanitizeLogData({ tags })
+
+      expect(result.tags).toBe(tags)
+    })
+
+    it('should handle empty objects', () => {
+      expect(sanitizeLogData({})).toEqual({})
+    })
   })
 })

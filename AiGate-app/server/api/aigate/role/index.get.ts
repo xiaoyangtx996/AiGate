@@ -1,4 +1,4 @@
-import { asc, eq, ilike } from 'drizzle-orm'
+import { and, asc, eq, ilike, or } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { role } from '@/db/schema'
 

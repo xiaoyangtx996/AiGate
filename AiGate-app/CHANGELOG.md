@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.1] - 2026-06-05
+
+### 测试
+- **506** 项测试（+54），覆盖率 **91.7%**（阈值 85%）
+- MCP tool CRUD、prompt POST、role/org 列表、agent chat handler 测试
+- context/logs/index-utils/pagination utils 扩展
+
+### 修复
+- `role/index.get.ts` 补全缺失的 `or`/`and` drizzle 导入
+
+---
+
 ## [1.8.0] - 2026-06-05
 
 ### 测试

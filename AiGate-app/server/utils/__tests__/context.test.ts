@@ -84,5 +84,45 @@ describe('context utils', () => {
       expect(principal.organizationId).toBeNull()
       expect(principal.isAdmin).toBe(false)
     })
+
+    it('should prefer first db role over default user when session role is absent', () => {
+      const principal = buildPrincipal({
+        userId: 'user-3',
+        email: 'editor@example.com',
+        roleIds: ['editor', 'viewer'],
+        memberships: [{ organizationId: 'org-2' }],
+      })
+
+      expect(principal.role).toBe('editor')
+      expect(principal.isAdmin).toBe(false)
+    })
+
+    it('should treat empty preferred role as absent and use db roles', () => {
+      expect(resolveRole('', ['manager'])).toBe('manager')
+    })
+  })
+
+  describe('principal edge cases', () => {
+    it('should use only first organization when multiple memberships exist', () => {
+      const principal = buildPrincipal({
+        userId: 'user-4',
+        email: 'multi@example.com',
+        roleIds: ['user'],
+        memberships: [{ organizationId: 'org-primary' }, { organizationId: 'org-secondary' }],
+      })
+
+      expect(principal.organizationId).toBe('org-primary')
+    })
+
+    it('should mark editor role as non-admin', () => {
+      const principal = buildPrincipal({
+        userId: 'user-5',
+        email: 'editor@example.com',
+        preferredRole: 'editor',
+      })
+
+      expect(principal.role).toBe('editor')
+      expect(principal.isAdmin).toBe(false)
+    })
   })
 })

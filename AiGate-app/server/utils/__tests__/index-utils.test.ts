@@ -72,6 +72,11 @@ describe('index utils', () => {
 
       expect(result.msg).toBe('未知错误')
     })
+
+    it('should handle null and undefined errors', () => {
+      expect(catchError(null).msg).toBe('未知错误')
+      expect(catchError(undefined).msg).toBe('未知错误')
+    })
   })
 
   describe('convertFlatDataToTree', () => {
@@ -107,6 +112,28 @@ describe('index utils', () => {
 
     it('should return empty array for empty input', () => {
       expect(convertFlatDataToTree([])).toEqual([])
+    })
+
+    it('should build multi-level tree with shared parent references', () => {
+      const flat = [
+        { id: '1', name: 'root', parentId: null },
+        { id: '2', name: 'branch-a', parentId: '1' },
+        { id: '3', name: 'branch-b', parentId: '1' },
+        { id: '4', name: 'leaf', parentId: '2' },
+      ]
+
+      const tree = convertFlatDataToTree(flat, null)
+      const leaf = tree[0].children?.[0].children?.[0]
+
+      expect(leaf?.id).toBe('4')
+      expect(leaf?.children).toBeUndefined()
+    })
+
+    it('should omit empty children arrays from output nodes', () => {
+      const flat = [{ id: 'solo', name: 'Solo', parentId: null }]
+      const tree = convertFlatDataToTree(flat, null)
+
+      expect(tree[0].children).toBeUndefined()
     })
   })
 
@@ -158,6 +185,33 @@ describe('index utils', () => {
 
       expect(result.en).toEqual({ onlyEn: 'Hello' })
       expect(result['zh-CN']).toEqual({ onlyZh: '你好' })
+    })
+
+    it('should build deeply nested locale objects', () => {
+      const nodes = [
+        {
+          id: '1',
+          name: 'app',
+          en: null,
+          zh: null,
+          children: [
+            {
+              id: '2',
+              name: 'nav',
+              en: null,
+              zh: null,
+              children: [
+                { id: '3', name: 'home', en: 'Home', zh: '首页', children: [] },
+              ],
+            },
+          ],
+        },
+      ] as InternalizationTree[]
+
+      const result = transformToLangTree(nodes)
+
+      expect(result.en).toEqual({ app: { nav: { home: 'Home' } } })
+      expect(result['zh-CN']).toEqual({ app: { nav: { home: '首页' } } })
     })
   })
 })
