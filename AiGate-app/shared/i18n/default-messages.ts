@@ -21,6 +21,12 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       required: '此项为必填', placeholder: '请输入', select: '请选择', cancel: '取消', save: '保存', inSave: '保存中...', sort: '排序', icon: '图标', enabled: '启用', yes: '是', no: '否', action: '操作', actionSuccess: '操作成功', actionFailed: '操作失败', deleteSuccess: '删除成功', saveSuccess: '保存成功', confirmDeleteTitle: '确认删除', confirmDeleteDescription: '删除后无法恢复，是否继续？', confirmDelete: '确认删除', inDelete: '删除中...', confirm: '确认', noData: '暂无数据', emptyTitle: '暂无内容', emptyDescription: '当前没有任何数据，您可以创建一条新记录', searchKeyword: '搜索关键词', columnVisibility: '列显示', parent: '上级', parentHelp: '留空表示顶级', selectAll: '全选', batchDelete: '批量删除', exportCsv: '导出 CSV', selectedCount: '已选择 {count} 项', total: '共 {total} 条，当前 {from}-{to}', pageSize: '每页 {size} 条', requestError: '请求失败，请稍后重试', createdAt: '创建时间',
     },
     errorBoundary: { title: '页面加载出错', description: '抱歉，当前页面遇到了问题。您可以尝试重新加载。', retry: '重试' },
+    components: {
+      globalSearch: {
+        results: '搜索结果',
+        placeholder: '搜索 Agents、Prompts、Channels、MCP Tools...',
+      },
+    },
     layout: { searchMenu: '搜索菜单', friendLink: '友情链接', github: 'GitHub', blog: '博客', lastMethod: '上次登录方式', switchAccount: '切换账号' },
     menu: {
       workspace: '工作台', dashboard: '运营概览',
@@ -204,6 +210,12 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
       required: 'This field is required', placeholder: 'Please enter', select: 'Please select', cancel: 'Cancel', save: 'Save', inSave: 'Saving...', sort: 'Sort', icon: 'Icon', enabled: 'Enabled', yes: 'Yes', no: 'No', action: 'Actions', actionSuccess: 'Success', actionFailed: 'Operation failed', deleteSuccess: 'Deleted successfully', saveSuccess: 'Saved successfully', confirmDeleteTitle: 'Confirm delete', confirmDeleteDescription: 'This action cannot be undone. Continue?', confirmDelete: 'Delete', inDelete: 'Deleting...', confirm: 'Confirm', noData: 'No data', emptyTitle: 'Nothing here yet', emptyDescription: 'No data found. You can create a new entry to get started.', searchKeyword: 'Search keyword', columnVisibility: 'Columns', parent: 'Parent', parentHelp: 'Leave empty for top level', selectAll: 'Select all', batchDelete: 'Batch delete', exportCsv: 'Export CSV', selectedCount: '{count} selected', total: '{from}-{to} of {total}', pageSize: '{size} / page', requestError: 'Request failed. Please try again.', createdAt: 'Created at',
     },
     errorBoundary: { title: 'Something went wrong', description: 'Sorry, this page encountered an error. You can try reloading.', retry: 'Retry' },
+    components: {
+      globalSearch: {
+        results: 'Search results',
+        placeholder: 'Search Agents, Prompts, Channels, MCP Tools...',
+      },
+    },
     layout: { searchMenu: 'Search menu', friendLink: 'Links', github: 'GitHub', blog: 'Blog', lastMethod: 'Last sign-in method', switchAccount: 'Switch account' },
     menu: {
       workspace: 'Workspace', dashboard: 'Dashboard',

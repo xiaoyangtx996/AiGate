@@ -19,6 +19,7 @@ const AIGATE_PAGES = [
   '/aigate/dashboard',
   '/aigate/dashboard/organization',
   '/aigate/agents',
+  '/aigate/agents/chat',
   '/aigate/agents/create',
   '/aigate/channels',
   '/aigate/api-keys',
@@ -30,12 +31,16 @@ const AIGATE_PAGES = [
   '/aigate/knowledge-base',
   '/aigate/prompts',
   '/aigate/alerts',
+  '/aigate/alerts/rules',
   '/aigate/billing',
+  '/aigate/gateway',
+  '/aigate/gateway/routes',
   '/aigate/organizations',
   '/aigate/members',
 ]
 
 const OTHER_PAGES = [
+  '/docs/api',
   '/hub/overview',
   '/hub/releases',
   '/playground/charts',

@@ -134,5 +134,118 @@ describe('aigate billing handlers', () => {
 
       expect(response.data).toEqual(items)
     })
+
+    it('should query without organization filter when principal has no organization', async () => {
+      const items = [{ id: 'bill-global', period: '2026-04' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await billingListHandler(createMockEvent({
+        query: { page: '1', pageSize: '20' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items,
+        total: 1,
+        page: 1,
+        pageSize: 20,
+      })
+    })
+
+    it('should treat null organizationId as unscoped query', async () => {
+      const items = [{ id: 'bill-null-org', period: '2026-03' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await billingListHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        query: { page: '1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items,
+        total: 1,
+        page: 1,
+        pageSize: 20,
+      })
+    })
+
+    it('should default page and clamp negative pageSize to minimum of 1', async () => {
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 0 }]))
+        .mockReturnValueOnce(createListSelectChain([]))
+
+      const response = await billingListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: 'abc', pageSize: '-5' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 1,
+      })
+    })
+
+    it('should clamp pageSize to maximum of 100', async () => {
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 0 }]))
+        .mockReturnValueOnce(createListSelectChain([]))
+
+      const response = await billingListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '2', pageSize: '500' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items: [],
+        total: 0,
+        page: 2,
+        pageSize: 100,
+      })
+    })
+
+    it('should default total to 0 when count row is missing', async () => {
+      const items = [{ id: 'bill-2', period: '2026-02' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await billingListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '1', pageSize: '10' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items,
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      })
+    })
+
+    it('should return responseError when db throws', async () => {
+      mockSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockRejectedValue(new Error('Database unavailable')),
+        }),
+      })
+
+      const response = await billingListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        query: { page: '1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect((response.data as Error).message).toBe('Database unavailable')
+    })
   })
 })

@@ -95,5 +95,119 @@ describe('aigate alert rule handlers', () => {
       expect(response.data).toEqual(created)
       expect(mockInsert).toHaveBeenCalledTimes(1)
     })
+
+    it('should default enabled to true when omitted', async () => {
+      const created = { id: 'rule-default-enabled', name: 'Quota', type: 'quota_warning', enabled: true }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { name: 'Quota', type: 'quota_warning' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }))
+    })
+
+    it('should default condition to empty object when omitted', async () => {
+      const created = { id: 'rule-default-condition', name: 'Usage', type: 'usage_spike', enabled: true }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { name: 'Usage', type: 'usage_spike', enabled: true },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ condition: {} }))
+    })
+
+    it('should default notifyChannels to empty array when omitted', async () => {
+      const created = { id: 'rule-default-channels', name: 'Budget', type: 'budget_limit', enabled: true }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { name: 'Budget', type: 'budget_limit', enabled: true, condition: {} },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ notifyChannels: [] }))
+    })
+
+    it('should create rule without principal organization', async () => {
+      const created = { id: 'rule-global', name: 'Global', type: 'system', enabled: true }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        body: {
+          name: 'Global',
+          type: 'system',
+          enabled: true,
+          condition: { level: 'critical' },
+          notifyChannels: ['email'],
+        },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual(created)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ organizationId: undefined }))
+    })
+
+    it('should respect enabled false when explicitly set', async () => {
+      const created = { id: 'rule-disabled', name: 'Paused', type: 'quota_warning', enabled: false }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { name: 'Paused', type: 'quota_warning', enabled: false },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }))
+    })
+
+    it('should use empty defaults for falsy condition and notifyChannels', async () => {
+      const created = { id: 'rule-falsy-defaults', name: 'Minimal', type: 'custom', enabled: true }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: {
+          name: 'Minimal',
+          type: 'custom',
+          condition: null,
+          notifyChannels: null,
+        },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({
+        condition: {},
+        notifyChannels: [],
+      }))
+    })
+
+    it('should return responseError when db throws', async () => {
+      mockInsert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockRejectedValue(new Error('Database unavailable')),
+        }),
+      })
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { name: 'Fail', type: 'quota_warning' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect((response.data as Error).message).toBe('Database unavailable')
+    })
   })
 })

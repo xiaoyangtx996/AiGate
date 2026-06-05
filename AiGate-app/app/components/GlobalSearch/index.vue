@@ -13,6 +13,7 @@ const props = defineProps<{
   menuGroups?: CommandPaletteGroup<CommandPaletteItem>[]
 }>()
 
+const { t } = useI18n()
 const { globalSearch } = useAigateApi()
 const isOpen = ref(false)
 const searchQuery = ref('')
@@ -63,7 +64,7 @@ const groups = computed(() => {
   if (searchQuery.value.length >= 2) {
     paletteGroups.unshift({
       id: 'results',
-      label: '搜索结果',
+      label: t('components.globalSearch.results'),
       ignoreFilter: true,
       items: results.value.map(r => ({
         id: `${r.type}-${r.id}`,
@@ -102,7 +103,7 @@ useRuntimeHook('dashboard:search:toggle', () => {
         v-model:search-term="searchQuery"
         :loading="loading"
         :groups="groups"
-        placeholder="搜索 Agents、Prompts、Channels、MCP Tools..."
+        :placeholder="t('components.globalSearch.placeholder')"
         :fuse="{ fuseOptions: { useTokenSearch: true } }"
         @update:model-value="onSelect"
       />

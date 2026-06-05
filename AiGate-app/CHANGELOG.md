@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.2] - 2026-06-05
+
+### 测试
+- **530** 项测试（+24），覆盖率 **92.4%**
+- `role.get.ts` 零覆盖补全，billing/member/alert-rule 分支测试扩展
+- `test/smoke-routes.test.ts` 静态校验 smoke 路由完整性
+
+### UX / 性能
+- GlobalSearch i18n + `default.vue` 懒加载
+- page-smoke-test 新增 gateway/chat/docs/alerts/rules 等 6 条路由
+
+---
+
 ## [1.8.1] - 2026-06-05
 
 ### 测试

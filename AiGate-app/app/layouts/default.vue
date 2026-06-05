@@ -14,6 +14,8 @@ const route = useRoute()
 const { menuItems } = useMenu()
 const appScrollContainer = useAppScrollContainer()
 
+const GlobalSearch = defineAsyncComponent(() => import('@/components/GlobalSearch/index.vue'))
+
 const skeletonWidths = computed(() => {
   return Array({ length: 6 }, () => {
     const widths = ['w-[70%]', 'w-[75%]', 'w-[80%]', 'w-[85%]', 'w-[90%]']
@@ -150,7 +152,9 @@ onMounted(() => {
       </template>
     </UDashboardSidebar>
 
-    <GlobalSearch :menu-groups="groups" />
+    <ClientOnly>
+      <GlobalSearch :menu-groups="groups" />
+    </ClientOnly>
     <UDashboardPanel id="app-container" :ui="{ body: 'app-scroll-container' }">
       <template #header>
         <UDashboardNavbar>

@@ -124,5 +124,71 @@ describe('aigate member handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
     })
+
+    it('should return 404 when member exists in another organization', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([]))
+
+      const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'member-other-org' },
+      }))
+
+      expect(response.code).toBe(404)
+      expect(response.msg).toBe('成员不存在或无权操作')
+      expect(mockDelete).toHaveBeenCalledTimes(1)
+    })
+
+    it('should delete by id only when principal organizationId is null', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([{ id: 'member-3' }]))
+
+      const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        params: { id: 'member-3' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toBeNull()
+      expect(mockDelete).toHaveBeenCalledTimes(1)
+    })
+
+    it('should return null data on successful delete', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([{ id: 'member-1' }]))
+
+      const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'member-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toBeNull()
+    })
+
+    it('should return 404 when principal is scoped but member id is missing', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([]))
+
+      const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-2' } },
+        params: { id: 'nonexistent' },
+      }))
+
+      expect(response.code).toBe(404)
+      expect(response.msg).toBe('成员不存在或无权操作')
+    })
+
+    it('should return responseError when db throws', async () => {
+      mockDelete.mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockRejectedValue(new Error('Database unavailable')),
+        }),
+      })
+
+      const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'member-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect((response.data as Error).message).toBe('Database unavailable')
+    })
   })
 })
