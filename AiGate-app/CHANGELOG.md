@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.3] - 2026-06-05
+
+### 修复
+
+- E2E 23 项全部通过：delPrompt、logs 中间件、OpenAPI 公开路由、API Key 创建
+- 统一迁移脚本 `apply-all-migrations.mjs`，CI E2E 前自动执行
+
+### 功能
+
+- 空状态组件 EmptyState（agents/prompts/channels）
+- 244 项单元测试，覆盖率约 35%
+
+---
+
 ## [1.7.2] - 2026-06-05
 
 ### 测试与质量
