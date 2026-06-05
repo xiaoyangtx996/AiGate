@@ -1,14 +1,21 @@
-﻿import { desc, eq } from 'drizzle-orm'
+﻿import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { billingRecord } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
+    const query = getQuery(event)
+    const page = Math.max(1, Number(query.page) || 1)
+    const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20))
+    const offset = (page - 1) * pageSize
     const principal = event.context.principal as { organizationId?: string | null } | undefined
-    const data = principal?.organizationId
-      ? await db.select().from(billingRecord).where(eq(billingRecord.organizationId, principal.organizationId)).orderBy(desc(billingRecord.createdAt))
-      : await db.select().from(billingRecord).orderBy(desc(billingRecord.createdAt))
-    return responseSuccess(data)
+    const where = principal?.organizationId
+      ? eq(billingRecord.organizationId, principal.organizationId)
+      : undefined
+
+    const [countRow] = await db.select({ total: sql<number>`count(*)::int` }).from(billingRecord).where(where)
+    const data = await db.select().from(billingRecord).where(where).orderBy(desc(billingRecord.createdAt)).limit(pageSize).offset(offset)
+    return responseSuccess(query.page ? { items: data, total: countRow?.total || 0, page, pageSize } : data)
   }
   catch (err) { return responseError(err) }
 })

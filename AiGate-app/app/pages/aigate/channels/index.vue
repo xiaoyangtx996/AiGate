@@ -4,12 +4,23 @@ const { successToast } = useAppToast()
 const { t } = useI18n()
 
 const keyword = ref('')
-const { data, pending: loading, refresh } = await useAsyncData('aigate-channels', async () => {
-  const res = await getChannelList({ keyword: keyword.value })
-  return res.data ?? []
-})
+const page = ref(1)
+const pageSize = ref(20)
 
-const list = computed(() => data.value || [])
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-channels',
+  async () => {
+    const res = await getChannelList({ keyword: keyword.value, page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 20 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+
+const list = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 
 const open = ref(false)
 const editData = ref<any>(null)
@@ -101,7 +112,7 @@ const p = (key: string) => t(`pages.aigate.channels.${key}`)
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="refresh" />
+        <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="() => { page = 1; refresh() }" />
         <UButton :loading="healthChecking" icon="lucide:heart-pulse" variant="outline" size="sm" @click="handleHealthCheck()">{{ p('healthCheck') }}</UButton>
       </div>
       <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
@@ -131,6 +142,14 @@ const p = (key: string) => t(`pages.aigate.channels.${key}`)
         </div>
       </template>
     </UTable>
+
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
+    </div>
 
     <UModal v-model:open="showHealthDetail">
       <template #header>

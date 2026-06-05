@@ -91,7 +91,7 @@ export function useAigateApi() {
   const delAlertRule = (id: string) => del(`/aigate/alert/rule/${id}`)
 
   // Billing
-  const getBillingList = () => get('/aigate/billing', undefined, cacheConfig.list)
+  const getBillingList = (params?: Record<string, unknown>) => get('/aigate/billing', params, cacheConfig.list)
   const getBillingDetail = (id: string) => get(`/aigate/billing/${id}`)
   const generateBilling = (period?: string) => post('/aigate/billing/generate', period ? { period } : {})
 

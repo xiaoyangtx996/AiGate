@@ -3,11 +3,22 @@ const { getPromptList, insertPrompt, updatePrompt, delPrompt, getPromptVersions,
 const { successToast } = useAppToast()
 const { t } = useI18n()
 
-const { data, pending: loading, refresh } = await useAsyncData('aigate-prompts', async () => {
-  const res = await getPromptList()
-  return res.data ?? []
-})
-const list = computed(() => data.value || [])
+const page = ref(1)
+const pageSize = ref(20)
+
+const { data, pending: loading, refresh } = await useAsyncData(
+  'aigate-prompts',
+  async () => {
+    const res = await getPromptList({ page: page.value, pageSize: pageSize.value })
+    return res.data ?? { items: [], total: 0, page: 1, pageSize: 20 }
+  },
+  {
+    watch: [page, pageSize],
+    dedupe: 'defer',
+  },
+)
+const list = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 
 const open = ref(false)
 const editData = ref<any>(null)
@@ -142,6 +153,14 @@ async function handleImportFile(e: Event) {
     <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
       <UIcon name="lucide:message-square-text" class="text-4xl mb-2" />
       <p>{{ $t('common.noData') }}</p>
+    </div>
+
+    <div v-if="total > 0" class="flex justify-end">
+      <UPagination
+        v-model:page="page"
+        :items-per-page="pageSize"
+        :total="total"
+      />
     </div>
 
     <UModal v-model:open="open">

@@ -1,16 +1,22 @@
-﻿import { and, asc, eq, ilike } from 'drizzle-orm'
+﻿import { and, asc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { prompt } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
+    const page = Math.max(1, Number(query.page) || 1)
+    const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20))
+    const offset = (page - 1) * pageSize
     const principal = event.context.principal as { organizationId?: string | null } | undefined
     const conditions = []
     if (principal?.organizationId) { conditions.push(eq(prompt.organizationId, principal.organizationId)) }
     if (query.keyword) { conditions.push(ilike(prompt.name, `%${query.keyword}%`)) }
-    const data = await db.select().from(prompt).where(conditions.length ? and(...conditions) : undefined).orderBy(asc(prompt.createdAt))
-    return responseSuccess(data)
+    const where = conditions.length ? and(...conditions) : undefined
+
+    const [countRow] = await db.select({ total: sql<number>`count(*)::int` }).from(prompt).where(where)
+    const data = await db.select().from(prompt).where(where).orderBy(asc(prompt.createdAt)).limit(pageSize).offset(offset)
+    return responseSuccess(query.page ? { items: data, total: countRow?.total || 0, page, pageSize } : data)
   }
   catch (err) { return responseError(err) }
 })
