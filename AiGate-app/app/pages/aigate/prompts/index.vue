@@ -3,6 +3,8 @@ const { getPromptList, insertPrompt, updatePrompt, delPrompt, getPromptVersions,
 const { successToast } = useAppToast()
 const { t } = useI18n()
 
+const DEFAULT_CATEGORY = '通用'
+
 const page = ref(1)
 const pageSize = ref(20)
 
@@ -38,31 +40,41 @@ const {
 })
 
 const open = ref(false)
-const editData = ref<any>(null)
+const editData = ref<{ id: string } | null>(null)
 const saveLoading = ref(false)
 
 const form = reactive({
   name: '',
   description: '',
   content: '',
-  category: '通用',
+  category: DEFAULT_CATEGORY,
 })
+
+const p = (key: string) => t(`pages.aigate.prompts.${key}`)
+
+const categoryOptions = computed(() => [
+  { label: p('categories.general'), value: '通用' },
+  { label: p('categories.code'), value: '代码' },
+  { label: p('categories.writing'), value: '写作' },
+  { label: p('categories.translation'), value: '翻译' },
+  { label: p('categories.analysis'), value: '分析' },
+])
 
 function handleAdd() {
   editData.value = null
   form.name = ''
   form.description = ''
   form.content = ''
-  form.category = '通用'
+  form.category = DEFAULT_CATEGORY
   open.value = true
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: { id: string, name?: string, description?: string, content?: string, category?: string }) {
   editData.value = row
   form.name = row.name || ''
   form.description = row.description || ''
   form.content = row.content || ''
-  form.category = row.category || '通用'
+  form.category = row.category || DEFAULT_CATEGORY
   open.value = true
 }
 
@@ -89,14 +101,12 @@ async function handleSubmit() {
   }
 }
 
-const p = (key: string) => t(`pages.aigate.prompts.${key}`)
-
 const versionOpen = ref(false)
 const versionPromptId = ref('')
-const versions = ref<any[]>([])
+const versions = ref<{ id: string, version: number, content: string, createdAt: string }[]>([])
 const versionLoading = ref(false)
 
-async function handleShowVersions(item: any) {
+async function handleShowVersions(item: { id: string }) {
   versionPromptId.value = item.id
   versionOpen.value = true
   versionLoading.value = true
@@ -109,7 +119,7 @@ async function handleShowVersions(item: any) {
 
 async function handleRestore(versionId: string) {
   await restorePromptVersion(versionPromptId.value, versionId)
-  successToast('已恢复该版本')
+  successToast(p('versionRestored'))
   versionOpen.value = false
   refresh()
 }
@@ -132,7 +142,7 @@ async function handleImportFile(e: Event) {
   const text = await file.text()
   const items = JSON.parse(text)
   const res = await importPrompts(items)
-  successToast(`已导入 ${res.data?.imported || 0} 条`)
+  successToast(p('importDone', { count: res.data?.imported || 0 }))
   refresh()
 }
 </script>
@@ -142,9 +152,9 @@ async function handleImportFile(e: Event) {
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-bold">{{ p('title') }}</h2>
       <div class="flex gap-2">
-        <UButton icon="lucide:upload" variant="outline" @click="importInput?.click()">导入</UButton>
+        <UButton icon="lucide:upload" variant="outline" @click="importInput?.click()">{{ p('import') }}</UButton>
         <input ref="importInput" type="file" accept=".json" class="hidden" @change="handleImportFile">
-        <UButton icon="lucide:download" variant="outline" @click="handleExport">导出</UButton>
+        <UButton icon="lucide:download" variant="outline" @click="handleExport">{{ p('export') }}</UButton>
         <UButton icon="lucide:plus" @click="handleAdd">{{ p('create') }}</UButton>
       </div>
     </div>
@@ -164,9 +174,9 @@ async function handleImportFile(e: Event) {
       :data="list"
       :columns="[
         { accessorKey: 'select', header: '' },
-        { accessorKey: 'name', header: '名称' },
+        { accessorKey: 'name', header: p('name') },
         { accessorKey: 'category', header: p('category') },
-        { accessorKey: 'description', header: '描述' },
+        { accessorKey: 'description', header: p('description') },
         { accessorKey: 'usageCount', header: p('usage') },
         { accessorKey: 'actions', header: $t('common.action') },
       ]"
@@ -245,22 +255,16 @@ async function handleImportFile(e: Event) {
       <template #body>
         <div class="space-y-4">
           <UFormField :label="p('category')">
-            <USelect v-model="form.category" :items="[
-              { label: '通用', value: '通用' },
-              { label: '代码', value: '代码' },
-              { label: '写作', value: '写作' },
-              { label: '翻译', value: '翻译' },
-              { label: '分析', value: '分析' },
-            ]" />
+            <USelect v-model="form.category" :items="categoryOptions" />
           </UFormField>
-          <UFormField label="名称" required>
-            <UInput v-model="form.name" placeholder="如：代码审查专家" />
+          <UFormField :label="p('name')" required>
+            <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
           </UFormField>
-          <UFormField label="描述">
-            <UInput v-model="form.description" placeholder="简要描述这个提示词的用途" />
+          <UFormField :label="p('description')">
+            <UInput v-model="form.description" :placeholder="p('descriptionPlaceholder')" />
           </UFormField>
-          <UFormField label="内容" required>
-            <UTextarea v-model="form.content" placeholder="输入提示词内容..." :rows="6" />
+          <UFormField :label="p('content')" required>
+            <UTextarea v-model="form.content" :placeholder="p('contentPlaceholder')" :rows="6" />
           </UFormField>
         </div>
       </template>
@@ -275,10 +279,10 @@ async function handleImportFile(e: Event) {
     </UModal>
 
     <UModal v-model:open="versionOpen">
-      <template #header><h3 class="font-bold">版本历史</h3></template>
+      <template #header><h3 class="font-bold">{{ p('versionHistory') }}</h3></template>
       <template #body>
-        <div v-if="versionLoading" class="text-center py-6">加载中...</div>
-        <div v-else-if="versions.length === 0" class="text-center py-6 text-muted">暂无历史版本</div>
+        <div v-if="versionLoading" class="text-center py-6">{{ p('loading') }}</div>
+        <div v-else-if="versions.length === 0" class="text-center py-6 text-muted">{{ p('noVersions') }}</div>
         <div v-else class="space-y-3">
           <UCard v-for="v in versions" :key="v.id">
             <div class="flex items-center justify-between mb-2">
@@ -286,7 +290,7 @@ async function handleImportFile(e: Event) {
               <span class="text-xs text-muted">{{ new Date(v.createdAt).toLocaleString() }}</span>
             </div>
             <p class="text-sm font-mono line-clamp-3">{{ v.content }}</p>
-            <UButton size="xs" class="mt-2" variant="outline" @click="handleRestore(v.id)">恢复此版本</UButton>
+            <UButton size="xs" class="mt-2" variant="outline" @click="handleRestore(v.id)">{{ p('restoreVersion') }}</UButton>
           </UCard>
         </div>
       </template>

@@ -1,7 +1,11 @@
 <script setup lang="ts">
 const route = useRoute()
 const { getBillingDetail } = useAigateApi()
+const { t } = useI18n()
 const id = computed(() => route.params.id as string)
+
+const p = (key: string) => t(`pages.aigate.billing.detail.${key}`)
+const b = (key: string) => t(`pages.aigate.billing.${key}`)
 
 const { data, pending: loading } = await useAsyncData(
   () => `billing-${id.value}`,
@@ -18,8 +22,8 @@ function formatTokens(n: number) { return n >= 1000000 ? `${(n / 1000000).toFixe
 function exportCsv() {
   if (!data.value) return
   const rows = [
-    ['模型', '请求数', 'Token', '费用(分)'],
-    ...(data.value.modelBreakdown || []).map((m: any) => [m.model, m.requests, m.tokens, m.cost]),
+    [p('model'), p('requests'), p('tokens'), p('costCents')],
+    ...(data.value.modelBreakdown || []).map((m: { model: string, requests: number, tokens: number, cost: number }) => [m.model, m.requests, m.tokens, m.cost]),
   ]
   const csv = rows.map(r => r.join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -38,29 +42,29 @@ function exportCsv() {
       <div class="flex items-center gap-3">
         <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/billing" />
         <div>
-          <h2 class="text-xl font-bold">账单详情</h2>
+          <h2 class="text-xl font-bold">{{ p('title') }}</h2>
           <p class="text-sm text-muted">{{ data?.organizationName }} · {{ data?.period }}</p>
         </div>
       </div>
-      <UButton icon="lucide:download" variant="outline" @click="exportCsv">导出 CSV</UButton>
+      <UButton icon="lucide:download" variant="outline" @click="exportCsv">{{ p('exportCsv') }}</UButton>
     </div>
 
-    <div v-if="loading" class="text-center py-12">加载中...</div>
+    <div v-if="loading" class="text-center py-12">{{ p('loading') }}</div>
     <template v-else-if="data">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <UCard><p class="text-sm text-muted">Token 用量</p><p class="text-2xl font-bold">{{ formatTokens(data.tokenUsage) }}</p></UCard>
-        <UCard><p class="text-sm text-muted">费用</p><p class="text-2xl font-bold text-primary">{{ formatCost(data.cost) }}</p></UCard>
-        <UCard><p class="text-sm text-muted">状态</p><UBadge variant="subtle">{{ data.status }}</UBadge></UCard>
-        <UCard><p class="text-sm text-muted">到期日</p><p class="font-bold">{{ data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '-' }}</p></UCard>
+        <UCard><p class="text-sm text-muted">{{ b('tokenUsage') }}</p><p class="text-2xl font-bold">{{ formatTokens(data.tokenUsage) }}</p></UCard>
+        <UCard><p class="text-sm text-muted">{{ b('cost') }}</p><p class="text-2xl font-bold text-primary">{{ formatCost(data.cost) }}</p></UCard>
+        <UCard><p class="text-sm text-muted">{{ b('status') }}</p><UBadge variant="subtle">{{ data.status }}</UBadge></UCard>
+        <UCard><p class="text-sm text-muted">{{ b('dueDate') }}</p><p class="font-bold">{{ data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '-' }}</p></UCard>
       </div>
 
       <UCard>
-        <template #header><h3 class="font-bold">按模型明细</h3></template>
+        <template #header><h3 class="font-bold">{{ p('modelBreakdown') }}</h3></template>
         <UTable :data="data.modelBreakdown || []" :columns="[
-          { accessorKey: 'model', header: '模型' },
-          { accessorKey: 'requests', header: '请求数' },
-          { accessorKey: 'tokens', header: 'Token' },
-          { accessorKey: 'cost', header: '费用(分)' },
+          { accessorKey: 'model', header: p('model') },
+          { accessorKey: 'requests', header: p('requests') },
+          { accessorKey: 'tokens', header: p('tokens') },
+          { accessorKey: 'cost', header: p('costCents') },
         ]">
           <template #tokens-cell="{ row }">{{ formatTokens(row.original.tokens) }}</template>
           <template #cost-cell="{ row }">{{ formatCost(row.original.cost) }}</template>
@@ -68,12 +72,12 @@ function exportCsv() {
       </UCard>
 
       <UCard>
-        <template #header><h3 class="font-bold">按日明细</h3></template>
+        <template #header><h3 class="font-bold">{{ p('dailyBreakdown') }}</h3></template>
         <UTable :data="data.dailyBreakdown || []" :columns="[
-          { accessorKey: 'date', header: '日期' },
-          { accessorKey: 'requests', header: '请求数' },
-          { accessorKey: 'tokens', header: 'Token' },
-          { accessorKey: 'cost', header: '费用(分)' },
+          { accessorKey: 'date', header: p('date') },
+          { accessorKey: 'requests', header: p('requests') },
+          { accessorKey: 'tokens', header: p('tokens') },
+          { accessorKey: 'cost', header: p('costCents') },
         ]">
           <template #tokens-cell="{ row }">{{ formatTokens(row.original.tokens) }}</template>
           <template #cost-cell="{ row }">{{ formatCost(row.original.cost) }}</template>

@@ -74,6 +74,11 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         billing: {
           org: '组织', period: '账期', tokenUsage: 'Token 用量', cost: '费用', status: '状态', dueDate: '到期日', generate: '生成当月账单',
           generateDone: '账单生成完成', emptyTitle: '暂无账单', emptyDescription: '当前账期还没有账单记录，可点击右上角生成',
+          detail: {
+            title: '账单详情', exportCsv: '导出 CSV', loading: '加载中...',
+            modelBreakdown: '按模型明细', dailyBreakdown: '按日明细',
+            model: '模型', requests: '请求数', tokens: 'Token', costCents: '费用(分)', date: '日期',
+          },
         },
         alerts: {
           title: '告警中心', unread: '条未读', check: '检测告警', checkDone: '告警检测完成',
@@ -91,7 +96,14 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
             emptyTitle: '暂无调用日志', emptyDescription: '该 Agent 还没有 API 调用记录',
           },
         },
-        prompts: { title: '提示词库', create: '创建提示词', category: '分类', usage: '次使用' },
+        prompts: {
+          title: '提示词库', create: '创建提示词', category: '分类', usage: '次使用',
+          import: '导入', export: '导出', name: '名称', description: '描述', content: '内容',
+          namePlaceholder: '如：代码审查专家', descriptionPlaceholder: '简要描述这个提示词的用途', contentPlaceholder: '输入提示词内容...',
+          versionHistory: '版本历史', loading: '加载中...', noVersions: '暂无历史版本', restoreVersion: '恢复此版本',
+          versionRestored: '已恢复该版本', importDone: '已导入 {count} 条',
+          categories: { general: '通用', code: '代码', writing: '写作', translation: '翻译', analysis: '分析' },
+        },
         mcpTools: {
           search: '搜索工具...', add: '添加工具', type: '类型', calls: '次调用', config: '配置',
           name: '名称', description: '描述', endpoint: '端点', status: '状态',
@@ -218,6 +230,11 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
         billing: {
           org: 'Organization', period: 'Period', tokenUsage: 'Token Usage', cost: 'Cost', status: 'Status', dueDate: 'Due Date', generate: 'Generate Bill',
           generateDone: 'Billing generated', emptyTitle: 'No bills', emptyDescription: 'No billing records for this period. Click Generate to create one.',
+          detail: {
+            title: 'Bill Details', exportCsv: 'Export CSV', loading: 'Loading...',
+            modelBreakdown: 'By Model', dailyBreakdown: 'Daily Breakdown',
+            model: 'Model', requests: 'Requests', tokens: 'Tokens', costCents: 'Cost (cents)', date: 'Date',
+          },
         },
         alerts: {
           title: 'Alert Center', unread: 'unread', check: 'Check Alerts', checkDone: 'Alert check completed',
@@ -235,7 +252,14 @@ export const defaultLocaleMessages: Record<Locale, Record<string, unknown>> = {
             emptyTitle: 'No API logs', emptyDescription: 'This agent has no API call records yet.',
           },
         },
-        prompts: { title: 'Prompt Library', create: 'Create Prompt', category: 'Category', usage: 'uses' },
+        prompts: {
+          title: 'Prompt Library', create: 'Create Prompt', category: 'Category', usage: 'uses',
+          import: 'Import', export: 'Export', name: 'Name', description: 'Description', content: 'Content',
+          namePlaceholder: 'e.g. Code Review Expert', descriptionPlaceholder: 'Briefly describe this prompt', contentPlaceholder: 'Enter prompt content...',
+          versionHistory: 'Version History', loading: 'Loading...', noVersions: 'No version history', restoreVersion: 'Restore this version',
+          versionRestored: 'Version restored', importDone: 'Imported {count} item(s)',
+          categories: { general: 'General', code: 'Code', writing: 'Writing', translation: 'Translation', analysis: 'Analysis' },
+        },
         mcpTools: {
           search: 'Search tools...', add: 'Add Tool', type: 'Type', calls: 'calls', config: 'Configure',
           name: 'Name', description: 'Description', endpoint: 'Endpoint', status: 'Status',

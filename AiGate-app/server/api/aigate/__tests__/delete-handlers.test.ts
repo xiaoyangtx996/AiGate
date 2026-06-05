@@ -13,10 +13,12 @@ vi.mock('@/db/drizzle', () => ({
 vi.mock('@/db/schema', () => ({
   alert: { id: 'id', organizationId: 'organizationId' },
   channel: { id: 'id', organizationId: 'organizationId' },
+  prompt: { id: 'id', organizationId: 'organizationId' },
 }))
 
 import alertDeleteHandler from '../alert/[id].delete'
 import channelDeleteHandler from '../channel/[id].delete'
+import promptDeleteHandler from '../prompt/[id].delete'
 
 function createDeleteChain(result: unknown[]) {
   return {
@@ -72,6 +74,30 @@ describe('aigate delete handlers', () => {
 
       const response = await channelDeleteHandler(createMockEvent({
         params: { id: 'ch-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+    })
+  })
+
+  describe('prompt [id].delete', () => {
+    it('should return 404 when prompt not found', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([]))
+
+      const response = await promptDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'missing' },
+      }))
+
+      expect(response.code).toBe(404)
+    })
+
+    it('should delete prompt scoped to organization', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([{ id: 'prompt-1' }]))
+
+      const response = await promptDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'prompt-1' },
       }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
