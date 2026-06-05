@@ -1,7 +1,20 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+const rootDir = fileURLToPath(new URL('.', import.meta.url))
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      '#server': path.resolve(rootDir, 'server'),
+      '@': path.resolve(rootDir, 'app'),
+      '~~': rootDir,
+      '@@': rootDir,
+    },
+  },
   test: {
+    setupFiles: ['server/api/aigate/__tests__/vitest.setup.ts'],
     include: [
       'server/**/__tests__/**/*.test.ts',
       'test/**/*.test.ts',
@@ -19,10 +32,10 @@ export default defineConfig({
         'server/**/*.d.ts',
       ],
       thresholds: {
-        lines: 4,
+        lines: 8,
         functions: 10,
         branches: 10,
-        statements: 4,
+        statements: 8,
       },
     },
   },

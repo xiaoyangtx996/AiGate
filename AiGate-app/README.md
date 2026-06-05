@@ -32,6 +32,43 @@ pnpm dev
 
 默认开发端口：`http://localhost:5173`
 
+## 测试
+
+项目使用 [Vitest](https://vitest.dev/) 进行单元测试，覆盖 `server/utils` 工具函数与 `server/api/aigate` 核心 API handler。
+
+### 运行测试
+
+```bash
+# 运行全部单元测试
+pnpm exec vitest run
+
+# 监听模式（开发时）
+pnpm test
+
+# 生成覆盖率报告（门槛：行/语句 ≥ 8%）
+pnpm test:coverage
+```
+
+覆盖率 HTML 报告输出至 `coverage/index.html`（已加入 `.gitignore`）。
+
+### 测试目录
+
+| 路径 | 说明 |
+|------|------|
+| `server/utils/__tests__/` | 工具函数纯逻辑与 mock 测试 |
+| `server/api/aigate/__tests__/` | API handler mock 测试（管理员鉴权、分页查询、MCP 安装等） |
+| `test/` | 通用校验等辅助测试 |
+
+API handler 测试通过 `vitest.setup.ts` 注入 Nitro 全局（`defineEventHandler`、`getQuery` 等），并对数据库与外部依赖进行 mock，无需启动完整 Nuxt 服务。
+
+### E2E 测试
+
+```bash
+pnpm test:e2e
+```
+
+使用 Playwright 进行端到端冒烟测试，需先启动开发服务。
+
 ## 说明
 
 - 当前仓库强制使用 `pnpm`，不再保留 `package-lock.json`。
