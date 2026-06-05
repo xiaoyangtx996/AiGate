@@ -1,6 +1,9 @@
 ﻿<script setup lang="ts">
+import HeaderContent from './components/HeaderContent.vue'
+
 const { getApiLogList } = useAigateApi()
 const { t } = useI18n()
+const { exportToCSV } = useExport()
 
 const page = ref(1)
 const pageSize = ref(20)
@@ -20,17 +23,30 @@ const { data, pending: loading, refresh } = await useAsyncData(
 const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const statusColor: Record<string, string> = { success: 'success', error: 'error', rate_limited: 'warning' }
+
 function formatLatency(ms: number) { return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms` }
+
+function handleExport() {
+  exportToCSV(
+    list.value.map(item => ({
+      createdAt: item.createdAt,
+      model: item.model,
+      totalTokens: item.totalTokens,
+      latency: item.latency,
+      cost: item.cost,
+      status: item.status,
+      statusCode: item.statusCode,
+    })),
+    'api-logs-export',
+  )
+}
 
 const p = (key: string) => t(`pages.aigate.apiLogs.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">{{ $t('menu.apiLogs') }}</h2>
-      <UButton variant="outline" icon="lucide:refresh-cw" @click="refresh">{{ p('refresh') }}</UButton>
-    </div>
+    <HeaderContent :loading :refresh :handle-export />
     <UTable :loading :data="list" :columns="[
       { accessorKey: 'createdAt', header: p('time') },
       { accessorKey: 'model', header: p('model') },

@@ -19,6 +19,23 @@ const { data, pending: loading, refresh } = await useAsyncData(
 )
 const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
+const listIds = computed(() => list.value.map((item: { id: string }) => item.id))
+
+const {
+  selectedCount,
+  hasSelection,
+  isSelected,
+  toggleSelect,
+  toggleSelectAll,
+  isAllSelected,
+  isSomeSelected,
+  batchDelete,
+} = useBatchOperations<{ id: string }>({
+  onDelete: async (items) => {
+    await Promise.all(items.map(item => delPrompt(item.id)))
+    refresh()
+  },
+})
 
 const open = ref(false)
 const editData = ref<any>(null)
@@ -131,29 +148,83 @@ async function handleImportFile(e: Event) {
         <UButton icon="lucide:plus" @click="handleAdd">{{ p('create') }}</UButton>
       </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <UCard v-for="item in list" :key="item.id" class="hover:border-primary transition-colors">
-        <div class="flex items-start justify-between mb-2">
-          <h3 class="font-bold">{{ item.name }}</h3>
-          <UBadge variant="outline" size="xs">{{ item.category }}</UBadge>
+
+    <TableSkeleton v-if="loading" :cols="5" />
+    <UTable
+      v-else
+      :data="list"
+      :columns="[
+        { accessorKey: 'select', header: '' },
+        { accessorKey: 'name', header: '名称' },
+        { accessorKey: 'category', header: p('category') },
+        { accessorKey: 'description', header: '描述' },
+        { accessorKey: 'usageCount', header: p('usage') },
+        { accessorKey: 'actions', header: $t('common.action') },
+      ]"
+    >
+      <template #select-header>
+        <UCheckbox
+          :model-value="isSomeSelected(listIds) ? 'indeterminate' : isAllSelected(listIds)"
+          :aria-label="$t('common.selectAll')"
+          @update:model-value="toggleSelectAll(listIds)"
+        />
+      </template>
+      <template #select-cell="{ row }">
+        <UCheckbox
+          :model-value="isSelected(row.original.id)"
+          @update:model-value="toggleSelect(row.original.id)"
+        />
+      </template>
+      <template #name-cell="{ row }">
+        <span class="font-medium">{{ row.original.name }}</span>
+      </template>
+      <template #category-cell="{ row }">
+        <UBadge variant="outline" size="xs">{{ row.original.category }}</UBadge>
+      </template>
+      <template #description-cell="{ row }">
+        <span class="text-sm text-muted line-clamp-2">{{ row.original.description || '-' }}</span>
+      </template>
+      <template #usageCount-cell="{ row }">
+        <span class="text-muted">{{ row.original.usageCount || 0 }}</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex gap-1">
+          <UButton size="xs" variant="ghost" icon="lucide:history" @click="handleShowVersions(row.original)" />
+          <UButton size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
+          <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
         </div>
-        <p class="text-sm text-muted mb-3">{{ item.description }}</p>
-        <div class="text-xs font-mono p-2 rounded bg-elevated mb-3 line-clamp-3">{{ item.content }}</div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-muted">{{ item.usageCount || 0 }} {{ p('usage') }}</span>
-          <div class="flex gap-1">
-            <UButton size="xs" variant="ghost" icon="lucide:history" @click="handleShowVersions(item)" />
-            <UButton size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(item)" />
-            <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(item.id)" />
-          </div>
-        </div>
-      </UCard>
-    </div>
+      </template>
+    </UTable>
 
     <div v-if="list.length === 0 && !loading" class="text-center py-12 text-muted">
       <UIcon name="lucide:message-square-text" class="text-4xl mb-2" />
       <p>{{ $t('common.noData') }}</p>
     </div>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="translate-y-4 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-4 opacity-0"
+    >
+      <div
+        v-if="hasSelection"
+        class="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-lg border border-default bg-default px-5 py-3 shadow-lg"
+      >
+        <span class="text-sm font-medium">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
+        <UButton
+          size="sm"
+          color="error"
+          variant="soft"
+          icon="lucide:trash-2"
+          @click="batchDelete(list)"
+        >
+          {{ $t('common.batchDelete') }}
+        </UButton>
+      </div>
+    </Transition>
 
     <div v-if="total > 0" class="flex justify-end">
       <UPagination

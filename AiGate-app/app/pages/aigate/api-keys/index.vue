@@ -1,4 +1,6 @@
 ﻿<script setup lang="ts">
+import HeaderContent from './components/HeaderContent.vue'
+
 interface ApiKeyRow {
   id: string
   name: string
@@ -14,6 +16,7 @@ interface ApiKeyRow {
 const { getApiKeyList, insertApiKey, updateApiKey, delApiKey } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const { exportToCSV } = useExport()
 
 const keyword = ref('')
 const { data, pending: loading, refresh } = await useAsyncData('aigate-api-keys', async () => {
@@ -21,6 +24,24 @@ const { data, pending: loading, refresh } = await useAsyncData('aigate-api-keys'
   return (res.data ?? []) as ApiKeyRow[]
 })
 const list = computed(() => data.value || [])
+const listIds = computed(() => list.value.map(item => item.id))
+
+const {
+  selectedCount,
+  hasSelection,
+  isSelected,
+  toggleSelect,
+  toggleSelectAll,
+  isAllSelected,
+  isSomeSelected,
+  batchDelete,
+} = useBatchOperations<ApiKeyRow>({
+  onDelete: async (items) => {
+    await Promise.all(items.map(item => delApiKey(item.id)))
+    refresh()
+  },
+})
+
 const stats = computed(() => {
   const items = list.value
   return {
@@ -42,7 +63,6 @@ const form = reactive({
   roleIds: [] as string[],
 })
 
-// Load roles list
 onMounted(async () => {
   try {
     const res = await $fetch<{ data?: Array<{ id: string; name: string }> }>('/api/aigate/role')
@@ -94,6 +114,21 @@ async function handleSubmit() {
   }
 }
 
+function handleExport() {
+  exportToCSV(
+    list.value.map(item => ({
+      name: item.name,
+      key: item.key,
+      env: item.env,
+      status: item.status,
+      calls: item.calls,
+      cost: item.cost,
+      lastUsed: item.lastUsed,
+    })),
+    'api-keys-export',
+  )
+}
+
 function maskKey(key: string) {
   if (!key) return '-'
   return key.length > 16 ? key.substring(0, 12) + '...' + key.substring(key.length - 4) : key
@@ -123,10 +158,14 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
 
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="refresh" />
-      <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
-    </div>
+    <HeaderContent
+      v-model="keyword"
+      :loading
+      :refresh
+      :handle-add
+      :handle-export
+      @keyup.enter="refresh"
+    />
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <UCard>
         <p class="text-sm text-muted">总 Key 数</p>
@@ -146,16 +185,35 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       </UCard>
     </div>
 
-    <UTable :loading :data="list" :columns="[
-      { accessorKey: 'name', header: p('name') },
-      { accessorKey: 'key', header: p('key') },
-      { accessorKey: 'env', header: p('env') },
-      { accessorKey: 'status', header: p('status') },
-      { accessorKey: 'calls', header: p('calls') },
-      { accessorKey: 'cost', header: '费用' },
-      { accessorKey: 'lastUsed', header: '最后使用' },
-      { accessorKey: 'actions', header: $t('common.action') },
-    ]">
+    <TableSkeleton v-if="loading" />
+    <UTable
+      v-else
+      :data="list"
+      :columns="[
+        { accessorKey: 'select', header: '' },
+        { accessorKey: 'name', header: p('name') },
+        { accessorKey: 'key', header: p('key') },
+        { accessorKey: 'env', header: p('env') },
+        { accessorKey: 'status', header: p('status') },
+        { accessorKey: 'calls', header: p('calls') },
+        { accessorKey: 'cost', header: '费用' },
+        { accessorKey: 'lastUsed', header: '最后使用' },
+        { accessorKey: 'actions', header: $t('common.action') },
+      ]"
+    >
+      <template #select-header>
+        <UCheckbox
+          :model-value="isSomeSelected(listIds) ? 'indeterminate' : isAllSelected(listIds)"
+          :aria-label="$t('common.selectAll')"
+          @update:model-value="toggleSelectAll(listIds)"
+        />
+      </template>
+      <template #select-cell="{ row }">
+        <UCheckbox
+          :model-value="isSelected(row.original.id)"
+          @update:model-value="toggleSelect(row.original.id)"
+        />
+      </template>
       <template #key-cell="{ row }">
         <code class="text-xs font-mono">{{ maskKey(row.original.key) }}</code>
       </template>
@@ -178,6 +236,31 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         </div>
       </template>
     </UTable>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="translate-y-4 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-4 opacity-0"
+    >
+      <div
+        v-if="hasSelection"
+        class="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-lg border border-default bg-default px-5 py-3 shadow-lg"
+      >
+        <span class="text-sm font-medium">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
+        <UButton
+          size="sm"
+          color="error"
+          variant="soft"
+          icon="lucide:trash-2"
+          @click="batchDelete(list)"
+        >
+          {{ $t('common.batchDelete') }}
+        </UButton>
+      </div>
+    </Transition>
 
     <UModal v-model:open="open">
       <template #header>
