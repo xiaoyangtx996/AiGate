@@ -89,7 +89,7 @@ function handleExport() {
         :placeholder="i18nLog('method')"
       />
       <AutoFormSearchButton :loading @refresh="refresh" />
-      <UButton icon="lucide:download" variant="outline" @click="handleExport">导出 CSV</UButton>
+      <UButton icon="lucide:download" variant="outline" @click="handleExport">{{ i18nCommon('exportCsv') }}</UButton>
       <UButton
         v-if="selectedRows.length"
         :label="i18nPermissions(raw.label)"

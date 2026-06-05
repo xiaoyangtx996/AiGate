@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.9] - 2026-06-05
+
+### 测试
+- **403** 项测试（+51），覆盖率 **83.2%**（阈值 75%）
+- 新增 channel、knowledge-base、api-log cleanup handler 测试
+- organization POST/PUT/tree 测试扩展
+
+### UX
+- 操作日志导出按钮 i18n（`common.exportCsv`）
+
+---
+
 ## [1.7.8] - 2026-06-05
 
 ### 测试
