@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.0] - 2026-06-05
+
+### 测试
+- **452** 项测试（+49），覆盖率 **87.4%**（阈值 80%）
+- alert PUT、agent detail、api-key PUT/DELETE handler 测试
+- model 列表、validation utils、cache 扩展测试
+
+---
+
 ## [1.7.9] - 2026-06-05
 
 ### 测试

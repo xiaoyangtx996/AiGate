@@ -52,5 +52,48 @@ describe('cache utils', () => {
       vi.advanceTimersByTime(CACHE_TTL_MS + 1)
       expect(getCached(key)).toBeNull()
     })
+
+    it('should isolate cache entries by key', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-06-05T10:00:00Z'))
+
+      setCached('dashboard:org-1:7d', { org: 1 }, CACHE_TTL_MS)
+      setCached('dashboard:org-2:7d', { org: 2 }, CACHE_TTL_MS)
+
+      expect(getCached('dashboard:org-1:7d')).toEqual({ org: 1 })
+      expect(getCached('dashboard:org-2:7d')).toEqual({ org: 2 })
+    })
+
+    it('should overwrite existing cache entry on setCached', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-06-05T10:00:00Z'))
+
+      const key = getDashboardCacheKey('org-1', 7)
+      setCached(key, { version: 1 }, CACHE_TTL_MS)
+      setCached(key, { version: 2 }, CACHE_TTL_MS)
+
+      expect(getCached(key)).toEqual({ version: 2 })
+    })
+
+    it('should keep entry valid at exact TTL boundary', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-06-05T10:00:00Z'))
+
+      const key = getDashboardCacheKey('org-1', 7)
+      setCached(key, { ok: true }, CACHE_TTL_MS)
+
+      vi.advanceTimersByTime(CACHE_TTL_MS)
+      expect(getCached(key)).toEqual({ ok: true })
+    })
+  })
+
+  describe('createCacheKey edge cases', () => {
+    it('should stringify numeric parts', () => {
+      expect(createCacheKey('stats', 7, 30)).toBe('stats:7:30')
+    })
+
+    it('should treat empty string as literal part', () => {
+      expect(createCacheKey('prefix', '', 'suffix')).toBe('prefix::suffix')
+    })
   })
 })
