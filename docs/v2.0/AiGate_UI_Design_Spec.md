@@ -1,7 +1,7 @@
 # AiGate v2.0 · UI 设计规范文档
 
 > **版本**：v1.4（知识库与Agent独立，明确资产类型边界）
-> **配套文档**：`AiGate_PRD_v2.0.docx` · `AiGate_MRD_v1.0.docx` · `aigate_analysis.md`
+> **配套文档**：`AiGate_PRD_v2.0.docx` · `AiGate_MRD_v1.0.docx` · `docs/aigate_analysis.md`
 > **作用**：本文档是 AiGate 前端 UI 完善与开发的依据。覆盖设计目标、信息架构、页面缺口分析、各核心页面详细设计、通用组件库、数据可视化规范、待开发清单。
 > **读者**：产品 / 设计 / 前端开发
 > **状态**：以现有 `UI/` 静态原型为基线，对照 PRD/MRD 列出**已完成**、**待补强**、**待新建**三类工作。
@@ -1229,7 +1229,7 @@ Agent 卡片网格：
 
 ## 十三、技术与工程约束（前端开发须知）
 
-### 13.1 已确认（来自 `aigate_analysis.md` §5.6 与项目规则）
+### 13.1 已确认（来自 `docs/aigate_analysis.md` §5.6 与项目规则）
 
 - **TailwindCSS v4**（当前 `package.json` 是 v3.4，**升级到 v4** 是首要工程任务）
 - **禁紫蓝渐变 / 禁 Emoji**

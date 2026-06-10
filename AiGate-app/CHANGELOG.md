@@ -146,7 +146,7 @@
 
 ## AiGate Phase 2–6 变更摘要（2026-06）
 
-> 以下为 AiGate 全面优化计划 Phase 2–6 的主要交付摘要，详细计划见 `docs/superpowers/plans/`。
+> 以下为 AiGate 全面优化计划 Phase 2–6 的主要交付摘要，当前审计基线见 `docs/specs/system-audit-and-optimization.md`。
 
 ### Phase 2：核心功能补全
 

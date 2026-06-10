@@ -128,7 +128,7 @@ AiGate 当前已经从早期原型推进到可运行的 Nuxt 4 全栈应用：�
 当前进展：
 
 - 已在 `server/utils/index.ts` 中增强 `responseError`：支持从 `statusCode/status/code`、Zod issues、PostgreSQL unique violation 推导业务 `code`，并可通过 `setResponseStatus` 设置真实 HTTP status。
-- 已新增 `server/middleware/error-handler.ts` 响应中间件：对返回体中 `code` 为 4xx/5xx 的统一响应补设真实 HTTP status，兼容旧 handler 中 `responseSuccess(..., 404/403)` 的历史写法。
+- 已新增 `server/plugins/01.error-handler.ts`（Nitro `beforeResponse` 钩子）：对返回体中 `code` 为 4xx/5xx 的统一响应补设真实 HTTP status，兼容旧 handler 中 `responseSuccess(..., 404/403)` 的历史写法。
 - 已在 `server/utils/__tests__/index-utils.test.ts` 和 `server/middleware/__tests__/error-handler.test.ts` 覆盖 401、400 validation、409 unique violation、生产环境 500 信息隐藏，以及 response body code 到 HTTP status 的映射。
 - 已清理 Channel 模块旧错误响应语义：`channel/[id].get|put|delete`、`channel/[id]/stats.get`、`channel/health-check.post` 的 404 场景改为 `responseError(..., { statusCode: 404 })`；局部验证 `channel-handlers.test.ts` 19 个测试通过，相关 handler 与测试 ESLint 通过。
 - 已清理 API Key 模块旧错误响应语义：`api-key/index.post` 的 401/400 与 `api-key/[id].put|delete` 的 404 场景改为 `responseError(..., { statusCode })`；局部验证 API Key handler 测试 10 个通过，相关 handler 与测试 ESLint 通过。
@@ -572,7 +572,7 @@ UI 规范要求筛选与 URL 同步、表格偏好持久化、最后更新时间
 
 1. 不建议继续堆功能后再治理质量门禁。当前门禁和 Windows 本地 build 已恢复，但构建耗时偏高、CI build 尚待复验，会放大每次改动风险。
 2. 不建议把 PRD 中 RAG/Agent/MCP 只做成列表 CRUD。它们是 v2.0 的核心价值，必须形成“资产授权 + 调用计量 + 审计 + Agent 消费”的闭环。
-3. 不建议继续维护多份状态不一致的计划文档。旧 `2026-06-04-aigate-comprehensive-optimization-plan.md` 存在乱码与过期结论，应以本文档为当前审计基线。
+3. 不建议继续维护多份状态不一致的计划文档；以本文档为当前唯一审计与优化基线。
 4. `.github/workflows` 已确认存在并补齐一版 CI；当前需优先复验 `pnpm build` 在 Ubuntu + Node 20 CI 环境中的结果，否则新增 build job 仍可能成为 CI 阻断点。
 
 ## 8. 下一步推荐

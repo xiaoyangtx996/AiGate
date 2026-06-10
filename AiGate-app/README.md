@@ -1,100 +1,111 @@
 ﻿# AiGate
 
+Enterprise AI Management Platform — Nuxt 4 全栈应用。
+
 ## 环境要求
 
 - Node.js 20+
 - pnpm 9+
-- PostgreSQL
+- PostgreSQL 15+
 
-## 开发
+## 快速开始
 
-1. 复制环境变量
 ```bash
-cp .env.example .env
-```
-
-2. 安装依赖
-```bash
+cp .env.example .env   # 配置 DATABASE_URL、BETTER_AUTH_SECRET 等
 pnpm install
-```
-
-3. 初始化数据库
-```bash
 pnpm dlx drizzle-kit migrate
-# 或快速同步
-pnpm dlx drizzle-kit push
+pnpm dev               # http://localhost:5173
 ```
 
-4. 启动开发服务
+## 数据库迁移
+
 ```bash
-pnpm dev
-```
+# 应用已有迁移
+pnpm dlx drizzle-kit migrate
 
-默认开发端口：`http://localhost:5173`
+# 开发环境快速同步 schema（慎用生产）
+pnpm dlx drizzle-kit push
+
+# 校验迁移一致性 + 补充 SQL dry-run
+node scripts/verify-migration-consistency.mjs
+node scripts/apply-all-migrations.mjs --dry-run
+```
 
 ## 测试
 
-项目使用 [Vitest](https://vitest.dev/) 进行单元测试，覆盖 `server/utils` 工具函数与 `server/api/aigate` 核心 API handler。
-
-### 运行测试
+项目使用 [Vitest](https://vitest.dev/) 进行单元测试，覆盖 `server/utils`、API handler、前端工具函数等。
 
 ```bash
-# 运行全部单元测试
-pnpm exec vitest run
-
-# 监听模式（开发时）
-pnpm test
-
-# 生成覆盖率报告（门槛见 vitest.config.ts，当前约 92%）
-pnpm test:coverage
-```
-
-页面冒烟测试（需本地 dev 服务 `pnpm dev`）：
-
-```bash
-pnpm test:smoke
-# 结果写入 scripts/page-smoke-test-result-latest.txt
-```
-
-覆盖率 HTML 报告输出至 `coverage/index.html`（已加入 `.gitignore`）。
-
-### 测试目录
-
-| 路径 | 说明 |
-|------|------|
-| `server/utils/__tests__/` | 工具函数纯逻辑与 mock 测试 |
-| `server/api/aigate/__tests__/` | API handler mock 测试（管理员鉴权、分页查询、MCP 安装等） |
-| `test/` | composable 导出工具、通用校验等辅助测试 |
-
-API handler 测试通过 `vitest.setup.ts` 注入 Nitro 全局（`defineEventHandler`、`getQuery` 等），并对数据库与外部依赖进行 mock，无需启动完整 Nuxt 服务。
-
-### E2E 测试
-
-使用 [Playwright](https://playwright.dev/) 进行端到端测试。`playwright.config.ts` 会在本地自动启动 `pnpm dev`（端口 5173）；若已有开发服务在运行，将复用现有进程。
-
-```bash
-# 运行全部 E2E（冒烟 + 认证 + 公开 API 策略）
-pnpm test:e2e
-
-# 仅运行认证相关场景
-pnpm exec playwright test e2e/auth.spec.ts
-
-# 仅运行公开/受保护 API 策略
-pnpm exec playwright test e2e/public-api.spec.ts
-
-# 带 UI 调试
-pnpm exec playwright test --ui
+pnpm exec vitest run      # 全部单元测试
+pnpm test                 # 监听模式
+pnpm test:coverage        # 覆盖率报告（门槛见 vitest.config.ts）
+pnpm test:openapi         # OpenAPI 契约覆盖校验
+pnpm test:e2e             # Playwright E2E
+pnpm test:smoke           # 页面冒烟（需 dev 服务，结果写入 scripts/page-smoke-test-result-latest.txt）
 ```
 
 | 路径 | 说明 |
 |------|------|
-| `e2e/smoke.spec.ts` | 首页、登录页、OpenAPI、文档页冒烟 |
-| `e2e/auth.spec.ts` | 注册/登录表单可见性、错误密码不崩溃 |
-| `e2e/public-api.spec.ts` | `/api/openapi`、搜索接口鉴权行为 |
+| `server/**/__tests__/` | Server 工具与 API handler 测试 |
+| `app/**/__tests__/` | 前端工具与 composable 测试 |
+| `shared/**/__tests__/` | 共享模块测试 |
+| `scripts/**/__tests__/` | 脚本校验测试 |
+| `e2e/` | Playwright 端到端测试 |
+
+API handler 测试通过 `vitest.setup.ts` 注入 Nitro 全局并对 DB 进行 mock，无需启动完整 Nuxt 服务。
+
+## 代码检查
+
+```bash
+pnpm lint
+pnpm lint:fix
+pnpm typecheck:server          # 生产 server 类型
+pnpm typecheck:server:test     # server 测试类型
+pnpm exec nuxt typecheck       # 前端 Vue 类型
+```
+
+提交前通过 Husky + lint-staged 对暂存文件执行 ESLint。
+
+## 构建
+
+```bash
+pnpm build
+pnpm preview
+```
+
+构建需正确配置 `DATABASE_URL` 与 `BETTER_AUTH_SECRET`。
+
+## 部署
+
+完整生产部署说明见 **[docs/deploy/README.md](./docs/deploy/README.md)**。
+
+```bash
+# Docker 构建（仓库根目录）
+docker build -f AiGate-app/Dockerfile \
+  --build-arg DATABASE_URL="postgresql://user:pass@host:5432/aigate" \
+  --build-arg BETTER_AUTH_SECRET="your-production-secret-min-32-chars" \
+  -t aigate:latest AiGate-app
+
+# PM2
+pnpm build && pm2 start ecosystem.config.cjs
+```
+
+CI/CD 工作流见仓库 `.github/workflows/`（`ci.yml`、`deploy.yml`、`release.yml`）。
+
+## API 文档
+
+- 浏览器：`http://localhost:5173/docs/api`
+- OpenAPI JSON：`GET /api/openapi`
 
 ## 说明
 
-- 当前仓库强制使用 `pnpm`，不再保留 `package-lock.json`。
-- 大部分接口默认需要登录；`/api/auth`、`/api/_`、`/api/common/releases` 为公开路径。
-- 组织管理、API Key、渠道、系统设置等路由仅允许管理员访问。
-- 本地开发时请确保 `.env` 已正确配置，尤其是 `DATABASE_URL` 和 `BETTER_AUTH_SECRET`。
+- 仓库强制使用 `pnpm`。
+- 大部分 API 需登录；`/api/auth`、`/api/_` 为公开路径。
+- 组织管理、API Key、渠道、系统设置等路由仅管理员可访问。
+- Sentry：设置 `SENTRY_DSN` 启用错误上报（见 [docs/MONITORING.md](./docs/MONITORING.md)）。
+
+更多文档：
+
+- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — 应用架构
+- [CONTRIBUTING.md](./docs/CONTRIBUTING.md) — 贡献指南
+- [../docs/specs/system-audit-and-optimization.md](../docs/specs/system-audit-and-optimization.md) — 系统审计与优化基线

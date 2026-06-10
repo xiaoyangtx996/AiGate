@@ -45,12 +45,6 @@ const AIGATE_PAGES = [
 
 const OTHER_PAGES = [
   '/docs/api',
-  '/hub/overview',
-  '/hub/releases',
-  '/playground/charts',
-  '/playground/spinner',
-  '/playground/qrcode',
-  '/playground/lightbox',
 ]
 
 async function waitForServer(maxMs = 120000) {

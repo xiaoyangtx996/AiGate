@@ -21,7 +21,7 @@ const ROUTES = [
     '/aigate/knowledge-base', '/aigate/prompts', '/aigate/alerts', '/aigate/alerts/rules',
     '/aigate/billing', '/aigate/gateway', '/aigate/gateway/routes', '/aigate/organizations', '/aigate/members',
   ],
-  ...['/docs/api', '/hub/overview', '/hub/releases'],
+  ...['/docs/api'],
 ]
 
 async function waitForServer(maxMs = 120000) {

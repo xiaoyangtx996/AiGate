@@ -257,4 +257,4 @@ Read UI/design-system.html
 
 - 设计规范：`docs/v2.0/AiGate_UI_Design_Spec.md`
 - 设计系统：`UI/design-system.html`
-- 架构分析：`aigate_analysis.md`
+- 架构分析：`docs/aigate_analysis.md`

@@ -37,6 +37,10 @@ env/
 # IDE
 .idea/
 .vscode/
+.cursor/
+.claude/worktrees/
+.claude/settings.local.json
+.mcp.json
 *.swp
 *.swo
 *~
@@ -62,6 +66,4 @@ target/
 *.tmp
 *.temp
 .cache/
-ruoyi-ai-main/
-new-api-main/
-CLIProxyAPI-main/
+false/

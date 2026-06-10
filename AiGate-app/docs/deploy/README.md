@@ -173,4 +173,4 @@ pm2 reload ecosystem.config.cjs
 | `e2e.yml` | 手动 / push main（commit 含 `[e2e]`） | 独立 Playwright E2E（Postgres + 迁移 + `test:e2e`） |
 | `database.yml` | push → main | 校验 Drizzle 数据库迁移 |
 
-更多开发说明见 [DEVELOPMENT.md](../DEVELOPMENT.md)。
+更多开发说明见 [README.md](../README.md)。

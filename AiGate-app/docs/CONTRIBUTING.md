@@ -72,7 +72,7 @@ pnpm test:coverage
 
 ## 文档
 
-- 开发环境：见 [DEVELOPMENT.md](./DEVELOPMENT.md)
+- 开发环境：见 [README.md](../README.md)
 - API 规范：开发服务器访问 `/docs/api`，OpenAPI JSON 为 `GET /api/openapi`
 
 ## Pull Request 检查清单

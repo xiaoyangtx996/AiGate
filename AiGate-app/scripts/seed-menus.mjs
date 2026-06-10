@@ -46,9 +46,7 @@ const menus = [
   ['menu-settings-roles', '角色管理', 'lucide:shield', '/system-settings/role-manage', 'menu-settings', 3, false, true],
   ['menu-settings-i18n', '国际化', 'lucide:languages', '/system-settings/internalization', 'menu-settings', 4, false, true],
   ['menu-settings-logs', '操作日志', 'lucide:history', '/system-settings/operation-log', 'menu-settings', 5, false, true],
-  ['menu-hub', 'Hub', 'lucide:sparkles', null, null, 30, false, true],
-  ['menu-hub-overview', '概览', 'lucide:home', '/hub/overview', 'menu-hub', 1, false, true],
-  ['menu-hub-releases', '版本发布', 'lucide:tag', '/hub/releases', 'menu-hub', 2, false, true],
+  ['menu-api-docs', 'API 文档', 'lucide:book-open-text', '/docs/api', null, 95, false, true],
 ]
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })

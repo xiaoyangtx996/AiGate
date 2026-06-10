@@ -26,10 +26,11 @@ describe('defaultMenuSeeds structure', () => {
     expect(routable.every(menu => menu.to!.startsWith('/'))).toBe(true)
   })
 
-  it('should include API docs entry under hub section', () => {
+  it('should include API docs as a root menu entry', () => {
     const apiDocs = defaultMenuSeeds.find(menu => menu.to === '/docs/api')
     expect(apiDocs).toBeDefined()
-    expect(apiDocs?.parentId).toBe('menu-hub')
+    expect(apiDocs?.id).toBe('menu-api-docs')
+    expect(apiDocs?.parentId).toBeUndefined()
     expect(apiDocs?.enabled).toBe(true)
   })
 

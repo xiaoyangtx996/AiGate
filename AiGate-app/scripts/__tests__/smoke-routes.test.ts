@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const ROOT = join(import.meta.dirname, '..')
+const ROOT = join(import.meta.dirname, '../..')
 const PAGES_DIR = join(ROOT, 'app', 'pages')
 const SMOKE_SCRIPT = join(ROOT, 'scripts', 'page-smoke-test.mjs')
 

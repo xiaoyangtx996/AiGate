@@ -32,8 +32,8 @@ test.describe('Smoke', () => {
     expect(body).toHaveProperty('paths')
   })
 
-  test('hub overview redirects unauthenticated users to sign-in', async ({ page }) => {
-    const response = await page.goto('/hub/overview')
+  test('my-workbench redirects unauthenticated users to sign-in', async ({ page }) => {
+    const response = await page.goto('/aigate/my-workbench')
     expect(response).not.toBeNull()
     expect(response?.status()).toBeLessThan(500)
     await expect(page).toHaveURL(/\/auth\/sign-in/)

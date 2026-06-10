@@ -13,6 +13,10 @@ node_modules
 logs
 *.log
 
+# Script outputs
+scripts/*-result*.txt
+scripts/browser-audit-result.txt
+
 # Test coverage
 coverage
 test-results/
@@ -21,6 +25,7 @@ test-results/
 .DS_Store
 .fleet
 .idea
+.vscode
 
 # Local env files
 .env

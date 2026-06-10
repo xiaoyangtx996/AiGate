@@ -17,7 +17,9 @@ export default defineConfig({
     setupFiles: ['server/api/aigate/__tests__/vitest.setup.ts'],
     include: [
       'server/**/__tests__/**/*.test.ts',
-      'test/**/*.test.ts',
+      'app/**/__tests__/**/*.test.ts',
+      'shared/**/__tests__/**/*.test.ts',
+      'scripts/**/__tests__/**/*.test.ts',
     ],
     coverage: {
       provider: 'v8',
