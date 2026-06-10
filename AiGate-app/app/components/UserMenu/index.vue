@@ -21,6 +21,24 @@ const lastMethod = $authClient.getLastUsedLoginMethod()
 
 const { themeItems } = useThemeMenu()
 
+function getThemeChip(item: DropdownMenuItem) {
+  return typeof (item as { chip?: unknown }).chip === 'string'
+    ? (item as { chip: string }).chip
+    : ''
+}
+
+function getThemeSlot(item: DropdownMenuItem) {
+  return typeof (item as { slot?: unknown }).slot === 'string'
+    ? (item as { slot: string }).slot
+    : ''
+}
+
+function getThemeIcon(item: DropdownMenuItem) {
+  return typeof (item as { icon?: unknown }).icon === 'string'
+    ? (item as { icon: string }).icon
+    : undefined
+}
+
 const items = computed(() => ([
   [{
     type: 'label',
@@ -122,19 +140,18 @@ const items = computed(() => ([
           :ui="{ wrapper: 'text-left' }"
         />
       </UButton>
-      <template #primary-leading="{ item }">
+      <template #item-leading="{ item }">
         <div class="inline-flex items-center justify-center shrink-0 size-5">
           <span
-            :class="cn('inline-block size-2 rounded-full', item.chip === 'black' ? 'bg-black dark:bg-white' : '')"
+            v-if="getThemeSlot(item) === 'primary'"
+            :class="cn('inline-block size-2 rounded-full', getThemeChip(item) === 'black' ? 'bg-black dark:bg-white' : '')"
             :style="{
-              backgroundColor: item.chip === 'black' ? undefined : getColor(item.chip, 500),
+              backgroundColor: getThemeChip(item) === 'black' ? undefined : getColor(getThemeChip(item), 500),
             }"
           />
+          <span v-else-if="getThemeSlot(item) === 'locales'">{{ getThemeIcon(item) }}</span>
+          <UIcon v-else-if="getThemeIcon(item)" :name="getThemeIcon(item)" />
         </div>
-      </template>
-
-      <template #locales-leading="{ item }">
-        <span>{{ item.icon }}</span>
       </template>
     </UDropdownMenu>
   </ClientOnly>

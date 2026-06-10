@@ -10,10 +10,117 @@ defaults:
   run:
     working-directory: AiGate-app
 
-jobs:
-  ci:
-    runs-on: ubuntu-latest
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
+  BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
 
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck-app:
+    name: Nuxt Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec nuxt typecheck
+
+  typecheck-server:
+    name: Server Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck:server
+
+  typecheck-server-test:
+    name: Server Test Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck:server:test
+
+  openapi:
+    name: OpenAPI Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:openapi
+
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run --reporter=dot
+
+  migrations:
+    name: Database Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:16
@@ -28,22 +135,59 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/verify-migration-consistency.mjs
+      - run: node scripts/apply-all-migrations.mjs --dry-run
+      - run: pnpm exec drizzle-kit migrate
+      - run: node scripts/apply-all-migrations.mjs
 
-      - name: Cache Nuxt and Vitest
-        uses: actions/cache@v4
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aigate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    needs:
+      - lint
+      - typecheck-app
+      - typecheck-server
+      - typecheck-server-test
+      - openapi
+      - unit
+      - migrations
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - uses: actions/cache@v4
         with:
           path: |
             AiGate-app/.nuxt
@@ -52,53 +196,41 @@ jobs:
           key: ${{ runner.os }}-build-${{ hashFiles('AiGate-app/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-build-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Test with coverage
-        run: pnpm test:coverage
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - migrations
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aigate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          name: coverage-report
-          path: AiGate-app/coverage/
-          retention-days: 14
-
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
+          version: 9
+      - uses: actions/setup-node@v4
         with:
-          files: AiGate-app/coverage/lcov.info
-          flags: unittests
-          name: aigate-coverage
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Run database migrations
-        run: pnpm dlx drizzle-kit migrate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
-
-      - name: Apply supplemental migrations
-        run: node scripts/apply-all-migrations.mjs
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
-
-      - name: E2E
-        run: pnpm exec playwright install chromium --with-deps && pnpm test:e2e
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
-          BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
-
-      - name: Build
-        run: pnpm build
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
-          BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec drizzle-kit migrate
+      - run: node scripts/apply-all-migrations.mjs
+      - run: pnpm exec playwright install chromium --with-deps
+      - run: pnpm test:e2e

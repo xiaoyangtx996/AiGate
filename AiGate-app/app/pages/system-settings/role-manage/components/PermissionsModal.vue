@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { TreeItem } from '@nuxt/ui'
-import type { TreeItemSelectEvent } from 'reka-ui'
 import { map } from 'es-toolkit/compat'
 import { PERMISSIONS } from '@/enums'
 
 interface CheckedKey { id: string }
+interface TreeSelectEvent {
+  detail: {
+    originalEvent: Event
+  }
+  preventDefault: () => void
+}
 
 const props = defineProps<{
   menuTree: MenuTree[]
@@ -65,7 +70,7 @@ const permissionsTree = computed<TreeItem[]>(() =>
 /**
  * Tree 展开阻止 click（官方示例逻辑）
  */
-function onSelect(e: TreeItemSelectEvent<TreeItem>) {
+function onSelect(e: TreeSelectEvent) {
   if (e.detail.originalEvent.type === 'click') {
     e.preventDefault()
   }

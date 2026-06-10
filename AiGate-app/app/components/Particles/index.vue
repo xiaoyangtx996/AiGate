@@ -42,10 +42,11 @@ let animationFrameId: number | null = null
 let lastTime = 0
 let elapsed = 0
 
-const defaultColors = ['#ffffff', '#ffffff', '#ffffff']
+const defaultColors = ['#ffffff', '#ffffff', '#ffffff'] as const
+const hexPrefixPattern = /^#/
 
 function hexToRgb(hex: string): [number, number, number] {
-  hex = hex.replace(/^#/, '')
+  hex = hex.replace(hexPrefixPattern, '')
   if (hex.length === 3) {
     hex = hex
       .split('')
@@ -193,7 +194,8 @@ function initParticles() {
     const r = Math.cbrt(Math.random())
     positions.set([x * r, y * r, z * r], i * 3)
     randoms.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4)
-    const col = hexToRgb(palette[Math.floor(Math.random() * palette.length)])
+    const color = palette[Math.floor(Math.random() * palette.length)] ?? defaultColors[0] ?? '#ffffff'
+    const col = hexToRgb(color)
     colors.set(col, i * 3)
   }
 

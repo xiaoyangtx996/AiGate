@@ -1,10 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
-import { createMockEvent } from './nitro-test-utils'
+import agentChatHandler from '../agent/[id]/chat.post'
+
+import { asResponse, createMockEvent } from './nitro-test-utils'
+
+interface ChatSuccessData {
+  conversationId: string
+  message: string
+  latency: number
+  usage: { total_tokens: number }
+}
+
+interface ErrorData {
+  statusCode: number
+  message: string
+}
 
 const mockSendAgentMessage = vi.fn()
 const mockStreamAgentMessage = vi.fn()
-const mockSendStream = vi.fn()
 const mockSetResponseHeaders = vi.fn()
 
 vi.mock('#server/utils/agent-chat', () => ({
@@ -12,13 +25,7 @@ vi.mock('#server/utils/agent-chat', () => ({
   streamAgentMessage: (...args: unknown[]) => mockStreamAgentMessage(...args),
 }))
 
-vi.mock('h3', () => ({
-  sendStream: (...args: unknown[]) => mockSendStream(...args),
-}))
-
 vi.stubGlobal('setResponseHeaders', (...args: unknown[]) => mockSetResponseHeaders(...args))
-
-import agentChatHandler from '../agent/[id]/chat.post'
 
 function createStreamGenerator(chunks: unknown[]) {
   return (async function* () {
@@ -26,6 +33,19 @@ function createStreamGenerator(chunks: unknown[]) {
       yield chunk
     }
   })()
+}
+
+async function readStream(stream: ReadableStream<Uint8Array>) {
+  const reader = stream.getReader()
+  const decoder = new TextDecoder()
+  let text = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done)
+      break
+    text += decoder.decode(value, { stream: true })
+  }
+  return text
 }
 
 describe('aigate agent chat handler', () => {
@@ -42,52 +62,62 @@ describe('aigate agent chat handler', () => {
       { type: 'delta', content: 'Hi' },
       { type: 'done', conversationId: 'conv-1', message: 'Hi', latency: 80 },
     ]))
-    mockSendStream.mockImplementation(async (_event, callback) => {
-      const stream = { write: vi.fn().mockResolvedValue(undefined) }
-      await callback(stream)
-      return stream
-    })
   })
 
   it('should return 401 when user is not authenticated', async () => {
-    const response = await agentChatHandler(createMockEvent({
+    const response = asResponse<ErrorData>(await agentChatHandler(createMockEvent({
       params: { id: 'agent-1' },
       body: { message: 'hello' },
-    }))
+    })))
 
-    expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+    expect(response.code).toBe(RESPONSE_CODE.UNAUTHORIZED)
     expect(response.data).toMatchObject({ statusCode: 401, message: 'Unauthorized' })
     expect(mockSendAgentMessage).not.toHaveBeenCalled()
     expect(mockStreamAgentMessage).not.toHaveBeenCalled()
   })
 
-  it('should return 400 when agent id is missing', async () => {
-    const response = await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+  it('should return 403 when non-admin user has no organization context', async () => {
+    const response = asResponse<ErrorData>(await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: null } },
+      params: { id: 'agent-1' },
       body: { message: 'hello' },
-    }))
+    })))
 
+    expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+    expect(response.data).toMatchObject({ statusCode: 403, message: '当前账号缺少组织上下文' })
+    expect(mockSendAgentMessage).not.toHaveBeenCalled()
+    expect(mockStreamAgentMessage).not.toHaveBeenCalled()
+  })
+
+  it('should return 400 when agent id is missing', async () => {
+    const response = asResponse<ErrorData>(await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+      body: { message: 'hello' },
+    })))
+
+    expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
     expect(response.data).toMatchObject({ statusCode: 400, message: 'Missing agent ID' })
     expect(mockSendAgentMessage).not.toHaveBeenCalled()
   })
 
   it('should return 400 when message is missing', async () => {
-    const response = await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+    const response = asResponse<ErrorData>(await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'agent-1' },
       body: {},
-    }))
+    })))
 
+    expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
     expect(response.data).toMatchObject({ statusCode: 400, message: 'Missing message' })
     expect(mockSendAgentMessage).not.toHaveBeenCalled()
   })
 
   it('should return success response for non-stream requests', async () => {
-    const response = await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+    const response = asResponse<ChatSuccessData>(await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'agent-1' },
       body: { message: 'hello', conversationId: 'conv-existing' },
-    }))
+    })))
 
     expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
     expect(response.data).toEqual({
@@ -96,61 +126,57 @@ describe('aigate agent chat handler', () => {
       latency: 120,
       usage: { total_tokens: 10 },
     })
-    expect(mockSendAgentMessage).toHaveBeenCalledWith('agent-1', 'user-1', 'hello', 'conv-existing')
-    expect(mockSendStream).not.toHaveBeenCalled()
+    expect(mockSendAgentMessage).toHaveBeenCalledWith('agent-1', 'user-1', 'hello', 'conv-existing', {
+      isAdmin: undefined,
+      organizationId: 'org-1',
+    })
   })
 
-  it('should set SSE headers and invoke sendStream for stream requests', async () => {
+  it('should set SSE headers and return a stream for stream requests', async () => {
     const event = createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'agent-1' },
       body: { message: 'hello', stream: true },
     })
 
-    await agentChatHandler(event)
+    const response = await agentChatHandler(event)
 
     expect(mockSetResponseHeaders).toHaveBeenCalledWith(event, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+      'Connection': 'keep-alive',
     })
-    expect(mockSendStream).toHaveBeenCalledTimes(1)
-    expect(mockStreamAgentMessage).toHaveBeenCalledWith('agent-1', 'user-1', 'hello', undefined)
+    expect(response).toBeInstanceOf(ReadableStream)
+    expect(mockStreamAgentMessage).toHaveBeenCalledWith('agent-1', 'user-1', 'hello', undefined, {
+      isAdmin: undefined,
+      organizationId: 'org-1',
+    })
     expect(mockSendAgentMessage).not.toHaveBeenCalled()
   })
 
   it('should write SSE chunks and DONE marker during stream', async () => {
-    const writes: string[] = []
-    mockSendStream.mockImplementation(async (_event, callback) => {
-      const stream = {
-        write: vi.fn(async (data: string) => { writes.push(data) }),
-      }
-      await callback(stream)
-      return stream
-    })
-
-    await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+    const response = await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'agent-1' },
       body: { message: 'hello', stream: true },
-    }))
+    })) as ReadableStream<Uint8Array>
 
-    expect(writes).toEqual([
+    expect(await readStream(response)).toBe([
       'data: {"type":"start","conversationId":"conv-1"}\n\n',
       'data: {"type":"delta","content":"Hi"}\n\n',
       'data: {"type":"done","conversationId":"conv-1","message":"Hi","latency":80}\n\n',
       'data: [DONE]\n\n',
-    ])
+    ].join(''))
   })
 
   it('should return responseError when sendAgentMessage fails', async () => {
     mockSendAgentMessage.mockRejectedValue(new Error('Agent not found'))
 
-    const response = await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+    const response = asResponse<Error>(await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'missing' },
       body: { message: 'hello' },
-    }))
+    })))
 
     expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
     expect(response.data).toBeInstanceOf(Error)
@@ -162,44 +188,28 @@ describe('aigate agent chat handler', () => {
       throw new Error('Stream failed')
     })())
 
-    const writes: string[] = []
-    mockSendStream.mockImplementation(async (_event, callback) => {
-      const stream = {
-        write: vi.fn(async (data: string) => { writes.push(data) }),
-      }
-      await callback(stream)
-      return stream
-    })
-
-    await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+    const response = await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'agent-1' },
       body: { message: 'hello', stream: true },
-    }))
+    })) as ReadableStream<Uint8Array>
 
-    expect(writes).toContain('data: {"type":"error","message":"Stream failed"}\n\n')
+    expect(await readStream(response)).toContain('data: {"type":"error","message":"Stream failed"}\n\n')
   })
 
   it('should use fallback stream error message when error has no message', async () => {
     mockStreamAgentMessage.mockReturnValue((async function* () {
-      throw Object.assign(new Error(''), { message: '' })
+      const error = new Error('empty message placeholder')
+      Object.defineProperty(error, 'message', { value: '' })
+      throw error
     })())
 
-    const writes: string[] = []
-    mockSendStream.mockImplementation(async (_event, callback) => {
-      const stream = {
-        write: vi.fn(async (data: string) => { writes.push(data) }),
-      }
-      await callback(stream)
-      return stream
-    })
-
-    await agentChatHandler(createMockEvent({
-      context: { principal: { userId: 'user-1' } },
+    const response = await agentChatHandler(createMockEvent({
+      context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
       params: { id: 'agent-1' },
       body: { message: 'hello', stream: true },
-    }))
+    })) as ReadableStream<Uint8Array>
 
-    expect(writes).toContain('data: {"type":"error","message":"Stream failed"}\n\n')
+    expect(await readStream(response)).toContain('data: {"type":"error","message":"Stream failed"}\n\n')
   })
 })

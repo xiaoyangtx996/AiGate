@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import apiKeyPostHandler from '../api-key/index.post'
+
 import { createMockEvent } from './nitro-test-utils'
 
 const mockInsert = vi.fn()
@@ -39,8 +41,6 @@ vi.mock('#server/utils/api-key', () => ({
   generateApiKey: (...args: unknown[]) => mockGenerateApiKey(...args),
 }))
 
-import apiKeyPostHandler from '../api-key/index.post'
-
 function createInsertChain(result: unknown[]) {
   return {
     values: vi.fn().mockReturnValue({
@@ -57,6 +57,16 @@ describe('aigate api-key handlers', () => {
   })
 
   describe('api-key index.post', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await apiKeyPostHandler(createMockEvent({
+        context: { principal: { isAdmin: false, userId: 'user-1' } },
+        body: { name: 'Test Key' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
     it('should return 401 when user is not logged in', async () => {
       const response = await apiKeyPostHandler(createMockEvent({ body: { name: 'Test Key' } }))
 
@@ -69,7 +79,7 @@ describe('aigate api-key handlers', () => {
       mockCheckApiKeyLimit.mockResolvedValue({ current: 3, max: 3, allowed: false })
 
       const response = await apiKeyPostHandler(createMockEvent({
-        context: { principal: { userId: 'user-1' } },
+        context: { principal: { isAdmin: true, userId: 'user-1' } },
         body: { name: 'Test Key' },
       }))
 
@@ -80,11 +90,11 @@ describe('aigate api-key handlers', () => {
 
     it('should reject invalid body missing required name', async () => {
       const response = await apiKeyPostHandler(createMockEvent({
-        context: { principal: { userId: 'user-1' } },
+        context: { principal: { isAdmin: true, userId: 'user-1' } },
         body: {},
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -99,7 +109,7 @@ describe('aigate api-key handlers', () => {
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await apiKeyPostHandler(createMockEvent({
-        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, userId: 'user-1', organizationId: 'org-1' } },
         body: { name: 'Prod Key', env: 'dev' },
       }))
 

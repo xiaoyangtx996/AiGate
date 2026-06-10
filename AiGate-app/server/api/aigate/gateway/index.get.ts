@@ -11,7 +11,8 @@ export default defineEventHandler(async (event) => {
     const orgId = principal?.organizationId
     const cacheKey = createCacheKey('gateway', orgId)
     const cached = getCached<ReturnType<typeof responseSuccess>>(cacheKey)
-    if (cached) return cached
+    if (cached)
+      return cached
 
     const orgFilter = orgId ? eq(apiKey.organizationId, orgId) : undefined
     const logOrgFilter = orgId ? eq(apiLog.organizationId, orgId) : undefined

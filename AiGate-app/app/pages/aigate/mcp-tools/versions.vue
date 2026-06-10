@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 interface McpVersion {
   id: string
   version: string
@@ -46,7 +46,9 @@ const p = (key: string) => t(`pages.aigate.mcpTools.versions.${key}`)
 <template>
   <div class="flex gap-4 h-[calc(100vh-120px)]">
     <div class="w-80 shrink-0 space-y-2 overflow-y-auto">
-      <h3 class="text-lg font-bold mb-3">{{ p('title') }}</h3>
+      <h3 class="text-lg font-bold mb-3">
+        {{ p('title') }}
+      </h3>
       <TableSkeleton v-if="loading" :cols="1" :rows="5" />
       <EmptyState
         v-else-if="tools.length === 0"
@@ -62,10 +64,16 @@ const p = (key: string) => t(`pages.aigate.mcpTools.versions.${key}`)
         <div class="flex items-center gap-2">
           <UIcon name="lucide:puzzle" class="text-primary" />
           <div class="flex-1 min-w-0">
-            <p class="font-medium text-sm truncate">{{ tool.name }}</p>
-            <p class="text-xs text-muted">{{ tool.type }}</p>
+            <p class="font-medium text-sm truncate">
+              {{ tool.name }}
+            </p>
+            <p class="text-xs text-muted">
+              {{ tool.type }}
+            </p>
           </div>
-          <UBadge :color="statusColor[tool.status] || 'neutral'" variant="subtle" size="xs">{{ tool.status }}</UBadge>
+          <UBadge :color="statusColor[tool.status] || 'neutral'" variant="subtle" size="xs">
+            {{ tool.status }}
+          </UBadge>
         </div>
       </UCard>
     </div>
@@ -75,10 +83,16 @@ const p = (key: string) => t(`pages.aigate.mcpTools.versions.${key}`)
         <UCard class="mb-4">
           <template #header>
             <div class="flex items-center justify-between">
-              <h3 class="font-bold">{{ selectedTool.name }}</h3>
+              <h3 class="font-bold">
+                {{ selectedTool.name }}
+              </h3>
               <div class="flex gap-2">
-                <UBadge :color="statusColor[selectedTool.status] || 'neutral'" variant="subtle">{{ selectedTool.status }}</UBadge>
-                <UBadge :color="healthColor[selectedTool.healthStatus || 'healthy'] || 'neutral'" variant="subtle">{{ selectedTool.healthStatus || 'unknown' }}</UBadge>
+                <UBadge :color="statusColor[selectedTool.status] || 'neutral'" variant="subtle">
+                  {{ selectedTool.status }}
+                </UBadge>
+                <UBadge :color="healthColor[selectedTool.healthStatus || 'healthy'] || 'neutral'" variant="subtle">
+                  {{ selectedTool.healthStatus || 'unknown' }}
+                </UBadge>
               </div>
             </div>
           </template>
@@ -88,12 +102,16 @@ const p = (key: string) => t(`pages.aigate.mcpTools.versions.${key}`)
             <div><span class="text-muted">{{ p('endpoint') }}：</span><code class="text-xs">{{ selectedTool.config?.endpoint || '-' }}</code></div>
             <div><span class="text-muted">{{ p('lastCheck') }}：</span>{{ selectedTool.lastHealthCheck ? new Date(selectedTool.lastHealthCheck).toLocaleString() : '-' }}</div>
           </div>
-          <p v-if="selectedTool.description" class="text-sm text-muted mt-3">{{ selectedTool.description }}</p>
+          <p v-if="selectedTool.description" class="text-sm text-muted mt-3">
+            {{ selectedTool.description }}
+          </p>
         </UCard>
 
         <UCard>
           <template #header>
-            <h3 class="font-bold">{{ p('history') }}</h3>
+            <h3 class="font-bold">
+              {{ p('history') }}
+            </h3>
           </template>
           <div v-if="versions.length > 0" class="space-y-3">
             <div v-for="ver in versions" :key="ver.id" class="flex items-center gap-3 p-3 rounded-lg border">
@@ -101,9 +119,13 @@ const p = (key: string) => t(`pages.aigate.mcpTools.versions.${key}`)
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <span class="font-mono font-bold">{{ ver.version }}</span>
-                  <UBadge v-if="ver.active" color="success" variant="subtle" size="xs">{{ p('current') }}</UBadge>
+                  <UBadge v-if="ver.active" color="success" variant="subtle" size="xs">
+                    {{ p('current') }}
+                  </UBadge>
                 </div>
-                <p v-if="ver.changelog" class="text-xs text-muted mt-1">{{ ver.changelog }}</p>
+                <p v-if="ver.changelog" class="text-xs text-muted mt-1">
+                  {{ ver.changelog }}
+                </p>
               </div>
               <span class="text-xs text-muted">{{ new Date(ver.createdAt).toLocaleDateString() }}</span>
             </div>

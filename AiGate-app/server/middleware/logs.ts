@@ -1,7 +1,7 @@
-﻿import { UAParser } from 'ua-parser-js'
+import { UAParser } from 'ua-parser-js'
+import { sanitizeLogData } from '#server/utils/logs'
 import { db } from '@/db/drizzle'
 import { logs } from '@/db/schema'
-import { sanitizeLogData, sanitizeHeaders } from '#server/utils/logs'
 
 export default defineEventHandler(async (event) => {
   const method = event.method as Methods
@@ -41,8 +41,6 @@ export default defineEventHandler(async (event) => {
   const uaResult = parser.getResult()
   const { device, os, browser } = uaResult
 
-  const headers = getRequestHeaders(event)
-
   try {
     await db.insert(logs).values({
       userId: principal.userId,
@@ -50,7 +48,6 @@ export default defineEventHandler(async (event) => {
       action: path,
       method,
       params: sanitizeLogData(body ?? {}), // ✅ 脱敏参数
-      headers: sanitizeHeaders(headers), // ✅ 脱敏请求头
       device: device.type ?? 'desktop',
       os: os.name ? `${os.name} ${os.version || ''}`.trim() : '未知',
       browser: browser.name ? `${browser.name} ${browser.version || ''}`.trim() : '未知',

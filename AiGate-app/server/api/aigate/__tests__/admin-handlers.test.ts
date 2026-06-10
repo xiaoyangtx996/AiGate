@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import alertCheckHandler from '../alert/check.post'
+
+import cleanupHandler from '../api-log/cleanup.post'
+import billingGenerateHandler from '../billing/generate.post'
 import { createMockEvent, expectForbidden } from './nitro-test-utils'
 
 const mockCleanupOldApiLogs = vi.fn()
@@ -19,10 +23,6 @@ vi.mock('#server/utils/billing', () => ({
   generateBillingForPeriod: (...args: unknown[]) => mockGenerateBillingForPeriod(...args),
   getCurrentPeriod: (...args: unknown[]) => mockGetCurrentPeriod(...args),
 }))
-
-import cleanupHandler from '../api-log/cleanup.post'
-import alertCheckHandler from '../alert/check.post'
-import billingGenerateHandler from '../billing/generate.post'
 
 describe('aigate admin handlers', () => {
   beforeEach(() => {

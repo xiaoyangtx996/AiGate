@@ -15,10 +15,12 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
   <div class="flex items-center justify-between">
     <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="refresh" />
     <div class="flex gap-2">
-      <UButton icon="lucide:download" variant="outline" @click="handleExport">
+      <UButton v-permission="'SEARCH'" icon="lucide:download" variant="outline" @click="handleExport">
         {{ $t('common.exportCsv') }}
       </UButton>
-      <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
+      <UButton v-permission="'ADD'" icon="lucide:plus" @click="handleAdd">
+        {{ p('add') }}
+      </UButton>
     </div>
   </div>
 </template>

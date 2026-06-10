@@ -1,20 +1,31 @@
-﻿import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { channel } from '@/db/schema'
 
+const channelStatuses = ['enabled', 'disabled'] as const
+type ChannelStatus = typeof channelStatuses[number]
+
+function isChannelStatus(status: unknown): status is ChannelStatus {
+  return typeof status === 'string' && channelStatuses.includes(status as ChannelStatus)
+}
+
 export default defineEventHandler(async (event) => {
   try {
+    const principal = event.context.principal as { isAdmin?: boolean } | undefined
+    if (!principal?.isAdmin) {
+      return responseError(null, '当前账号无权访问该资源', { statusCode: 403 })
+    }
+
     const query = getQuery(event)
     const page = Math.max(1, Number(query.page) || 1)
     const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20))
     const offset = (page - 1) * pageSize
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
     const conditions = []
-    if (principal?.organizationId) { conditions.push(eq(channel.organizationId, principal.organizationId)) }
     if (query.keyword) {
       conditions.push(or(ilike(channel.name, `%${query.keyword}%`), ilike(channel.vendor, `%${query.keyword}%`)))
     }
-    if (query.status) { conditions.push(eq(channel.status, query.status as string)) }
+    if (isChannelStatus(query.status))
+      conditions.push(eq(channel.status, query.status))
     const where = conditions.length ? and(...conditions) : undefined
 
     const [countRow] = await db.select({ total: sql<number>`count(*)::int` }).from(channel).where(where)

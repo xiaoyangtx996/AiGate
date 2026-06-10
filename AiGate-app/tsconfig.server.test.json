@@ -1,0 +1,10 @@
+{
+  "extends": "./.nuxt/tsconfig.server.json",
+  "include": [
+    "server/**/*.ts",
+    "shared/**/*.ts",
+    "test/**/*.ts",
+    ".nuxt/types/nitro-nuxt.d.ts",
+    ".nuxt/types/nitro.d.ts"
+  ]
+}

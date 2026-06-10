@@ -1,7 +1,7 @@
-﻿<script setup lang="ts">
-type ChatMessage = { role: string; content: string; time: string }
-type ChatConversation = { id: string; agentId: string; title: string; lastMessage: string; updatedAt: string; messages: ChatMessage[] }
-type AgentItem = { id: string; name: string; description?: string; model?: string }
+<script setup lang="ts">
+interface ChatMessage { role: string, content: string, time: string }
+interface ChatConversation { id: string, agentId: string, title: string, lastMessage: string, updatedAt: string, messages: ChatMessage[] }
+interface AgentItem { id: string, name: string, description?: string, model?: string }
 
 const route = useRoute()
 const { t } = useI18n()
@@ -10,7 +10,7 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.age
 
 const { data } = await useAsyncData('aigate-agents-chat', async () => {
   const res = await getAgentList()
-  return res.data ?? []
+  return res.data?.items ?? []
 })
 const agents = computed(() => data.value || [])
 const selectedAgent = ref<AgentItem | null>(null)
@@ -37,7 +37,8 @@ onMounted(async () => {
   const agentId = route.query.agentId as string | undefined
   if (agentId) {
     const target = agents.value.find(a => a.id === agentId)
-    if (target) await selectAgent(target)
+    if (target)
+      await selectAgent(target)
   }
 })
 
@@ -64,7 +65,8 @@ async function startNewConversation() {
 }
 
 async function sendMessage() {
-  if (!inputText.value.trim() || sending.value || !selectedAgent.value) return
+  if (!inputText.value.trim() || sending.value || !selectedAgent.value)
+    return
   const userMsg = { role: 'user', content: inputText.value.trim(), time: new Date().toISOString() }
   messages.value.push(userMsg)
   const msg = inputText.value.trim()
@@ -73,7 +75,7 @@ async function sendMessage() {
 
   messages.value.push({ role: 'assistant', content: '', time: new Date().toISOString() })
 
-  const lastMessage = messages.value[messages.value.length - 1]
+  const lastMessage = messages.value.at(-1)
   const agent = selectedAgent.value
 
   try {
@@ -95,12 +97,15 @@ async function sendMessage() {
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done)
+          break
         const chunk = decoder.decode(value, { stream: true })
         for (const line of chunk.split('\n')) {
-          if (!line.startsWith('data: ')) continue
+          if (!line.startsWith('data: '))
+            continue
           const payload = line.slice(6).trim()
-          if (payload === '[DONE]') continue
+          if (payload === '[DONE]')
+            continue
           try {
             const parsed = JSON.parse(payload)
             if (parsed.type === 'start' && parsed.conversationId) {
@@ -108,12 +113,14 @@ async function sendMessage() {
             }
             if (parsed.type === 'delta' && parsed.content) {
               reply += parsed.content
-              if (lastMessage) lastMessage.content = reply
+              if (lastMessage)
+                lastMessage.content = reply
             }
             if (parsed.type === 'done') {
               conversationId.value = parsed.conversationId || conversationId.value
               reply = parsed.message || reply
-              if (lastMessage) lastMessage.content = reply
+              if (lastMessage)
+                lastMessage.content = reply
             }
             if (parsed.type === 'error') {
               throw new Error(parsed.message || 'Stream error')
@@ -121,7 +128,8 @@ async function sendMessage() {
           }
           catch (e: unknown) {
             const err = e as { message?: string }
-            if (err?.message && !err.message.includes('JSON')) throw e
+            if (err?.message && !err.message.includes('JSON'))
+              throw e
           }
         }
       }
@@ -132,14 +140,16 @@ async function sendMessage() {
       const res = await response.json()
       conversationId.value = res.data?.conversationId
       const reply = res.data?.message || p('noReply')
-      if (lastMessage) lastMessage.content = reply
+      if (lastMessage)
+        lastMessage.content = reply
       saveToLocalStorage(conversationId.value, agent.id, msg, reply)
     }
   }
   catch (err: unknown) {
     const message = err instanceof Error ? err.message : p('checkGateway')
     const errorMsg = p('requestFailed', { message })
-    if (lastMessage) lastMessage.content = errorMsg
+    if (lastMessage)
+      lastMessage.content = errorMsg
   }
   finally { sending.value = false }
 }
@@ -148,7 +158,7 @@ function saveToLocalStorage(convId: string | undefined, agentId: string, userMsg
   try {
     const saved = localStorage.getItem('aigate-chat-history')
     const history = saved
-      ? JSON.parse(saved) as { conversations: ChatConversation[]; currentConv: string | null }
+      ? JSON.parse(saved) as { conversations: ChatConversation[], currentConv: string | null }
       : { conversations: [], currentConv: null }
 
     const id = convId || `local-${Date.now()}`
@@ -201,7 +211,7 @@ function deleteConversation(convId: string, e: Event) {
   try {
     const saved = localStorage.getItem('aigate-chat-history')
     if (saved) {
-      const history = JSON.parse(saved) as { conversations: ChatConversation[]; currentConv: string | null }
+      const history = JSON.parse(saved) as { conversations: ChatConversation[], currentConv: string | null }
       history.conversations = history.conversations.filter(c => c.id !== convId)
       if (history.currentConv === convId) {
         history.currentConv = null
@@ -216,7 +226,8 @@ function deleteConversation(convId: string, e: Event) {
 }
 
 function exportConversation() {
-  if (messages.value.length === 0) return
+  if (messages.value.length === 0)
+    return
 
   let md = `# ${p('exportTitle')}\n\n`
   md += `**${p('exportTime')}**: ${new Date().toLocaleString()}\n`
@@ -242,7 +253,9 @@ function exportConversation() {
 <template>
   <div class="flex h-[calc(100vh-120px)] gap-4">
     <div class="w-72 shrink-0 space-y-2">
-      <h3 class="text-lg font-bold mb-3">{{ p('selectAgent') }}</h3>
+      <h3 class="text-lg font-bold mb-3">
+        {{ p('selectAgent') }}
+      </h3>
       <UCard
         v-for="agent in agents" :key="agent.id"
         :class="selectedAgent?.id === agent.id ? 'border-primary' : 'cursor-pointer hover:border-primary/50'"
@@ -251,31 +264,44 @@ function exportConversation() {
         <div class="flex items-center gap-2">
           <UIcon name="lucide:bot" class="text-primary" />
           <div>
-            <p class="font-medium text-sm">{{ agent.name }}</p>
-            <p class="text-xs text-muted truncate">{{ agent.description }}</p>
+            <p class="font-medium text-sm">
+              {{ agent.name }}
+            </p>
+            <p class="text-xs text-muted truncate">
+              {{ agent.description }}
+            </p>
           </div>
         </div>
       </UCard>
 
       <template v-if="conversations.length > 0">
         <div class="flex items-center justify-between mt-4">
-          <h4 class="text-sm font-bold text-muted">{{ p('history') }}</h4>
+          <h4 class="text-sm font-bold text-muted">
+            {{ p('history') }}
+          </h4>
           <UButton size="xs" variant="ghost" icon="lucide:x" @click="conversations = []" />
         </div>
         <div class="space-y-1">
-          <div v-for="conv in conversations" :key="conv.id"
+          <div
+            v-for="conv in conversations" :key="conv.id"
             class="group flex items-center gap-2 text-sm p-2 rounded hover:bg-muted cursor-pointer"
             :class="conversationId === conv.id ? 'bg-muted' : ''"
             @click="loadConversation(conv.id)"
           >
             <UIcon name="lucide:message-square" class="shrink-0" />
             <div class="flex-1 min-w-0">
-              <p class="truncate">{{ conv.title || p('untitled') }}</p>
-              <p class="text-xs text-muted truncate">{{ conv.lastMessage }}</p>
+              <p class="truncate">
+                {{ conv.title || p('untitled') }}
+              </p>
+              <p class="text-xs text-muted truncate">
+                {{ conv.lastMessage }}
+              </p>
             </div>
-            <UButton size="xs" variant="ghost" icon="lucide:trash-2"
+            <UButton
+              size="xs" variant="ghost" icon="lucide:trash-2"
               class="opacity-0 group-hover:opacity-100 transition-opacity"
-              @click="deleteConversation(conv.id, $event)" />
+              @click="deleteConversation(conv.id, $event)"
+            />
           </div>
         </div>
       </template>
@@ -288,15 +314,21 @@ function exportConversation() {
             <h3 class="font-bold flex items-center gap-2">
               <UIcon name="lucide:bot" class="text-primary" />
               {{ selectedAgent.name }}
-              <UBadge variant="outline" size="xs">{{ selectedAgent.model || 'gpt-4o' }}</UBadge>
+              <UBadge variant="outline" size="xs">
+                {{ selectedAgent.model || 'gpt-4o' }}
+              </UBadge>
             </h3>
-            <p class="text-sm text-muted">{{ selectedAgent.description }}</p>
+            <p class="text-sm text-muted">
+              {{ selectedAgent.description }}
+            </p>
           </div>
           <div class="flex gap-2">
-            <UButton size="xs" variant="outline" icon="lucide:download" @click="exportConversation" :disabled="messages.length === 0">
+            <UButton size="xs" variant="outline" icon="lucide:download" :disabled="messages.length === 0" @click="exportConversation">
               {{ p('export') }}
             </UButton>
-            <UButton size="xs" variant="outline" icon="lucide:plus" @click="startNewConversation">{{ p('newChat') }}</UButton>
+            <UButton size="xs" variant="outline" icon="lucide:plus" @click="startNewConversation">
+              {{ p('newChat') }}
+            </UButton>
           </div>
         </div>
 
@@ -307,12 +339,18 @@ function exportConversation() {
                 <Suspense>
                   <LazyMdc :value="msg.content" />
                   <template #fallback>
-                    <p class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
+                    <p class="text-sm whitespace-pre-wrap">
+                      {{ msg.content }}
+                    </p>
                   </template>
                 </Suspense>
               </ClientOnly>
-              <p v-else class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
-              <p class="text-xs opacity-60 mt-1">{{ new Date(msg.time).toLocaleTimeString() }}</p>
+              <p v-else class="text-sm whitespace-pre-wrap">
+                {{ msg.content }}
+              </p>
+              <p class="text-xs opacity-60 mt-1">
+                {{ new Date(msg.time).toLocaleTimeString() }}
+              </p>
             </div>
           </div>
           <div v-if="sending" class="flex justify-start">
@@ -324,8 +362,8 @@ function exportConversation() {
         </div>
 
         <div class="flex gap-2">
-          <UInput v-model="inputText" :placeholder="p('inputPlaceholder')" class="flex-1" @keyup.enter="sendMessage" :disabled="sending" />
-          <UButton :disabled="!inputText.trim() || sending" @click="sendMessage" :loading="sending">
+          <UInput v-model="inputText" :placeholder="p('inputPlaceholder')" class="flex-1" :disabled="sending" @keyup.enter="sendMessage" />
+          <UButton :disabled="!inputText.trim() || sending" :loading="sending" @click="sendMessage">
             <UIcon name="lucide:send" />
           </UButton>
         </div>

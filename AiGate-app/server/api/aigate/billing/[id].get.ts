@@ -4,6 +4,9 @@ import { apiLog, billingRecord, organization } from '@/db/schema'
 
 function parsePeriod(period: string) {
   const [year, month] = period.split('-').map(Number)
+  if (!year || !month) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid billing period' })
+  }
   return {
     startDate: new Date(year, month - 1, 1),
     endDate: new Date(year, month, 1),
@@ -18,7 +21,9 @@ export default defineEventHandler(async (event) => {
       ? and(eq(billingRecord.id, id!), eq(billingRecord.organizationId, principal.organizationId))
       : eq(billingRecord.id, id!)
     const [record] = await db.select().from(billingRecord).where(where)
-    if (!record) { return responseSuccess(null, '账单不存在', 404) }
+    if (!record) {
+      return responseError(null, '账单不存在', { statusCode: 404 })
+    }
 
     const { startDate, endDate } = parsePeriod(record.period)
     const logConditions = [

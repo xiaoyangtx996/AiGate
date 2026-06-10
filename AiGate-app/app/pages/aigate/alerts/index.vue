@@ -12,6 +12,7 @@ interface AlertRow {
 const { getAlertList, markAlertRead, delAlert, runAlertCheck } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const p = (key: string) => t(`pages.aigate.alerts.${key}`)
 
 const page = ref(1)
 const pageSize = ref(20)
@@ -77,7 +78,6 @@ async function handleCheckAlerts() {
 const severityColor: Record<string, 'info' | 'warning' | 'error'> = { info: 'info', warning: 'warning', critical: 'error' }
 const severityIcon: Record<string, string> = { info: 'lucide:info', warning: 'lucide:alert-triangle', critical: 'lucide:alert-octagon' }
 
-const p = (key: string) => t(`pages.aigate.alerts.${key}`)
 const typeLabel = (type: string) => t(`pages.aigate.alerts.types.${type}`, type)
 </script>
 
@@ -85,7 +85,9 @@ const typeLabel = (type: string) => t(`pages.aigate.alerts.types.${type}`, type)
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <h2 class="text-xl font-bold">{{ p('title') }}</h2>
+        <h2 class="text-xl font-bold">
+          {{ p('title') }}
+        </h2>
         <UBadge v-if="unreadCount > 0" color="error" variant="solid" size="sm">
           {{ unreadCount }} {{ p('unread') }}
         </UBadge>
@@ -126,14 +128,24 @@ const typeLabel = (type: string) => t(`pages.aigate.alerts.types.${type}`, type)
           />
           <div class="flex-1">
             <div class="flex items-center justify-between">
-              <h3 class="font-bold">{{ a.title }}</h3>
+              <h3 class="font-bold">
+                {{ a.title }}
+              </h3>
               <div class="flex items-center gap-2">
-                <UBadge variant="outline" size="xs">{{ typeLabel(a.type) }}</UBadge>
-                <UBadge :color="severityColor[a.severity] || 'info'" variant="subtle" size="xs">{{ a.severity }}</UBadge>
+                <UBadge variant="outline" size="xs">
+                  {{ typeLabel(a.type) }}
+                </UBadge>
+                <UBadge :color="severityColor[a.severity] || 'info'" variant="subtle" size="xs">
+                  {{ a.severity }}
+                </UBadge>
               </div>
             </div>
-            <p class="text-sm text-muted mt-1">{{ a.message }}</p>
-            <p class="text-xs text-muted mt-2">{{ new Date(a.createdAt).toLocaleString() }}</p>
+            <p class="text-sm text-muted mt-1">
+              {{ a.message }}
+            </p>
+            <p class="text-xs text-muted mt-2">
+              {{ new Date(a.createdAt).toLocaleString() }}
+            </p>
           </div>
           <UButton v-if="!a.read" size="xs" variant="ghost" @click="handleRead(a.id)">
             {{ p('markRead') }}

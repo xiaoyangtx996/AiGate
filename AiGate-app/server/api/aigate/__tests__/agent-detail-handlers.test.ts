@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import agentDeleteHandler from '../agent/[id].delete'
+
+import agentGetHandler from '../agent/[id].get'
+import agentConversationsHandler from '../agent/[id]/conversations.get'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -24,10 +28,6 @@ vi.mock('@/db/schema', () => ({
 vi.mock('#server/utils/agent-chat', () => ({
   getUserConversations: (...args: unknown[]) => mockGetUserConversations(...args),
 }))
-
-import agentGetHandler from '../agent/[id].get'
-import agentDeleteHandler from '../agent/[id].delete'
-import agentConversationsHandler from '../agent/[id]/conversations.get'
 
 function createSelectChain(result: unknown[]) {
   return {
@@ -78,11 +78,25 @@ describe('aigate agent detail handlers', () => {
       expect(mockSelect).toHaveBeenCalledTimes(1)
     })
 
-    it('should return agent by id when principal has no organization', async () => {
+    it('should reject non-admin detail access without organization context', async () => {
       const agent = { id: 'agent-2', name: 'Global Bot' }
       mockSelect.mockReturnValue(createSelectChain([agent]))
 
       const response = await agentGetHandler(createMockEvent({
+        params: { id: 'agent-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to return agent without organization context', async () => {
+      const agent = { id: 'agent-2', name: 'Global Bot' }
+      mockSelect.mockReturnValue(createSelectChain([agent]))
+
+      const response = await agentGetHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'agent-2' },
       }))
 
@@ -118,10 +132,23 @@ describe('aigate agent detail handlers', () => {
       expect(mockDelete).toHaveBeenCalledTimes(1)
     })
 
-    it('should delete agent by id when principal has no organization', async () => {
+    it('should reject non-admin delete without organization context', async () => {
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'agent-2' }]))
 
       const response = await agentDeleteHandler(createMockEvent({
+        params: { id: 'agent-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockDelete).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to delete agent without organization context', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([{ id: 'agent-2' }]))
+
+      const response = await agentDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'agent-2' },
       }))
 
@@ -131,13 +158,13 @@ describe('aigate agent detail handlers', () => {
   })
 
   describe('agent [id]/conversations.get', () => {
-    it('should return server error when user is not logged in', async () => {
+    it('should return unauthorized when user is not logged in', async () => {
       const response = await agentConversationsHandler(createMockEvent({
         params: { id: 'agent-1' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
-      expect(response.msg).toBe('服务器错误')
+      expect(response.code).toBe(RESPONSE_CODE.UNAUTHORIZED)
+      expect(response.msg).toBe('Unauthorized')
       expect(mockGetUserConversations).not.toHaveBeenCalled()
     })
 

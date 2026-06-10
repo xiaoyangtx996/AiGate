@@ -1,9 +1,12 @@
-﻿import { and, eq, gte, lt, sql, sum } from 'drizzle-orm'
+import { and, eq, gte, lt, sum } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { apiLog, billingRecord, organization } from '@/db/schema'
 
 export async function generateBillingForPeriod(period: string) {
   const [year, month] = period.split('-').map(Number)
+  if (!year || !month) {
+    throw new Error('Invalid billing period')
+  }
   const startDate = new Date(year, month - 1, 1)
   const endDate = new Date(year, month, 1)
 
@@ -27,7 +30,8 @@ export async function generateBillingForPeriod(period: string) {
     const tokenUsage = Number(result?.totalTokens || 0)
     const cost = Number(result?.totalCost || 0)
 
-    if (tokenUsage === 0 && cost === 0) continue
+    if (tokenUsage === 0 && cost === 0)
+      continue
 
     const [existing] = await db.select().from(billingRecord).where(
       and(

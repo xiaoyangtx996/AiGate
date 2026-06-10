@@ -1,11 +1,15 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { prompt } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
-    const data = principal?.organizationId
+    const principal = event.context.principal as { isAdmin?: boolean, organizationId?: string | null } | undefined
+    if (!principal?.isAdmin && !principal?.organizationId) {
+      return responseError(null, '当前账号缺少组织上下文', { statusCode: 403 })
+    }
+
+    const data = !principal.isAdmin && principal.organizationId
       ? await db.select().from(prompt).where(eq(prompt.organizationId, principal.organizationId))
       : await db.select().from(prompt)
     setResponseHeader(event, 'Content-Type', 'application/json')

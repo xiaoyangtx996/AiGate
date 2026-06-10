@@ -1,6 +1,14 @@
+import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import kbDeleteHandler from '../knowledge-base/[id].delete'
+import kbPutHandler from '../knowledge-base/[id].put'
+import kbDocumentDeleteHandler from '../knowledge-base/[id]/documents/[docId].delete'
+import kbDocumentsGetHandler from '../knowledge-base/[id]/documents/index.get'
+import kbDocumentPostHandler from '../knowledge-base/[id]/documents/index.post'
+import kbListHandler from '../knowledge-base/index.get'
+import kbPostHandler from '../knowledge-base/index.post'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -54,14 +62,6 @@ vi.mock('@/db/schema', () => ({
 }))
 
 vi.stubGlobal('readMultipartFormData', async (event: { _formData?: unknown }) => event._formData)
-
-import kbPostHandler from '../knowledge-base/index.post'
-import kbListHandler from '../knowledge-base/index.get'
-import kbPutHandler from '../knowledge-base/[id].put'
-import kbDeleteHandler from '../knowledge-base/[id].delete'
-import kbDocumentsGetHandler from '../knowledge-base/[id]/documents/index.get'
-import kbDocumentPostHandler from '../knowledge-base/[id]/documents/index.post'
-import kbDocumentDeleteHandler from '../knowledge-base/[id]/documents/[docId].delete'
 
 function createSelectChain(result: unknown[]) {
   return {
@@ -147,7 +147,7 @@ describe('aigate knowledge-base handlers', () => {
         body: { description: 'No name' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -166,16 +166,36 @@ describe('aigate knowledge-base handlers', () => {
     })
 
     it('should create knowledge base preserving explicit organizationId', async () => {
-      const created = { id: 'kb-2', name: 'Shared KB', organizationId: 'org-explicit' }
-      mockInsert.mockReturnValue(createInsertChain([created]))
-
       const response = await kbPostHandler(createMockEvent({
         context: { principal: { organizationId: 'org-1' } },
         body: { name: 'Shared KB', organizationId: 'org-explicit' },
       }))
 
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to create knowledge base with explicit organizationId', async () => {
+      const created = { id: 'kb-2', name: 'Shared KB', organizationId: 'org-explicit' }
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const response = await kbPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        body: { name: 'Shared KB', organizationId: 'org-explicit' },
+      }))
+
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
+    })
+
+    it('should reject non-admin principals without organization context', async () => {
+      const response = await kbPostHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        body: { name: 'No Org KB' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
     })
   })
 
@@ -205,11 +225,22 @@ describe('aigate knowledge-base handlers', () => {
       expect(response.data).toEqual(items)
     })
 
-    it('should return all knowledge bases when principal has no organization', async () => {
+    it('should reject non-admin principals without organization context', async () => {
+      const response = await kbListHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to list all knowledge bases without organization context', async () => {
       const items = [{ id: 'kb-3', name: 'Global KB' }]
       mockSelect.mockReturnValue(createListSelectChain(items))
 
-      const response = await kbListHandler(createMockEvent())
+      const response = await kbListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(items)
@@ -217,6 +248,17 @@ describe('aigate knowledge-base handlers', () => {
   })
 
   describe('knowledge-base [id].put', () => {
+    it('should reject non-admin principals without organization context', async () => {
+      const response = await kbPutHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        params: { id: 'kb-1' },
+        body: { name: 'Updated' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
     it('should return 404 when knowledge base not found', async () => {
       mockUpdate.mockReturnValue(createUpdateChain([]))
 
@@ -247,6 +289,16 @@ describe('aigate knowledge-base handlers', () => {
   })
 
   describe('knowledge-base [id].delete', () => {
+    it('should reject non-admin principals without organization context', async () => {
+      const response = await kbDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        params: { id: 'kb-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockDelete).not.toHaveBeenCalled()
+    })
+
     it('should return 404 when knowledge base not found', async () => {
       mockDelete.mockReturnValue(createDeleteChain([]))
 
@@ -274,9 +326,11 @@ describe('aigate knowledge-base handlers', () => {
 
   describe('knowledge-base [id]/documents index.get', () => {
     it('should return error when knowledge base id is missing', async () => {
-      const response = await kbDocumentsGetHandler(createMockEvent())
+      const response = await kbDocumentsGetHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+      }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect((response.data as Error).message).toBe('Missing knowledge base ID')
       expect(mockSelect).not.toHaveBeenCalled()
     })
@@ -285,10 +339,11 @@ describe('aigate knowledge-base handlers', () => {
       mockSelect.mockReturnValue(createSelectChain([]))
 
       const response = await kbDocumentsGetHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'missing' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.NOT_FOUND)
       expect((response.data as Error).message).toBe('Knowledge base not found')
     })
 
@@ -296,6 +351,7 @@ describe('aigate knowledge-base handlers', () => {
       const kb = {
         id: 'kb-1',
         name: 'Docs KB',
+        organizationId: 'org-1',
         status: 'ready',
         documents: [
           { id: 'doc-1', name: 'guide.pdf' },
@@ -305,6 +361,7 @@ describe('aigate knowledge-base handlers', () => {
       mockSelect.mockReturnValue(createSelectChain([kb]))
 
       const response = await kbDocumentsGetHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'kb-1' },
       }))
 
@@ -315,13 +372,31 @@ describe('aigate knowledge-base handlers', () => {
         total: 2,
       })
     })
+
+    it('should reject documents list outside principal organization', async () => {
+      mockSelect.mockReturnValue(createSelectChain([{
+        id: 'kb-1',
+        name: 'Docs KB',
+        organizationId: 'org-other',
+        status: 'ready',
+      }]))
+
+      const response = await kbDocumentsGetHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'kb-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('无权操作此知识库')
+    })
   })
 
   describe('knowledge-base [id]/documents index.post', () => {
     it('should reject when knowledge base id is missing', async () => {
       const response = await kbDocumentPostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         _formData: createFileFormData(),
-      } as ReturnType<typeof createMockEvent>))
+      }))
 
       expect(response.msg).toBe('缺少知识库 ID')
       expect(mockInsert).not.toHaveBeenCalled()
@@ -330,10 +405,11 @@ describe('aigate knowledge-base handlers', () => {
     it('should reject when knowledge base not found', async () => {
       mockSelect.mockReturnValue(createSelectChain([]))
 
-      const response = await kbDocumentPostHandler({
-        ...createMockEvent({ params: { id: 'missing' } }),
+      const response = await kbDocumentPostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'missing' },
         _formData: createFileFormData(),
-      })
+      }))
 
       expect(response.msg).toBe('知识库不存在')
       expect(mockInsert).not.toHaveBeenCalled()
@@ -345,13 +421,11 @@ describe('aigate knowledge-base handlers', () => {
         organizationId: 'org-other',
       }]))
 
-      const response = await kbDocumentPostHandler({
-        ...createMockEvent({
-          context: { principal: { organizationId: 'org-1' } },
-          params: { id: 'kb-1' },
-        }),
+      const response = await kbDocumentPostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'kb-1' },
         _formData: createFileFormData(),
-      })
+      }))
 
       expect(response.msg).toBe('无权操作此知识库')
       expect(mockInsert).not.toHaveBeenCalled()
@@ -363,13 +437,11 @@ describe('aigate knowledge-base handlers', () => {
         organizationId: 'org-1',
       }]))
 
-      const response = await kbDocumentPostHandler({
-        ...createMockEvent({
-          context: { principal: { organizationId: 'org-1' } },
-          params: { id: 'kb-1' },
-        }),
+      const response = await kbDocumentPostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'kb-1' },
         _formData: createFileFormData({ type: 'image/png' }),
-      })
+      }))
 
       expect(response.msg).toBe('不支持的文件类型')
       expect(mockInsert).not.toHaveBeenCalled()
@@ -391,13 +463,11 @@ describe('aigate knowledge-base handlers', () => {
       mockInsert.mockReturnValue(createInsertChain([insertedDoc]))
       mockUpdate.mockReturnValue(createUpdateChainNoReturn())
 
-      const response = await kbDocumentPostHandler({
-        ...createMockEvent({
-          context: { principal: { organizationId: 'org-1' } },
-          params: { id: 'kb-1' },
-        }),
+      const response = await kbDocumentPostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'kb-1' },
         _formData: createFileFormData({ data: fileData, chunkSize: '500' }),
-      })
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual({
@@ -415,10 +485,11 @@ describe('aigate knowledge-base handlers', () => {
   describe('knowledge-base [id]/documents/[docId].delete', () => {
     it('should return error when parameters are missing', async () => {
       const response = await kbDocumentDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'kb-1' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect((response.data as Error).message).toBe('Missing parameters')
       expect(mockSelect).not.toHaveBeenCalled()
     })
@@ -427,22 +498,36 @@ describe('aigate knowledge-base handlers', () => {
       mockSelect.mockReturnValue(createSelectChain([]))
 
       const response = await kbDocumentDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'missing', docId: 'doc-1' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.NOT_FOUND)
       expect((response.data as Error).message).toBe('Knowledge base not found')
     })
 
     it('should confirm document deletion for existing knowledge base', async () => {
-      mockSelect.mockReturnValue(createSelectChain([{ id: 'kb-1', name: 'Docs KB' }]))
+      mockSelect.mockReturnValue(createSelectChain([{ id: 'kb-1', name: 'Docs KB', organizationId: 'org-1' }]))
 
       const response = await kbDocumentDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'kb-1', docId: 'doc-1' },
       }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual({ message: 'Document deleted', docId: 'doc-1' })
+    })
+
+    it('should reject document deletion outside principal organization', async () => {
+      mockSelect.mockReturnValue(createSelectChain([{ id: 'kb-1', name: 'Docs KB', organizationId: 'org-other' }]))
+
+      const response = await kbDocumentDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'kb-1', docId: 'doc-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('无权操作此知识库')
     })
   })
 })

@@ -1,16 +1,19 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { channel } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean } | undefined
+    if (!principal?.isAdmin) {
+      return responseError(null, '当前账号无权访问该资源', { statusCode: 403 })
+    }
+
     const id = getRouterParam(event, 'id')
-    const where = principal?.organizationId
-      ? and(eq(channel.id, id!), eq(channel.organizationId, principal.organizationId))
-      : eq(channel.id, id!)
-    const [res] = await db.select().from(channel).where(where)
-    if (!res) { return responseSuccess(null, '资源不存在或无权操作', 404) }
+    const [res] = await db.select().from(channel).where(eq(channel.id, id!))
+    if (!res) {
+      return responseError(null, '资源不存在或无权操作', { statusCode: 404 })
+    }
     return responseSuccess(res)
   }
   catch (err) { return responseError(err) }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
 import { apiRoutePolicy, matchApiRoute } from '../routes'
 
-type Principal = { isAdmin: boolean }
+interface Principal { isAdmin: boolean }
 
 function resolveApiAccess(path: string, method: string, principal?: Principal) {
   if (!path.startsWith('/api')) {
@@ -51,8 +51,13 @@ describe('auth route policy', () => {
       expect(matchApiRoute('/api/oauth/token', ['/api/auth'])).toBe(false)
     })
 
-    it('should match paths that share a route prefix', () => {
-      expect(matchApiRoute('/api/authentication', ['/api/auth'])).toBe(true)
+    it('should not match paths that only share a text prefix', () => {
+      expect(matchApiRoute('/api/authentication', ['/api/auth'])).toBe(false)
+      expect(matchApiRoute('/api/aigate/api-key-extra', ['/api/aigate/api-key'])).toBe(false)
+    })
+
+    it('should support explicit internal route prefixes', () => {
+      expect(matchApiRoute('/api/_nuxt/dev.json', ['/api/_'])).toBe(true)
     })
 
     it('should return false for empty route list', () => {
@@ -84,6 +89,21 @@ describe('auth route policy', () => {
         action: 'forbidden',
         code: RESPONSE_CODE.FORBIDDEN,
         msg: '当前账号无权访问该资源',
+      })
+    })
+
+    it.each([
+      '/api/aigate/organization',
+      '/api/aigate/api-key',
+      '/api/aigate/channel',
+      '/api/aigate/member',
+      '/api/system-settings/user-manage',
+      '/api/system-settings/role-manage',
+      '/api/system-settings/operation-log',
+    ])('should forbid non-admin access to %s', (path) => {
+      expect(resolveApiAccess(path, 'GET', { isAdmin: false })).toMatchObject({
+        action: 'forbidden',
+        code: RESPONSE_CODE.FORBIDDEN,
       })
     })
 

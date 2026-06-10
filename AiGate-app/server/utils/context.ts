@@ -1,4 +1,4 @@
-﻿import { eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { auth } from '#server/utils/auth'
 import { db } from '@/db/drizzle'
 import { member, userRole } from '@/db/schema'
@@ -19,19 +19,21 @@ export async function getRequestPrincipal(event: import('h3').H3Event) {
     .from(userRole)
     .where(eq(userRole.userId, userId))
 
-  const role = preferredRole || (roles.length ? roles[0].roleId : 'user')
+  const roleIds = roles.map(role => role.roleId)
+  const role = preferredRole || roles[0]?.roleId || 'user'
 
   const memberships = await db
     .select({ organizationId: member.organizationId })
     .from(member)
     .where(eq(member.userId, userId))
 
-  const organizationId = memberships.length ? memberships[0].organizationId : null
+  const organizationId = memberships[0]?.organizationId ?? null
 
   return {
     userId,
     email,
     role,
+    roleIds,
     organizationId,
     isAdmin: role === 'admin',
     session,

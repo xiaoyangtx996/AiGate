@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import HeaderContent from './components/HeaderContent.vue'
 
 interface ApiKeyRow {
@@ -16,7 +16,9 @@ interface ApiKeyRow {
 const { getApiKeyList, insertApiKey, updateApiKey, delApiKey } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const { i18nCommon } = useMessage()
 const { exportToCSV } = useExport()
+const confirm = useConfirmDialog()
 
 const keyword = ref('')
 const page = ref(1)
@@ -67,7 +69,7 @@ const open = ref(false)
 const editData = ref<ApiKeyRow | null>(null)
 const saveLoading = ref(false)
 
-const roles = ref<Array<{ id: string; name: string }>>([])
+const roles = ref<Array<{ id: string, name: string }>>([])
 const form = reactive({
   name: '',
   env: 'production',
@@ -77,7 +79,7 @@ const form = reactive({
 
 onMounted(async () => {
   try {
-    const res = await $fetch<{ data?: Array<{ id: string; name: string }> }>('/api/aigate/role')
+    const res = await $fetch<{ data?: Array<{ id: string, name: string }> }>('/api/aigate/role')
     roles.value = res.data || []
   }
   catch {
@@ -104,24 +106,38 @@ function handleEdit(row: ApiKeyRow) {
 }
 
 async function handleDelete(id: string) {
-  await delApiKey(id)
-  successToast()
-  refresh()
+  const confirmed = await confirm({
+    title: i18nCommon('confirmDeleteTitle'),
+    description: i18nCommon('confirmDeleteDescription'),
+    confirmLabel: i18nCommon('confirmDelete'),
+    loadingLabel: i18nCommon('inDelete'),
+    onConfirm: async () => {
+      await delApiKey(id)
+      return true
+    },
+  })
+  if (confirmed) {
+    successToast(i18nCommon('deleteSuccess'))
+    refresh()
+  }
 }
 
 async function handleSubmit() {
-  if (!form.name) return
+  if (!form.name)
+    return
   saveLoading.value = true
   try {
     if (editData.value?.id) {
       await updateApiKey({ ...form, id: editData.value.id })
-    } else {
+    }
+    else {
       await insertApiKey(form)
     }
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -142,8 +158,9 @@ function handleExport() {
 }
 
 function maskKey(key: string) {
-  if (!key) return '-'
-  return key.length > 16 ? key.substring(0, 12) + '...' + key.substring(key.length - 4) : key
+  if (!key)
+    return '-'
+  return key.length > 16 ? `${key.substring(0, 12)}...${key.substring(key.length - 4)}` : key
 }
 
 function formatCost(cents?: number | null) {
@@ -180,20 +197,36 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
     />
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <UCard>
-        <p class="text-sm text-muted">{{ p('totalKeys') }}</p>
-        <p class="text-2xl font-bold">{{ stats.total }}</p>
+        <p class="text-sm text-muted">
+          {{ p('totalKeys') }}
+        </p>
+        <p class="text-2xl font-bold">
+          {{ stats.total }}
+        </p>
       </UCard>
       <UCard>
-        <p class="text-sm text-muted">{{ p('activeKeys') }}</p>
-        <p class="text-2xl font-bold text-success">{{ stats.active }}</p>
+        <p class="text-sm text-muted">
+          {{ p('activeKeys') }}
+        </p>
+        <p class="text-2xl font-bold text-success">
+          {{ stats.active }}
+        </p>
       </UCard>
       <UCard>
-        <p class="text-sm text-muted">{{ p('totalCalls') }}</p>
-        <p class="text-2xl font-bold">{{ stats.calls.toLocaleString() }}</p>
+        <p class="text-sm text-muted">
+          {{ p('totalCalls') }}
+        </p>
+        <p class="text-2xl font-bold">
+          {{ stats.calls.toLocaleString() }}
+        </p>
       </UCard>
       <UCard>
-        <p class="text-sm text-muted">{{ p('totalCost') }}</p>
-        <p class="text-2xl font-bold">{{ formatCost(stats.cost) }}</p>
+        <p class="text-sm text-muted">
+          {{ p('totalCost') }}
+        </p>
+        <p class="text-2xl font-bold">
+          {{ formatCost(stats.cost) }}
+        </p>
       </UCard>
     </div>
 
@@ -236,7 +269,9 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         <code class="text-xs font-mono">{{ maskKey(row.original.key) }}</code>
       </template>
       <template #status-cell="{ row }">
-        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
+        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">
+          {{ row.original.status }}
+        </UBadge>
       </template>
       <template #calls-cell="{ row }">
         <span class="font-mono">{{ (row.original.calls || 0).toLocaleString() }}</span>
@@ -249,8 +284,8 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       </template>
       <template #actions-cell="{ row }">
         <div class="flex gap-1">
-          <UButton size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
-          <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
+          <UButton v-permission="'EDIT'" size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
+          <UButton v-permission="'DELETE'" size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
         </div>
       </template>
     </UTable>
@@ -277,6 +312,7 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       >
         <span class="text-sm font-medium">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
         <UButton
+          v-permission="'BATCH_DELETE'"
           size="sm"
           color="error"
           variant="soft"
@@ -290,7 +326,9 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
 
     <UModal v-model:open="open">
       <template #header>
-        <h3 class="text-lg font-bold">{{ editData ? $t('common.save') : p('add') }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ editData ? $t('common.save') : p('add') }}
+        </h3>
       </template>
       <template #body>
         <div class="space-y-4">
@@ -298,18 +336,22 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
             <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
           </UFormField>
           <UFormField :label="p('env')">
-            <USelect v-model="form.env" :items="[
-              { label: p('envProduction'), value: 'production' },
-              { label: p('envTest'), value: 'test' },
-              { label: p('envDev'), value: 'dev' },
-            ]" />
+            <USelect
+              v-model="form.env" :items="[
+                { label: p('envProduction'), value: 'production' },
+                { label: p('envTest'), value: 'test' },
+                { label: p('envDev'), value: 'dev' },
+              ]"
+            />
           </UFormField>
           <UFormField :label="p('status')">
-            <USelect v-model="form.status" :items="[
-              { label: p('statusActive'), value: 'active' },
-              { label: p('statusRevoked'), value: 'revoked' },
-              { label: p('statusExpired'), value: 'expired' },
-            ]" />
+            <USelect
+              v-model="form.status" :items="[
+                { label: p('statusActive'), value: 'active' },
+                { label: p('statusRevoked'), value: 'revoked' },
+                { label: p('statusExpired'), value: 'expired' },
+              ]"
+            />
           </UFormField>
           <UFormField :label="p('bindRoles')" :hint="p('bindRolesHint')">
             <div class="flex flex-wrap gap-2">
@@ -326,8 +368,10 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
-          <UButton :loading="saveLoading" :disabled="!form.name" @click="handleSubmit">
+          <UButton variant="ghost" @click="open = false">
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton v-permission="editData ? 'EDIT' : 'ADD'" :loading="saveLoading" :disabled="!form.name" @click="handleSubmit">
             {{ $t('common.save') }}
           </UButton>
         </div>

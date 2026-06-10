@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { cleanupOldApiLogs } from '../log-cleanup'
+
 const mockDelete = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
@@ -11,8 +13,6 @@ vi.mock('@/db/drizzle', () => ({
 vi.mock('@/db/schema', () => ({
   apiLog: { createdAt: 'createdAt' },
 }))
-
-import { cleanupOldApiLogs } from '../log-cleanup'
 
 const RETENTION_DAYS = 180
 

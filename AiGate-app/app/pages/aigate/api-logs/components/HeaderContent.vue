@@ -11,7 +11,9 @@ const p = (key: string) => t(`pages.aigate.apiLogs.${key}`)
 
 <template>
   <div class="flex items-center justify-between">
-    <h2 class="text-xl font-bold">{{ $t('menu.apiLogs') }}</h2>
+    <h2 class="text-xl font-bold">
+      {{ $t('menu.apiLogs') }}
+    </h2>
     <div class="flex gap-2">
       <UButton icon="lucide:download" variant="outline" @click="handleExport">
         {{ $t('common.exportCsv') }}

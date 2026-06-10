@@ -6,6 +6,7 @@ export const TEST_PASSWORD = 'Test123456'
 export const TEST_NAME = 'Test Admin'
 
 const DEFAULT_BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'
+const signInButtonPattern = /^登录$|^Sign in$/i
 
 export interface EnsureTestUserResult {
   ok: boolean
@@ -20,7 +21,7 @@ export async function ensureTestUser(baseURL = DEFAULT_BASE_URL): Promise<Ensure
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Origin: baseURL,
+      'Origin': baseURL,
     },
     body: JSON.stringify({
       email: TEST_EMAIL,
@@ -74,7 +75,7 @@ export async function loginAsTestUser(page: Page): Promise<boolean> {
   await emailInput.waitFor({ state: 'visible', timeout: 15_000 })
   await emailInput.fill(TEST_EMAIL)
   await passwordInput.fill(TEST_PASSWORD)
-  await page.locator('form').first().getByRole('button', { name: /^登录$|^Sign in$/i }).click()
+  await page.locator('form').first().getByRole('button', { name: signInButtonPattern }).click()
 
   await page.waitForURL(url => !url.pathname.includes('/auth/sign-in'), { timeout: 30_000 }).catch(() => {})
   await page.waitForTimeout(2000)

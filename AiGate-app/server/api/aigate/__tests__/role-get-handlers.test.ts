@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import roleGetHandler from '../role.get'
+
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -20,8 +22,6 @@ vi.mock('@/db/schema', () => ({
     createdAt: 'createdAt',
   },
 }))
-
-import roleGetHandler from '../role.get'
 
 function createRoleSelectChain(result: unknown[]) {
   return {

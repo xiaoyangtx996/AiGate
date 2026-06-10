@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import gatewayProxyHandler from '../[...path]'
+
 const mockValidateApiKey = vi.fn()
 const mockCheckIpWhitelist = vi.fn()
 const mockCheckApiKeyScopes = vi.fn()
@@ -40,14 +42,24 @@ vi.mock('@/db/drizzle', () => ({
 vi.mock('@/db/schema', () => ({
   apiKey: { id: 'id', calls: 'calls', cost: 'cost', lastUsed: 'lastUsed' },
   apiLog: {
-    userId: 'userId', apiKeyId: 'apiKeyId', organizationId: 'organizationId', model: 'model',
-    provider: 'provider', type: 'type', inputTokens: 'inputTokens', outputTokens: 'outputTokens',
-    totalTokens: 'totalTokens', cost: 'cost', latency: 'latency', statusCode: 'statusCode',
-    status: 'status', prompt: 'prompt', response: 'response', errorMessage: 'errorMessage',
+    userId: 'userId',
+    apiKeyId: 'apiKeyId',
+    organizationId: 'organizationId',
+    model: 'model',
+    provider: 'provider',
+    type: 'type',
+    inputTokens: 'inputTokens',
+    outputTokens: 'outputTokens',
+    totalTokens: 'totalTokens',
+    cost: 'cost',
+    latency: 'latency',
+    statusCode: 'statusCode',
+    status: 'status',
+    prompt: 'prompt',
+    response: 'response',
+    errorMessage: 'errorMessage',
   },
 }))
-
-import gatewayProxyHandler from '../[...path]'
 
 function createEvent(options: {
   method?: string
@@ -57,8 +69,10 @@ function createEvent(options: {
   ip?: string
 } = {}) {
   const headers = new Map<string, string>()
-  if (options.authHeader) headers.set('authorization', options.authHeader)
-  if (options.ip) headers.set('x-forwarded-for', options.ip)
+  if (options.authHeader)
+    headers.set('authorization', options.authHeader)
+  if (options.ip)
+    headers.set('x-forwarded-for', options.ip)
 
   return {
     method: options.method ?? 'POST',

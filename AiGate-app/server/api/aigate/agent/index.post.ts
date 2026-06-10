@@ -1,13 +1,19 @@
-﻿import { db } from '@/db/drizzle'
-import { insertAgentSchema, agent } from '@/db/schema'
 import { validateBody, ValidationError } from '#server/utils/validation'
+import { db } from '@/db/drizzle'
+import { agent, insertAgentSchema } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean, organizationId?: string | null } | undefined
 
     // 使用 validateBody 验证请求体
     const body = await validateBody(insertAgentSchema)(event)
+    if (!principal?.isAdmin && !principal?.organizationId) {
+      return responseError(null, '当前账号缺少组织上下文', { statusCode: 403 })
+    }
+    if (!principal?.isAdmin && body.organizationId && body.organizationId !== principal.organizationId) {
+      return responseError(null, '无权向其他组织创建 Agent', { statusCode: 403 })
+    }
 
     const [res] = await db.insert(agent).values({
       ...body,

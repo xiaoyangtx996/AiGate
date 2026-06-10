@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
-import { createMockEvent } from './nitro-test-utils'
+import channelGetHandler from '../channel/[id].get'
+
+import channelPutHandler from '../channel/[id].put'
+import channelStatsHandler from '../channel/[id]/stats.get'
+import channelHealthCheckHandler from '../channel/health-check.post'
+import channelPostHandler from '../channel/index.post'
+import { asResponse, createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
@@ -52,12 +58,6 @@ vi.mock('@/db/schema', () => ({
     parse: (body: unknown) => channelBodySchema.parse(body),
   },
 }))
-
-import channelPostHandler from '../channel/index.post'
-import channelPutHandler from '../channel/[id].put'
-import channelGetHandler from '../channel/[id].get'
-import channelHealthCheckHandler from '../channel/health-check.post'
-import channelStatsHandler from '../channel/[id]/stats.get'
 
 const sampleChannel = {
   id: 'ch-1',
@@ -134,12 +134,27 @@ describe('aigate channel handlers', () => {
   })
 
   describe('channel index.post', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelPostHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        body: {
+          name: 'OpenAI Primary',
+          vendor: 'openai',
+          vendorTag: 'gpt-4o',
+          endpoint: 'https://api.openai.com/v1/chat/completions',
+        },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
     it('should create channel with organization from principal', async () => {
       const created = { ...sampleChannel }
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await channelPostHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         body: {
           name: 'OpenAI Primary',
           vendor: 'openai',
@@ -153,7 +168,7 @@ describe('aigate channel handlers', () => {
       expect(mockInsert).toHaveBeenCalledTimes(1)
     })
 
-    it('should create channel without principal organization', async () => {
+    it('should reject requests without admin principal', async () => {
       const created = { ...sampleChannel, organizationId: undefined }
       mockInsert.mockReturnValue(createInsertChain([created]))
 
@@ -166,17 +181,17 @@ describe('aigate channel handlers', () => {
         },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual(created)
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
     })
 
     it('should reject invalid body missing required fields', async () => {
       const response = await channelPostHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         body: { name: 'Incomplete Channel' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -184,8 +199,8 @@ describe('aigate channel handlers', () => {
       const created = { ...sampleChannel, organizationId: 'org-2' }
       mockInsert.mockReturnValue(createInsertChain([created]))
 
-      const response = await channelPostHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+      const response = asResponse<any>(await channelPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         body: {
           name: 'OpenAI Primary',
           vendor: 'openai',
@@ -193,7 +208,7 @@ describe('aigate channel handlers', () => {
           endpoint: 'https://api.openai.com/v1/chat/completions',
           organizationId: 'org-2',
         },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.organizationId).toBe('org-2')
@@ -201,6 +216,17 @@ describe('aigate channel handlers', () => {
   })
 
   describe('channel [id].put', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelPutHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        params: { id: 'ch-1' },
+        body: { name: 'Blocked Update' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
     it('should update channel successfully', async () => {
       const updated = { ...sampleChannel, name: 'OpenAI Updated' }
       mockUpdate.mockReturnValue({
@@ -212,6 +238,7 @@ describe('aigate channel handlers', () => {
       })
 
       const response = await channelPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'ch-1' },
         body: { name: 'OpenAI Updated' },
       }))
@@ -230,6 +257,7 @@ describe('aigate channel handlers', () => {
       })
 
       const response = await channelPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'missing' },
         body: { name: 'Ghost Channel' },
       }))
@@ -248,7 +276,7 @@ describe('aigate channel handlers', () => {
       })
 
       const response = await channelPutHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-other' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-other' } },
         params: { id: 'ch-1' },
         body: { name: 'Blocked Update' },
       }))
@@ -259,10 +287,21 @@ describe('aigate channel handlers', () => {
   })
 
   describe('channel [id].get', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelGetHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        params: { id: 'ch-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return channel by id', async () => {
       mockSelect.mockReturnValue(createWhereSelectChain([sampleChannel]))
 
       const response = await channelGetHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'ch-1' },
       }))
 
@@ -274,6 +313,7 @@ describe('aigate channel handlers', () => {
       mockSelect.mockReturnValue(createWhereSelectChain([]))
 
       const response = await channelGetHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'missing' },
       }))
 
@@ -285,7 +325,7 @@ describe('aigate channel handlers', () => {
       mockSelect.mockReturnValue(createWhereSelectChain([]))
 
       const response = await channelGetHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-other' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-other' } },
         params: { id: 'ch-1' },
       }))
 
@@ -295,11 +335,21 @@ describe('aigate channel handlers', () => {
   })
 
   describe('channel health-check.post', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelHealthCheckHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        body: { channelId: 'ch-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return 404 when channelId not found', async () => {
       mockSelect.mockReturnValue(createWhereSelectChain([]))
 
       const response = await channelHealthCheckHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         body: { channelId: 'missing' },
       }))
 
@@ -313,9 +363,10 @@ describe('aigate channel handlers', () => {
       mockFetch.mockResolvedValue({ ok: true, status: 200 })
       mockUpdate.mockReturnValue(createUpdateChain())
 
-      const response = await channelHealthCheckHandler(createMockEvent({
+      const response = asResponse<any>(await channelHealthCheckHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         body: { channelId: 'ch-1' },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.healthy).toBe(true)
@@ -330,9 +381,10 @@ describe('aigate channel handlers', () => {
       mockFetch.mockRejectedValue(new Error('Connection refused'))
       mockUpdate.mockReturnValue(createUpdateChain())
 
-      const response = await channelHealthCheckHandler(createMockEvent({
+      const response = asResponse<any>(await channelHealthCheckHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         body: { channelId: 'ch-1' },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.healthy).toBe(false)
@@ -351,10 +403,10 @@ describe('aigate channel handlers', () => {
         .mockResolvedValueOnce({ ok: false, status: 503 })
       mockUpdate.mockReturnValue(createUpdateChain())
 
-      const response = await channelHealthCheckHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+      const response = asResponse<any>(await channelHealthCheckHandler(createMockEvent({
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         body: {},
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.total).toBe(2)
@@ -367,7 +419,7 @@ describe('aigate channel handlers', () => {
       mockSelect.mockReturnValue(createWhereSelectChain([]))
 
       const response = await channelHealthCheckHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-empty' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-empty' } },
         body: { channelId: 'ch-1' },
       }))
 
@@ -377,12 +429,23 @@ describe('aigate channel handlers', () => {
   })
 
   describe('channel [id]/stats.get', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelStatsHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        params: { id: 'ch-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return channel stats with trend data', async () => {
       setupStatsDbMocks(sampleChannel, { total: 100, success: 95, avg: 120 })
 
-      const response = await channelStatsHandler(createMockEvent({
+      const response = asResponse<any>(await channelStatsHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'ch-1' },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.channel).toEqual(sampleChannel)
@@ -396,6 +459,7 @@ describe('aigate channel handlers', () => {
       mockSelect.mockReturnValue(createWhereSelectChain([]))
 
       const response = await channelStatsHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'missing' },
       }))
 
@@ -408,7 +472,7 @@ describe('aigate channel handlers', () => {
       mockSelect.mockReturnValue(createWhereSelectChain([]))
 
       const response = await channelStatsHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-other' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-other' } },
         params: { id: 'ch-1' },
       }))
 
@@ -420,10 +484,10 @@ describe('aigate channel handlers', () => {
     it('should return zero success rate when no requests recorded', async () => {
       setupStatsDbMocks(sampleChannel, { total: 0, success: 0, avg: 0 })
 
-      const response = await channelStatsHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+      const response = asResponse<any>(await channelStatsHandler(createMockEvent({
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         params: { id: 'ch-1' },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.stats.totalRequests).toBe(0)

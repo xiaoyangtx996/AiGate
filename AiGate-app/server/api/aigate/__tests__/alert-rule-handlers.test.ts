@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import alertRuleListHandler from '../alert/rule/index.get'
+import alertRulePostHandler from '../alert/rule/index.post'
 import { createMockEvent } from './nitro-test-utils'
 
-const mockSelect = vi.fn()
-const mockInsert = vi.fn()
+const { mockInsert, mockSelect } = vi.hoisted(() => ({
+  mockInsert: vi.fn(),
+  mockSelect: vi.fn(),
+}))
 
 vi.mock('@/db/drizzle', () => ({
   db: {
@@ -23,9 +27,6 @@ vi.mock('@/db/schema', () => ({
     notifyChannels: 'notifyChannels',
   },
 }))
-
-import alertRuleListHandler from '../alert/rule/index.get'
-import alertRulePostHandler from '../alert/rule/index.post'
 
 function createListSelectChain(result: unknown[]) {
   return {
@@ -110,7 +111,7 @@ describe('aigate alert rule handlers', () => {
       expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }))
     })
 
-    it('should default condition to empty object when omitted', async () => {
+    it('should default condition to quota template when omitted', async () => {
       const created = { id: 'rule-default-condition', name: 'Usage', type: 'usage_spike', enabled: true }
       const chain = createInsertChain([created])
       mockInsert.mockReturnValue(chain)
@@ -121,7 +122,9 @@ describe('aigate alert rule handlers', () => {
       }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ condition: {} }))
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({
+        condition: { templateId: 'quota_90', threshold: 90 },
+      }))
     })
 
     it('should default notifyChannels to empty array when omitted', async () => {
@@ -135,7 +138,28 @@ describe('aigate alert rule handlers', () => {
       }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ notifyChannels: [] }))
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ notifyChannels: ['in_app', 'email'] }))
+    })
+
+    it('should apply quota rule template defaults', async () => {
+      const created = { id: 'rule-template', name: 'Quota 70%', type: 'quota_warning', enabled: true }
+      const chain = createInsertChain([created])
+      mockInsert.mockReturnValue(chain)
+
+      const response = await alertRulePostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: {
+          name: 'Quota 70%',
+          condition: { templateId: 'quota_70' },
+        },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'quota_warning',
+        condition: { templateId: 'quota_70', threshold: 70 },
+        notifyChannels: ['in_app'],
+      }))
     })
 
     it('should create rule without principal organization', async () => {
@@ -172,7 +196,7 @@ describe('aigate alert rule handlers', () => {
       expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }))
     })
 
-    it('should use empty defaults for falsy condition and notifyChannels', async () => {
+    it('should use template defaults for falsy condition and notifyChannels', async () => {
       const created = { id: 'rule-falsy-defaults', name: 'Minimal', type: 'custom', enabled: true }
       const chain = createInsertChain([created])
       mockInsert.mockReturnValue(chain)
@@ -189,8 +213,8 @@ describe('aigate alert rule handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(chain.values).toHaveBeenCalledWith(expect.objectContaining({
-        condition: {},
-        notifyChannels: [],
+        condition: { templateId: 'quota_90', threshold: 90 },
+        notifyChannels: ['in_app', 'email'],
       }))
     })
 

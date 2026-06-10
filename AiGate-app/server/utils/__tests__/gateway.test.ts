@@ -1,10 +1,10 @@
-﻿import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { checkApiKeyScopes, checkIpWhitelist } from '#server/utils/gateway'
 
 vi.mock('@/db/drizzle', () => ({
   db: {},
 }))
-
-import { checkApiKeyScopes, checkIpWhitelist } from '#server/utils/gateway'
 
 describe('gateway utils', () => {
   it('checkIpWhitelist should allow when whitelist is empty', () => {

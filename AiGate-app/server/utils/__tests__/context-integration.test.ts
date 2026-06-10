@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getRequestPrincipal, requireAdmin, requireRequestPrincipal } from '#server/utils/context'
+
 const mockGetSession = vi.fn()
 const mockSelect = vi.fn()
 
@@ -21,8 +23,6 @@ vi.mock('@/db/schema', () => ({
   userRole: { userId: 'userId', roleId: 'roleId' },
   member: { userId: 'userId', organizationId: 'organizationId' },
 }))
-
-import { getRequestPrincipal, requireAdmin, requireRequestPrincipal } from '#server/utils/context'
 
 function createRoleSelectChain(result: unknown[]) {
   return {
@@ -71,6 +71,7 @@ describe('context integration', () => {
         userId: 'user-1',
         email: 'a@example.com',
         role: 'admin',
+        roleIds: ['editor'],
         organizationId: 'org-1',
         isAdmin: true,
       })
@@ -87,6 +88,7 @@ describe('context integration', () => {
       const principal = await getRequestPrincipal(createMockEvent() as never)
 
       expect(principal.role).toBe('user')
+      expect(principal.roleIds).toEqual([])
       expect(principal.organizationId).toBeNull()
       expect(principal.isAdmin).toBe(false)
     })

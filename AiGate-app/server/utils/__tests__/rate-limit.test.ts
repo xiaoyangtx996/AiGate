@@ -1,7 +1,7 @@
-﻿import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RateLimiter } from '../rate-limit'
 
-describe('RateLimiter', () => {
+describe('rateLimiter', () => {
   let limiter: RateLimiter
 
   beforeEach(() => {

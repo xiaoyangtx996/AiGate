@@ -29,18 +29,19 @@
 
 ## 数据库迁移
 
-每次发布新版本前，在目标环境执行 Drizzle 迁移，并应用补充 SQL（Phase 2 表/索引、0008 `role_ids`、Phase 3 索引）：
+每次发布新版本前，在目标环境执行 Drizzle 迁移，并应用补充 SQL（Phase 2 表/索引、0008 `role_ids`、Phase 3 索引、配额审批表）：
 
 ```bash
 cd AiGate-app
 export DATABASE_URL="postgresql://user:pass@host:5432/aigate"
 pnpm dlx drizzle-kit migrate
 node scripts/apply-all-migrations.mjs
+node scripts/verify-migration-consistency.mjs
 ```
 
-`apply-all-migrations.mjs` 会依次执行 Phase 2 表与索引、迁移 `0008_add_api_key_role_ids.sql`、Phase 3 额外索引；可重复运行（`IF NOT EXISTS`）。CI、`release.yml` 与 `e2e.yml` 在 build/E2E 前均会调用该脚本。
+`apply-all-migrations.mjs` 会在 Drizzle 迁移后执行幂等补充 SQL：未纳入 journal 的 `0007_comments_and_missing_tables.sql`、历史 CI 仍可重复执行的 `0008_add_api_key_role_ids.sql` / `0009_phase2_phase3_schema.sql`、以及未纳入 journal 的 `0010_phase3_extra_indexes.sql` / `0011_quota_requests.sql`。脚本执行后会校验补充表、索引和关键列存在。不要为修正历史状态直接手改 `_journal.json`；新增 SQL 必须进入 Drizzle journal，或明确加入补充脚本并通过 `verify-migration-consistency.mjs` 校验。
 
-`database.yml` 仅校验 Drizzle 迁移；若仅需 Phase 3 索引，可单独运行 `node scripts/apply-phase3-indexes.mjs`。
+`apply-all-migrations.mjs --dry-run` 可查看补充执行路径；`database.yml` 仅校验 Drizzle 迁移。若仅需 Phase 3 索引，可单独运行 `node scripts/apply-phase3-indexes.mjs`。
 
 ### v1.7.3 发布说明
 

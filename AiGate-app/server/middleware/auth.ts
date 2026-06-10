@@ -1,4 +1,4 @@
-﻿import { getRequestPrincipal } from '#server/utils/context'
+import { getRequestPrincipal } from '#server/utils/context'
 import { apiRoutePolicy } from '#server/utils/routes'
 import { RESPONSE_CODE } from '@/enums'
 

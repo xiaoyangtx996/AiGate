@@ -1,4 +1,4 @@
-﻿import { and, desc, eq, ilike, or, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { alert } from '@/db/schema'
 
@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
     const offset = (page - 1) * pageSize
     const principal = event.context.principal as { organizationId?: string | null } | undefined
     const conditions = []
-    if (principal?.organizationId) { conditions.push(eq(alert.organizationId, principal.organizationId)) }
+    if (principal?.organizationId)
+
+      conditions.push(eq(alert.organizationId, principal.organizationId))
     if (query.keyword) {
       conditions.push(or(
         ilike(alert.title, `%${query.keyword}%`),

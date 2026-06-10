@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { generateBillingForPeriod, getCurrentPeriod } from '../billing'
+
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
@@ -18,16 +20,14 @@ vi.mock('@/db/schema', () => ({
   organization: { enabled: 'enabled', id: 'id' },
 }))
 
-import { generateBillingForPeriod, getCurrentPeriod } from '../billing'
-
 function parseBillingPeriod(period: string) {
   const [year, month] = period.split('-').map(Number)
   return {
     year,
     month,
-    startDate: new Date(year, month - 1, 1),
-    endDate: new Date(year, month, 1),
-    dueDate: new Date(year, month, 15),
+    startDate: new Date(year!, month! - 1, 1),
+    endDate: new Date(year!, month!, 1),
+    dueDate: new Date(year!, month!, 15),
   }
 }
 

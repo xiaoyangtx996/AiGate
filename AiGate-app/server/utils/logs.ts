@@ -38,7 +38,7 @@ export function sanitizeLogData(data: Record<string, unknown>): Record<string, u
 /**
  * 脱敏请求头
  */
-export function sanitizeHeaders(headers: Record<string, string>): Record<string, string> {
+export function sanitizeHeaders(headers: Record<string, string | undefined>): Record<string, string> {
   const sensitiveHeaders = [
     'authorization',
     'x-api-key',
@@ -53,7 +53,7 @@ export function sanitizeHeaders(headers: Record<string, string>): Record<string,
     if (sensitiveHeaders.includes(key.toLowerCase())) {
       sanitized[key] = '***REDACTED***'
     }
-    else {
+    else if (value !== undefined) {
       sanitized[key] = value
     }
   }

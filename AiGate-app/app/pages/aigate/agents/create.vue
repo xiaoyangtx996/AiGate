@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const { insertAgent } = useAigateApi()
 const { successToast } = useAppToast()
 const router = useRouter()
@@ -32,7 +32,8 @@ function removeTag(tag: string) {
 }
 
 async function handleSave() {
-  if (!form.name) return
+  if (!form.name)
+    return
   saving.value = true
   try {
     await insertAgent(form)
@@ -55,7 +56,9 @@ const models = [
   <div class="max-w-2xl mx-auto space-y-6">
     <div class="flex items-center gap-3">
       <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/agents" />
-      <h2 class="text-xl font-bold">{{ p('createTitle') }}</h2>
+      <h2 class="text-xl font-bold">
+        {{ p('createTitle') }}
+      </h2>
     </div>
 
     <UCard>
@@ -97,8 +100,12 @@ const models = [
     </UCard>
 
     <div class="flex justify-end gap-2">
-      <UButton variant="ghost" to="/aigate/agents">{{ $t('common.cancel') }}</UButton>
-      <UButton :loading="saving" :disabled="!form.name" icon="lucide:save" @click="handleSave">{{ p('createAgent') }}</UButton>
+      <UButton variant="ghost" to="/aigate/agents">
+        {{ $t('common.cancel') }}
+      </UButton>
+      <UButton :loading="saving" :disabled="!form.name" icon="lucide:save" @click="handleSave">
+        {{ p('createAgent') }}
+      </UButton>
     </div>
   </div>
 </template>

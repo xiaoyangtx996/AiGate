@@ -1,13 +1,12 @@
-import { z, type ZodError } from 'zod'
-import { defineEventHandler } from 'h3'
-import { readBody, getQuery } from 'h3'
+import type { z, ZodError } from 'zod'
+import { defineEventHandler, getQuery, readBody } from 'h3'
 
 /**
  * 验证失败错误类
  */
 export class ValidationError extends Error {
   constructor(
-    public issues: ZodError['issues']
+    public issues: ZodError['issues'],
   ) {
     super('Validation failed')
     this.name = 'ValidationError'

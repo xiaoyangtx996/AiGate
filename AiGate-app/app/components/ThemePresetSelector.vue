@@ -1,8 +1,6 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const appStore = useAppStore()
 const colorMode = useColorMode()
-
-const { primaryColor, radius } = storeToRefs(appStore)
 
 interface ThemePreset {
   id: string

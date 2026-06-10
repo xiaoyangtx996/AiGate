@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import promptPutHandler from '../prompt/[id].put'
+
+import promptRestoreHandler from '../prompt/[id]/versions/[versionId]/restore.post'
+import promptVersionsHandler from '../prompt/[id]/versions/index.get'
+import promptExportHandler from '../prompt/export.get'
+import promptImportHandler from '../prompt/import.post'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -31,12 +37,6 @@ vi.mock('@/db/schema', () => ({
     content: 'content',
   },
 }))
-
-import promptImportHandler from '../prompt/import.post'
-import promptExportHandler from '../prompt/export.get'
-import promptPutHandler from '../prompt/[id].put'
-import promptVersionsHandler from '../prompt/[id]/versions/index.get'
-import promptRestoreHandler from '../prompt/[id]/versions/[versionId]/restore.post'
 
 function createSelectChain(result: unknown[]) {
   return {
@@ -141,6 +141,7 @@ describe('aigate prompt extended handlers', () => {
       mockInsert.mockReturnValue(createInsertChain())
 
       const response = await promptImportHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         body: [
           { name: 'Valid', content: 'OK' },
           { name: 'No content' },
@@ -180,12 +181,28 @@ describe('aigate prompt extended handlers', () => {
       expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Content-Disposition', 'attachment; filename="prompts-export.json"')
     })
 
-    it('should export all prompts when principal has no organization', async () => {
+    it('should reject non-admin export without organization context', async () => {
       mockSelect.mockReturnValue({
         from: vi.fn().mockResolvedValue([]),
       })
 
       const result = await promptExportHandler(createMockEvent())
+
+      expect(result).toMatchObject({
+        code: RESPONSE_CODE.FORBIDDEN,
+        msg: '当前账号缺少组织上下文',
+      })
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to export all prompts without organization context', async () => {
+      mockSelect.mockReturnValue({
+        from: vi.fn().mockResolvedValue([]),
+      })
+
+      const result = await promptExportHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+      }))
 
       expect(result).toEqual([])
     })
@@ -279,6 +296,7 @@ describe('aigate prompt extended handlers', () => {
       mockSelect.mockReturnValue(createSelectChain([]))
 
       const response = await promptRestoreHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'missing', versionId: 'v-1' },
       }))
 
@@ -292,6 +310,7 @@ describe('aigate prompt extended handlers', () => {
         .mockReturnValueOnce(createSelectChain([]))
 
       const response = await promptRestoreHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'p-1', versionId: 'missing' },
       }))
 

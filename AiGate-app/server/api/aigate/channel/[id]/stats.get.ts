@@ -4,15 +4,18 @@ import { apiLog, channel } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean, organizationId?: string | null } | undefined
+    if (!principal?.isAdmin) {
+      return responseError(null, '当前账号无权访问该资源', { statusCode: 403 })
+    }
+
     const id = getRouterParam(event, 'id')
 
     // 1. 获取 channel 信息
-    const where = principal?.organizationId
-      ? and(eq(channel.id, id!), eq(channel.organizationId, principal.organizationId))
-      : eq(channel.id, id!)
-    const [ch] = await db.select().from(channel).where(where)
-    if (!ch) { return responseSuccess(null, '渠道不存在', 404) }
+    const [ch] = await db.select().from(channel).where(eq(channel.id, id!))
+    if (!ch) {
+      return responseError(null, '渠道不存在', { statusCode: 404 })
+    }
 
     // 2. 获取该 channel 的 API 日志统计（近24小时）
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -22,7 +25,7 @@ export default defineEventHandler(async (event) => {
       .from(apiLog)
       .where(and(
         eq(apiLog.provider, ch.vendor),
-        principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`
+        principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`,
       ))
 
     // 成功率
@@ -31,7 +34,7 @@ export default defineEventHandler(async (event) => {
       .where(and(
         eq(apiLog.provider, ch.vendor),
         eq(apiLog.status, 'success'),
-        principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`
+        principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`,
       ))
 
     // 平均延迟
@@ -39,7 +42,7 @@ export default defineEventHandler(async (event) => {
       .from(apiLog)
       .where(and(
         eq(apiLog.provider, ch.vendor),
-        principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`
+        principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`,
       ))
 
     // 最近24小时趋势（按小时分组）
@@ -53,7 +56,7 @@ export default defineEventHandler(async (event) => {
       .where(and(
         eq(apiLog.provider, ch.vendor),
         principal?.organizationId ? eq(apiLog.organizationId, principal.organizationId) : sql`true`,
-        sql`${apiLog.createdAt} >= ${twentyFourHoursAgo}`
+        sql`${apiLog.createdAt} >= ${twentyFourHoursAgo}`,
       ))
       .groupBy(sql`to_char(${apiLog.createdAt}, 'YYYY-MM-DD HH24:00')`)
       .orderBy(sql`to_char(${apiLog.createdAt}, 'YYYY-MM-DD HH24:00')`)

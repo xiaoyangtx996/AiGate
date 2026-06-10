@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  checkDailyLimit,
+  proxyToChannel,
+  proxyToChannelStream,
+  selectChannel,
+  validateApiKeyFromHeader,
+} from '#server/utils/gateway'
+
 const mockSelect = vi.fn()
 const mockFetch = vi.fn()
 
@@ -20,14 +28,6 @@ vi.mock('@/db/schema', () => ({
   apiKey: { key: 'key', status: 'status', expiresAt: 'expiresAt' },
   apiLog: { apiKeyId: 'apiKeyId', createdAt: 'createdAt' },
 }))
-
-import {
-  checkDailyLimit,
-  proxyToChannel,
-  proxyToChannelStream,
-  selectChannel,
-  validateApiKeyFromHeader,
-} from '#server/utils/gateway'
 
 function createChannelSelectChain(result: unknown[]) {
   return {

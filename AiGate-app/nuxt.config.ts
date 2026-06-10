@@ -1,5 +1,3 @@
-﻿import vue from '@vitejs/plugin-vue'
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -77,7 +75,9 @@ export default defineNuxtConfig({
     normalizePageNames: true,
     defaults: {
       nuxtLink: {
-        prefetchOn: 'interaction',
+        prefetchOn: {
+          interaction: true,
+        },
       },
     },
   },
@@ -106,15 +106,15 @@ export default defineNuxtConfig({
       '**/__tests__/**',
       '**/*.test.ts',
     ],
+    experimental: {
+      bundleRuntimeDependencies: false,
+    },
+    externals: {
+      trace: process.platform !== 'win32',
+    },
     compressPublicAssets: {
       brotli: true,
       gzip: true,
     },
-    rollupConfig: {
-      plugins: [vue()],
-    },
-    middleware: [
-      '~/server/middleware/error-handler.ts',
-    ],
   },
 })

@@ -1,4 +1,4 @@
-﻿import { relations, sql } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { boolean, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createUpdateSchema } from 'drizzle-zod'
 import { user } from '../../auth-schema'
@@ -183,6 +183,43 @@ export const member = pgTable('member', {
 export const insertMemberSchema = createInsertSchema(member).omit({ id: true, createdAt: true })
 export const insertOrgSchema = createInsertSchema(organization).omit({ id: true, createdAt: true, updatedAt: true })
 export const updateOrgSchema = createUpdateSchema(organization).omit({ id: true, createdAt: true, updatedAt: true })
+
+/**
+ * @description: 配额申请与变更审计
+ */
+export const quotaRequest = pgTable('quota_request', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  requesterId: text('requester_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  requestedTokenLimit: integer('requested_token_limit').notNull(),
+  currentTokenLimit: integer('current_token_limit').default(0).notNull(),
+  reason: text('reason'),
+  status: text('status').$type<'pending' | 'approved' | 'rejected'>().default('pending').notNull(),
+  approverId: text('approver_id').references(() => user.id),
+  decisionComment: text('decision_comment'),
+  decidedAt: timestamp('decided_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+}, t => [
+  index('quota_request_org_status_idx').on(t.organizationId, t.status),
+  index('quota_request_requester_idx').on(t.requesterId),
+  index('quota_request_created_idx').on(t.createdAt),
+])
+
+export const quotaChangeLog = pgTable('quota_change_log', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  requestId: text('request_id').references(() => quotaRequest.id, { onDelete: 'set null' }),
+  actorId: text('actor_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  previousTokenLimit: integer('previous_token_limit').notNull(),
+  nextTokenLimit: integer('next_token_limit').notNull(),
+  decisionStatus: text('decision_status').$type<'approved' | 'rejected'>(),
+  reason: text('reason'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, t => [
+  index('quota_change_log_org_created_idx').on(t.organizationId, t.createdAt),
+  index('quota_change_log_request_idx').on(t.requestId),
+])
 
 /**
  * @description: 渠道管理（上游 AI 供应商代理配置）

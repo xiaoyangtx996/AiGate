@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
-import { createMockEvent } from './nitro-test-utils'
+import dashboardHandler from '../dashboard/index.get'
+
+import { asResponse, createMockEvent } from './nitro-test-utils'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
 
@@ -26,11 +28,11 @@ vi.mock('@/db/schema', () => ({
   },
 }))
 
-import dashboardHandler from '../dashboard/index.get'
-
 function parseRangeDays(range?: string): number {
-  if (range === '30d') return 30
-  if (range === '90d') return 90
+  if (range === '30d')
+    return 30
+  if (range === '90d')
+    return 90
   return 7
 }
 
@@ -48,7 +50,8 @@ function computeOverview(
   const totalTokens = logs.reduce((sum, log) => sum + (log.totalTokens || 0), 0)
   const activeKeys = keys.filter(key => key.status === 'active').length
   const expiringSoon = keys.filter((key) => {
-    if (!key.expiresAt) return false
+    if (!key.expiresAt)
+      return false
     return new Date(key.expiresAt).getTime() - now < 7 * 86400000
   }).length
 
@@ -398,7 +401,7 @@ describe('aigate dashboard index.get', () => {
       statusRows: [],
     })
 
-    const response = await dashboardHandler(createMockEvent({ query: { range: '90d' } }))
+    const response = asResponse<any>(await dashboardHandler(createMockEvent({ query: { range: '90d' } })))
 
     expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
     expect(response.data?.range).toBe('90d')

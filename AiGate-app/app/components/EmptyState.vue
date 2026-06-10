@@ -1,6 +1,4 @@
 <script setup lang="ts">
-const { t } = useI18n()
-
 withDefaults(defineProps<{
   icon?: string
   title?: string
@@ -8,6 +6,8 @@ withDefaults(defineProps<{
 }>(), {
   icon: 'lucide:inbox',
 })
+
+const { t } = useI18n()
 </script>
 
 <template>

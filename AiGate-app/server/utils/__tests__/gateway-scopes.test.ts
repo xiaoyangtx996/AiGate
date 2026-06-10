@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 function checkApiKeyScopes(keyRecord: { scopes?: string[] | null }, method: string): boolean {
   const scopes = keyRecord.scopes || ['read', 'write']
-  if (method === 'GET' || method === 'HEAD') return scopes.includes('read')
+  if (method === 'GET' || method === 'HEAD')
+    return scopes.includes('read')
   return scopes.includes('write')
 }
 

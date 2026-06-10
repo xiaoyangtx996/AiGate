@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
-import { createMockEvent } from './nitro-test-utils'
+import billingDetailHandler from '../billing/[id].get'
+
+import { asResponse, createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
 
@@ -28,8 +30,6 @@ vi.mock('@/db/schema', () => ({
     name: 'name',
   },
 }))
-
-import billingDetailHandler from '../billing/[id].get'
 
 function createRecordSelectChain(result: unknown[]) {
   return {
@@ -121,9 +121,9 @@ describe('aigate billing detail handlers', () => {
         .mockReturnValueOnce(createBreakdownSelectChain([]))
         .mockReturnValueOnce(createOrgSelectChain([]))
 
-      const response = await billingDetailHandler(createMockEvent({
+      const response = asResponse<any>(await billingDetailHandler(createMockEvent({
         params: { id: 'bill-2' },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.organizationName).toBe('')

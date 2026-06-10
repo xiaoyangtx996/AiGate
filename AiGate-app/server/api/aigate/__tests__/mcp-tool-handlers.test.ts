@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
-import { createMockEvent } from './nitro-test-utils'
+import mcpToolListHandler from '../mcp-tool/index.get'
+
+import mcpToolInstallHandler from '../mcp-tool/install.post'
+import mcpToolMarketplaceHandler from '../mcp-tool/marketplace.get'
+import mcpToolTestHandler from '../mcp-tool/test.post'
+import { asResponse, createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
@@ -31,11 +36,6 @@ vi.mock('@/db/schema', () => ({
     parse: (data: unknown) => data,
   },
 }))
-
-import mcpToolListHandler from '../mcp-tool/index.get'
-import mcpToolMarketplaceHandler from '../mcp-tool/marketplace.get'
-import mcpToolInstallHandler from '../mcp-tool/install.post'
-import mcpToolTestHandler from '../mcp-tool/test.post'
 
 function parseMcpToolPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -221,18 +221,29 @@ describe('aigate mcp-tool handlers', () => {
       mockSelect.mockReturnValue(createToolSelectChain([]))
 
       const response = await mcpToolTestHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         body: { id: 'missing' },
       }))
 
       expect(response.data).toEqual({ healthy: false, error: 'Tool not found' })
     })
 
+    it('should reject existing tool health check without organization context', async () => {
+      const response = await mcpToolTestHandler(createMockEvent({
+        body: { id: 'tool-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should report healthy when endpoint responds with success status', async () => {
       mockFetch.mockResolvedValue({ status: 200 })
 
-      const response = await mcpToolTestHandler(createMockEvent({
+      const response = asResponse<any>(await mcpToolTestHandler(createMockEvent({
         body: { endpoint: 'https://mcp.example.com/sse', type: 'sse' },
-      }))
+      })))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data.healthy).toBe(true)
@@ -249,9 +260,10 @@ describe('aigate mcp-tool handlers', () => {
       mockFetch.mockResolvedValue({ status: 200 })
       mockUpdate.mockReturnValue(createUpdateChain())
 
-      const response = await mcpToolTestHandler(createMockEvent({
+      const response = asResponse<any>(await mcpToolTestHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         body: { id: 'tool-1' },
-      }))
+      })))
 
       expect(response.data.healthy).toBe(true)
       expect(mockUpdate).toHaveBeenCalledTimes(1)
@@ -260,9 +272,9 @@ describe('aigate mcp-tool handlers', () => {
     it('should report unhealthy when endpoint returns server error', async () => {
       mockFetch.mockResolvedValue({ status: 503 })
 
-      const response = await mcpToolTestHandler(createMockEvent({
+      const response = asResponse<any>(await mcpToolTestHandler(createMockEvent({
         body: { endpoint: 'https://mcp.example.com/sse' },
-      }))
+      })))
 
       expect(response.data.healthy).toBe(false)
       expect(response.data.status).toBe(503)

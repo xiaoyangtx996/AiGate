@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { CommandPaletteGroup, CommandPaletteItem, NavigationMenuItem } from '@nuxt/ui'
 import pkg from '~~/package.json'
 import { useMenuStore } from '@/stores/useMenuStore'
@@ -12,11 +12,13 @@ const open = ref(false)
 const isMac = ref(false)
 const route = useRoute()
 const { menuItems } = useMenu()
+const { user } = useCurrentUser()
 const appScrollContainer = useAppScrollContainer()
 
 const GlobalSearch = defineAsyncComponent(() => import('@/components/GlobalSearch/index.vue'))
 
 const skeletonWidths = ['w-[70%]', 'w-[75%]', 'w-[80%]', 'w-[85%]', 'w-[90%]', 'w-[72%]']
+const applePlatformPattern = /Mac|iPhone|iPad|iPod/
 
 const title = computed(() => {
   if (!menuStore.menuPathMap) {
@@ -87,9 +89,17 @@ onMounted(async () => {
   await menuStore.init()
 })
 
+watch(
+  () => user.value?.id,
+  () => {
+    if (user.value && !menuStore.menuTree.length)
+      void menuStore.init()
+  },
+)
+
 onMounted(() => {
   appScrollContainer.value = document.querySelector('.app-scroll-container')
-  isMac.value = /Mac|iPhone|iPad|iPod/.test(navigator.platform)
+  isMac.value = applePlatformPattern.test(navigator.platform)
 })
 </script>
 

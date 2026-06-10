@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 interface AgentRow {
   id: string
   name: string
@@ -11,7 +11,10 @@ interface AgentRow {
 const { getAgentList, delAgent } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const { i18nCommon } = useMessage()
+const confirm = useConfirmDialog()
 const router = useRouter()
+const p = (key: string) => t(`pages.aigate.agents.${key}`)
 
 const page = ref(1)
 const pageSize = ref(12)
@@ -45,9 +48,20 @@ const {
 })
 
 async function handleDelete(id: string) {
-  await delAgent(id)
-  successToast()
-  refresh()
+  const confirmed = await confirm({
+    title: i18nCommon('confirmDeleteTitle'),
+    description: i18nCommon('confirmDeleteDescription'),
+    confirmLabel: i18nCommon('confirmDelete'),
+    loadingLabel: i18nCommon('inDelete'),
+    onConfirm: async () => {
+      await delAgent(id)
+      return true
+    },
+  })
+  if (confirmed) {
+    successToast(i18nCommon('deleteSuccess'))
+    refresh()
+  }
 }
 
 const statusColor: Record<string, 'success' | 'neutral' | 'warning'> = { active: 'success', inactive: 'neutral', archived: 'warning' }
@@ -63,15 +77,17 @@ function editAgent(row: AgentRow) {
 function chatWithAgent(row: AgentRow) {
   return router.push({ path: '/aigate/agents/chat', query: { agentId: row.id } })
 }
-
-const p = (key: string) => t(`pages.aigate.agents.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
-      <UButton icon="lucide:plus" to="/aigate/agents/create">{{ p('create') }}</UButton>
+      <h2 class="text-xl font-bold">
+        {{ p('title') }}
+      </h2>
+      <UButton v-permission="'ADD'" icon="lucide:plus" to="/aigate/agents/create">
+        {{ p('create') }}
+      </UButton>
     </div>
 
     <AgentCardSkeleton v-if="loading" />
@@ -83,7 +99,9 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
       :description="p('emptyDescription')"
     >
       <template #action>
-        <UButton icon="lucide:plus" to="/aigate/agents/create">{{ p('create') }}</UButton>
+        <UButton v-permission="'ADD'" icon="lucide:plus" to="/aigate/agents/create">
+          {{ p('create') }}
+        </UButton>
       </template>
     </EmptyState>
 
@@ -100,25 +118,32 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
             <div>
               <h3 class="text-lg font-bold flex items-center gap-2">
                 {{ agent.name }}
-                <UBadge v-if="agent.builtin" color="primary" variant="solid" size="xs">{{ p('builtin') }}</UBadge>
+                <UBadge v-if="agent.builtin" color="primary" variant="solid" size="xs">
+                  {{ p('builtin') }}
+                </UBadge>
               </h3>
-              <p class="text-sm text-muted mt-1">{{ agent.description }}</p>
+              <p class="text-sm text-muted mt-1">
+                {{ agent.description }}
+              </p>
             </div>
             <UBadge :color="statusColor[agent.status] || 'neutral'" variant="subtle" size="sm">
               {{ statusLabel(agent.status) }}
             </UBadge>
           </div>
           <div class="flex flex-wrap gap-1 mb-3">
-            <UBadge v-for="tag in (agent.tags || [])" :key="tag" variant="outline" size="xs">{{ tag }}</UBadge>
+            <UBadge v-for="tag in (agent.tags || [])" :key="tag" variant="outline" size="xs">
+              {{ tag }}
+            </UBadge>
           </div>
           <div class="flex gap-2">
             <UButton size="sm" variant="outline" class="flex-1" icon="lucide:message-square" @click="chatWithAgent(agent)">
               {{ p('chat') }}
             </UButton>
-            <UButton size="sm" variant="outline" icon="lucide:edit" @click="editAgent(agent)" />
+            <UButton v-permission="'EDIT'" size="sm" variant="outline" icon="lucide:edit" @click="editAgent(agent)" />
             <UButton size="sm" variant="ghost" icon="lucide:file-text" :to="`/aigate/agents/${agent.id}/logs`" />
             <UButton
               v-if="!agent.builtin"
+              v-permission="'DELETE'"
               size="sm"
               variant="ghost"
               color="error"
@@ -152,6 +177,7 @@ const p = (key: string) => t(`pages.aigate.agents.${key}`)
       >
         <span class="text-sm font-medium">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
         <UButton
+          v-permission="'BATCH_DELETE'"
           size="sm"
           color="error"
           variant="soft"

@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
+import { createMockEvent } from '../server/api/aigate/__tests__/nitro-test-utils'
+import { validateBody, validateQuery, ValidationError } from '../server/utils/validation'
+
 vi.mock('h3', () => ({
   defineEventHandler: (handler: (event: unknown) => unknown) => handler,
   readBody: async (event: { _body?: unknown }) => event._body ?? {},
   getQuery: (event: { _query?: Record<string, string | undefined> }) => event._query ?? {},
 }))
-
-import { validateBody, validateQuery, ValidationError } from '../server/utils/validation'
-import { createMockEvent } from '../server/api/aigate/__tests__/nitro-test-utils'
 
 const bodySchema = z.object({
   name: z.string(),
@@ -20,7 +20,7 @@ const querySchema = z.object({
   pageSize: z.coerce.number().min(1).max(100).optional(),
 })
 
-describe('ValidationError', () => {
+describe('validationError', () => {
   it('should expose issues and use ValidationError name', () => {
     const result = bodySchema.safeParse({ name: 'test' })
     expect(result.success).toBe(false)

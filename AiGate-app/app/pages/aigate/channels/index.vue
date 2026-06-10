@@ -1,10 +1,11 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import HeaderContent from './components/HeaderContent.vue'
 
 const { getChannelList, insertChannel, updateChannel, delChannel, checkChannelHealth } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
 const { exportToCSV } = useExport()
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.channels.${key}`, params ?? {})
 
 const keyword = ref('')
 const page = ref(1)
@@ -65,19 +66,22 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.name || !form.endpoint) return
+  if (!form.name || !form.endpoint)
+    return
   saveLoading.value = true
   try {
     const data = { ...form }
     if (editData.value?.id) {
       await updateChannel({ ...data, id: editData.value.id })
-    } else {
+    }
+    else {
       await insertChannel(data)
     }
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -85,28 +89,36 @@ async function handleSubmit() {
 const healthCheckResult = ref<any>(null)
 const showHealthDetail = ref(false)
 
+function hasHealthResults(data: unknown): data is { results: any[], total?: number, healthy?: number, unhealthy?: number } {
+  return typeof data === 'object' && data !== null && Array.isArray((data as { results?: unknown }).results)
+}
+
 async function handleHealthCheck(channelId?: string) {
   healthChecking.value = true
   try {
     const res = await checkChannelHealth(channelId)
-    if (res.data?.results) {
+    if (hasHealthResults(res.data)) {
       const healthy = res.data.results.filter((r: any) => r.healthy).length
       successToast(p('healthCheckDone', { healthy, total: res.data.results.length }))
       healthCheckResult.value = res.data
       showHealthDetail.value = true
-    } else if (res.data) {
+    }
+    else if (res.data) {
       successToast(res.data.healthy ? p('healthSingleOk', { name: res.data.name }) : p('healthSingleFail', { name: res.data.name }))
       healthCheckResult.value = { results: [res.data] }
       showHealthDetail.value = true
     }
     refresh()
-  } finally {
+  }
+  finally {
     healthChecking.value = false
   }
 }
 
-const statusColor: Record<string, string> = { enabled: 'success', disabled: 'neutral' }
-const healthColor: Record<string, string> = { healthy: 'success', degraded: 'warning', down: 'error' }
+const statusColor: Record<string, 'success' | 'neutral' | 'warning'> = { enabled: 'success', disabled: 'neutral' }
+const healthColor: Record<string, 'success' | 'warning' | 'error'> = { healthy: 'success', degraded: 'warning', down: 'error' }
+const getStatusColor = (status: string) => statusColor[status] || 'neutral'
+const getHealthColor = (health: string) => healthColor[health] || 'error'
 
 function handleExport() {
   exportToCSV(
@@ -121,8 +133,6 @@ function handleExport() {
     'channels-export',
   )
 }
-
-const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.channels.${key}`, params ?? {})
 </script>
 
 <template>
@@ -144,30 +154,38 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
       :title="$t('common.noData')"
     >
       <template #action>
-        <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
+        <UButton v-permission="'ADD'" icon="lucide:plus" @click="handleAdd">
+          {{ p('add') }}
+        </UButton>
       </template>
     </EmptyState>
-    <UTable v-else :data="list" :columns="[
-      { accessorKey: 'name', header: p('name') },
-      { accessorKey: 'vendor', header: p('vendor') },
-      { accessorKey: 'endpoint', header: p('endpoint') },
-      { accessorKey: 'status', header: p('status') },
-      { accessorKey: 'health', header: p('health') },
-      { accessorKey: 'qps', header: p('qps') },
-      { accessorKey: 'actions', header: $t('common.action') },
-    ]">
+    <UTable
+      v-else :data="list" :columns="[
+        { accessorKey: 'name', header: p('name') },
+        { accessorKey: 'vendor', header: p('vendor') },
+        { accessorKey: 'endpoint', header: p('endpoint') },
+        { accessorKey: 'status', header: p('status') },
+        { accessorKey: 'health', header: p('health') },
+        { accessorKey: 'qps', header: p('qps') },
+        { accessorKey: 'actions', header: $t('common.action') },
+      ]"
+    >
       <template #status-cell="{ row }">
-        <UBadge :color="(statusColor[row.original.status] || 'neutral') as 'success' | 'neutral' | 'warning'" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
+        <UBadge :color="getStatusColor(row.original.status)" variant="subtle" size="sm">
+          {{ row.original.status }}
+        </UBadge>
       </template>
       <template #health-cell="{ row }">
-        <UBadge :color="(healthColor[row.original.health] || 'neutral') as 'success' | 'warning' | 'error'" variant="subtle" size="sm">{{ row.original.health }}</UBadge>
+        <UBadge :color="getHealthColor(row.original.health)" variant="subtle" size="sm">
+          {{ row.original.health }}
+        </UBadge>
       </template>
       <template #actions-cell="{ row }">
         <div class="flex gap-1">
           <UButton size="xs" variant="ghost" icon="lucide:eye" :to="`/aigate/channels/${row.original.id}`" />
           <UButton size="xs" variant="ghost" icon="lucide:heart-pulse" :loading="healthChecking" @click="handleHealthCheck(row.original.id)" />
-          <UButton size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
-          <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
+          <UButton v-permission="'EDIT'" size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
+          <UButton v-permission="'DELETE'" size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
         </div>
       </template>
     </UTable>
@@ -182,7 +200,9 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
 
     <UModal v-model:open="showHealthDetail">
       <template #header>
-        <h3 class="text-lg font-bold">{{ p('healthDetailTitle') }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ p('healthDetailTitle') }}
+        </h3>
       </template>
       <template #body>
         <div v-if="healthCheckResult" class="space-y-4">
@@ -190,10 +210,14 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
             {{ p('healthSummary', { total: healthCheckResult.total, healthy: healthCheckResult.healthy, unhealthy: healthCheckResult.unhealthy }) }}
           </div>
           <div class="space-y-2">
-            <div v-for="result in (healthCheckResult.results || [healthCheckResult])" :key="result.channelId"
-                 class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div
+              v-for="result in (healthCheckResult.results || [healthCheckResult])" :key="result.channelId"
+              class="border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
               <div class="flex items-center justify-between mb-2">
-                <div class="font-medium">{{ result.name || '-' }}</div>
+                <div class="font-medium">
+                  {{ result.name || '-' }}
+                </div>
                 <UBadge :color="result.healthy ? 'success' : 'error'" variant="subtle">
                   {{ result.healthy ? p('healthy') : p('unhealthy') }}
                 </UBadge>
@@ -222,14 +246,18 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
       </template>
       <template #footer>
         <div class="flex justify-end">
-          <UButton variant="ghost" @click="showHealthDetail = false">{{ p('close') }}</UButton>
+          <UButton variant="ghost" @click="showHealthDetail = false">
+            {{ p('close') }}
+          </UButton>
         </div>
       </template>
     </UModal>
 
     <UModal v-model:open="open">
       <template #header>
-        <h3 class="text-lg font-bold">{{ editData ? $t('common.save') : p('add') }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ editData ? $t('common.save') : p('add') }}
+        </h3>
       </template>
       <template #body>
         <div class="space-y-4">
@@ -237,12 +265,14 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
             <UInput v-model="form.name" :placeholder="p('namePlaceholder')" />
           </UFormField>
           <UFormField :label="p('vendor')">
-            <USelect v-model="form.vendor" :items="[
-              { label: 'OpenAI', value: 'openai' },
-              { label: 'Anthropic', value: 'anthropic' },
-              { label: 'DeepSeek', value: 'deepseek' },
-              { label: p('other'), value: 'other' },
-            ]" :placeholder="p('vendorPlaceholder')" />
+            <USelect
+              v-model="form.vendor" :items="[
+                { label: 'OpenAI', value: 'openai' },
+                { label: 'Anthropic', value: 'anthropic' },
+                { label: 'DeepSeek', value: 'deepseek' },
+                { label: p('other'), value: 'other' },
+              ]" :placeholder="p('vendorPlaceholder')"
+            />
           </UFormField>
           <UFormField :label="p('endpoint')" required>
             <UInput v-model="form.endpoint" :placeholder="p('endpointPlaceholder')" />
@@ -251,16 +281,20 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.cha
             <UInput v-model="form.apiKey" type="password" :placeholder="p('apiKeyPlaceholder')" />
           </UFormField>
           <UFormField :label="p('status')">
-            <USelect v-model="form.status" :items="[
-              { label: p('enabled'), value: 'enabled' },
-              { label: p('disabled'), value: 'disabled' },
-            ]" />
+            <USelect
+              v-model="form.status" :items="[
+                { label: p('enabled'), value: 'enabled' },
+                { label: p('disabled'), value: 'disabled' },
+              ]"
+            />
           </UFormField>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton variant="ghost" @click="open = false">
+            {{ $t('common.cancel') }}
+          </UButton>
           <UButton :loading="saveLoading" :disabled="!form.name || !form.endpoint" @click="handleSubmit">
             {{ $t('common.save') }}
           </UButton>

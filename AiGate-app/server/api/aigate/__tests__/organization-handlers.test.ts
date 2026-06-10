@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import orgPutHandler from '../organization/[id].put'
+
+import orgPostHandler from '../organization/index.post'
+import orgTreeHandler from '../organization/tree.get'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -47,10 +51,6 @@ vi.mock('@/db/schema', () => ({
     parse: (body: unknown) => updateOrgBodySchema.parse(body),
   },
 }))
-
-import orgPostHandler from '../organization/index.post'
-import orgPutHandler from '../organization/[id].put'
-import orgTreeHandler from '../organization/tree.get'
 
 interface OrgRow {
   id: string
@@ -134,13 +134,25 @@ describe('aigate organization handlers', () => {
   })
 
   describe('organization tree.get', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await orgTreeHandler(createMockEvent({
+        context: { principal: { isAdmin: false } },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return flat list when flat=true', async () => {
       const orgs = [
         { id: 'org-1', name: 'HQ', parentId: null, level: 'company', tokenLimit: 0, tokenUsed: 0 },
       ]
       mockSelect.mockReturnValue(createSelectChain(orgs))
 
-      const response = await orgTreeHandler(createMockEvent({ query: { flat: 'true' } }))
+      const response = await orgTreeHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        query: { flat: 'true' },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(orgs)
@@ -153,7 +165,9 @@ describe('aigate organization handlers', () => {
       ]
       mockSelect.mockReturnValue(createSelectChain(orgs))
 
-      const response = await orgTreeHandler(createMockEvent())
+      const response = await orgTreeHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(buildTree(orgs as OrgRow[]))
@@ -162,7 +176,10 @@ describe('aigate organization handlers', () => {
     it('should return empty list when no organizations exist', async () => {
       mockSelect.mockReturnValue(createSelectChain([]))
 
-      const response = await orgTreeHandler(createMockEvent({ query: { flat: 'true' } }))
+      const response = await orgTreeHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        query: { flat: 'true' },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual([])
@@ -170,10 +187,23 @@ describe('aigate organization handlers', () => {
   })
 
   describe('organization index.post', () => {
-    it('should reject invalid body missing name', async () => {
-      const response = await orgPostHandler(createMockEvent({ body: { level: 'company' } }))
+    it('should reject non-admin principals', async () => {
+      const response = await orgPostHandler(createMockEvent({
+        context: { principal: { isAdmin: false } },
+        body: { name: 'HQ' },
+      }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should reject invalid body missing name', async () => {
+      const response = await orgPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        body: { level: 'company' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -189,6 +219,7 @@ describe('aigate organization handlers', () => {
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await orgPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         body: { name: 'HQ', level: 'company', tokenLimit: 1000 },
       }))
 
@@ -209,6 +240,7 @@ describe('aigate organization handlers', () => {
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await orgPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         body: { name: 'Engineering', parentId: 'org-root', level: 'department', tokenLimit: 500 },
       }))
 
@@ -218,13 +250,25 @@ describe('aigate organization handlers', () => {
   })
 
   describe('organization [id].put', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await orgPutHandler(createMockEvent({
+        context: { principal: { isAdmin: false } },
+        params: { id: 'org-1' },
+        body: { name: 'Forbidden' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
     it('should reject invalid body with bad level', async () => {
       const response = await orgPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'org-1' },
         body: { level: 'invalid-level' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockUpdate).not.toHaveBeenCalled()
     })
 
@@ -240,6 +284,7 @@ describe('aigate organization handlers', () => {
       mockUpdate.mockReturnValue(createUpdateChain([updated]))
 
       const response = await orgPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'org-1' },
         body: { name: 'Renamed HQ', tokenLimit: 2000 },
       }))
@@ -253,6 +298,7 @@ describe('aigate organization handlers', () => {
       mockUpdate.mockReturnValue(createUpdateChain([]))
 
       const response = await orgPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'missing' },
         body: { name: 'Ghost Org' },
       }))

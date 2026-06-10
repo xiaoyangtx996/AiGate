@@ -28,4 +28,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!isLoggedIn && !isAuth && !isPublicDoc) {
     return navigateTo('/auth/sign-in')
   }
+
+  if (isLoggedIn && (isAuth || to.path === '/')) {
+    return navigateTo('/aigate/my-workbench')
+  }
 })

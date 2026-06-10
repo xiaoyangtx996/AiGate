@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import searchHandler from '../search/index.get'
+
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -17,8 +19,6 @@ vi.mock('@/db/schema', () => ({
   mcpTool: { id: 'id', name: 'name', description: 'description', organizationId: 'organizationId' },
 }))
 
-import searchHandler from '../search/index.get'
-
 function normalizeSearchKeyword(raw: unknown): string {
   return String(raw || '').trim()
 }
@@ -31,7 +31,7 @@ function buildSearchPattern(keyword: string): string {
   return `%${keyword}%`
 }
 
-type RawSearchRow = { id: string, name: string, description?: string | null }
+interface RawSearchRow { id: string, name: string, description?: string | null }
 
 function formatSearchResults(rows: {
   agents: RawSearchRow[]

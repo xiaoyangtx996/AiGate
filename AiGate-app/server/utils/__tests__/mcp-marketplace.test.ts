@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MCP_MARKETPLACE_PRESETS } from '../mcp-marketplace'
 
-describe('MCP_MARKETPLACE_PRESETS', () => {
+describe('mCP_MARKETPLACE_PRESETS', () => {
   it('has at least 10 presets', () => {
     expect(MCP_MARKETPLACE_PRESETS.length).toBeGreaterThanOrEqual(10)
   })

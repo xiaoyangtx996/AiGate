@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import alertPutHandler from '../alert/[id].put'
+import alertRulePutHandler from '../alert/rule/[id].put'
 import { createMockEvent } from './nitro-test-utils'
 
-const mockUpdate = vi.fn()
+const { mockUpdate } = vi.hoisted(() => ({
+  mockUpdate: vi.fn(),
+}))
 
 vi.mock('@/db/drizzle', () => ({
   db: {
@@ -22,9 +26,6 @@ vi.mock('@/db/schema', () => ({
     notifyChannels: 'notifyChannels',
   },
 }))
-
-import alertPutHandler from '../alert/[id].put'
-import alertRulePutHandler from '../alert/rule/[id].put'
 
 function createUpdateChain(result: unknown[]) {
   const returning = vi.fn().mockResolvedValue(result)

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import billingListHandler from '../billing/index.get'
+
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -19,8 +21,6 @@ vi.mock('@/db/schema', () => ({
   },
 }))
 
-import billingListHandler from '../billing/index.get'
-
 function parseBillingPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
   const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20))
@@ -31,13 +31,13 @@ function parseBillingPagination(query: Record<string, string | undefined>) {
 function parsePeriod(period: string) {
   const [year, month] = period.split('-').map(Number)
   return {
-    startDate: new Date(year, month - 1, 1),
-    endDate: new Date(year, month, 1),
+    startDate: new Date(year!, month! - 1, 1),
+    endDate: new Date(year!, month!, 1),
   }
 }
 
 function isValidBillingPeriod(period: string) {
-  return /^\d{4}-(0[1-9]|1[0-2])$/.test(period)
+  return /^\d{4}-(?:0[1-9]|1[0-2])$/.test(period)
 }
 
 function createCountSelectChain(result: unknown[]) {
@@ -135,13 +135,14 @@ describe('aigate billing handlers', () => {
       expect(response.data).toEqual(items)
     })
 
-    it('should query without organization filter when principal has no organization', async () => {
+    it('should allow admin to query without organization filter', async () => {
       const items = [{ id: 'bill-global', period: '2026-04' }]
       mockSelect
         .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
         .mockReturnValueOnce(createListSelectChain(items))
 
       const response = await billingListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         query: { page: '1', pageSize: '20' },
       }))
 
@@ -154,24 +155,14 @@ describe('aigate billing handlers', () => {
       })
     })
 
-    it('should treat null organizationId as unscoped query', async () => {
-      const items = [{ id: 'bill-null-org', period: '2026-03' }]
-      mockSelect
-        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
-        .mockReturnValueOnce(createListSelectChain(items))
-
+    it('should reject non-admin principals without organization context', async () => {
       const response = await billingListHandler(createMockEvent({
         context: { principal: { organizationId: null } },
         query: { page: '1' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual({
-        items,
-        total: 1,
-        page: 1,
-        pageSize: 20,
-      })
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
     })
 
     it('should default page and clamp negative pageSize to minimum of 1', async () => {

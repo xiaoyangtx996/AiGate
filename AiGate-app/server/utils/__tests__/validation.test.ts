@@ -2,23 +2,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { createMockEvent } from '../../api/aigate/__tests__/nitro-test-utils'
 
+import { validateBody, validateQuery, ValidationError } from '../validation'
+
 vi.mock('h3', () => ({
   defineEventHandler: (handler: (event: unknown) => unknown) => handler,
   readBody: async (event: { _body?: unknown }) => event._body ?? {},
   getQuery: (event: { _query?: Record<string, string | undefined> }) => event._query ?? {},
 }))
 
-import { ValidationError, validateBody, validateQuery } from '../validation'
-
 describe('validation utils', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('ValidationError', () => {
+  describe('validationError', () => {
     it('should expose zod issues and error name', () => {
       const result = z.object({ name: z.string() }).safeParse({ name: 123 })
-      if (result.success) throw new Error('expected validation failure')
+      if (result.success)
+        throw new Error('expected validation failure')
 
       const error = new ValidationError(result.error.issues)
 
@@ -29,7 +30,8 @@ describe('validation utils', () => {
 
     it('should be instanceof Error', () => {
       const result = z.object({ id: z.number() }).safeParse({ id: 'bad' })
-      if (result.success) throw new Error('expected validation failure')
+      if (result.success)
+        throw new Error('expected validation failure')
 
       expect(new ValidationError(result.error.issues)).toBeInstanceOf(Error)
     })

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { checkAllChannels, checkChannelHealth } from '../mcp-health'
+
 const mockSelect = vi.fn()
 const mockUpdate = vi.fn()
 
@@ -13,8 +15,6 @@ vi.mock('@/db/drizzle', () => ({
 vi.mock('@/db/schema', () => ({
   channel: { id: 'id', status: 'status' },
 }))
-
-import { checkAllChannels, checkChannelHealth } from '../mcp-health'
 
 function createSelectChain(result: unknown[]) {
   return {

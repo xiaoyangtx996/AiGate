@@ -5,7 +5,7 @@ function resolveRole(preferredRole: string | null, roleIds: string[]) {
 }
 
 function resolveOrganizationId(memberships: Array<{ organizationId: string }>) {
-  return memberships.length ? memberships[0].organizationId : null
+  return memberships.length ? memberships[0]!.organizationId : null
 }
 
 function buildPrincipal(options: {

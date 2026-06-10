@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import alertDeleteHandler from '../alert/[id].delete'
+
+import alertRuleDeleteHandler from '../alert/rule/[id].delete'
+import channelDeleteHandler from '../channel/[id].delete'
+import promptDeleteHandler from '../prompt/[id].delete'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockDelete = vi.fn()
@@ -16,11 +21,6 @@ vi.mock('@/db/schema', () => ({
   channel: { id: 'id', organizationId: 'organizationId' },
   prompt: { id: 'id', organizationId: 'organizationId' },
 }))
-
-import alertDeleteHandler from '../alert/[id].delete'
-import alertRuleDeleteHandler from '../alert/rule/[id].delete'
-import channelDeleteHandler from '../channel/[id].delete'
-import promptDeleteHandler from '../prompt/[id].delete'
 
 function createDeleteChain(result: unknown[]) {
   return {
@@ -61,10 +61,21 @@ describe('aigate delete handlers', () => {
   })
 
   describe('channel [id].delete', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        params: { id: 'ch-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockDelete).not.toHaveBeenCalled()
+    })
+
     it('should return 404 when channel not found', async () => {
       mockDelete.mockReturnValue(createDeleteChain([]))
 
       const response = await channelDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'missing' },
       }))
 
@@ -75,6 +86,7 @@ describe('aigate delete handlers', () => {
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'ch-1' }]))
 
       const response = await channelDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'ch-1' },
       }))
 

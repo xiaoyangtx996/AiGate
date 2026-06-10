@@ -39,7 +39,7 @@ function parseSmokeTestRoutes(scriptPath: string, arrayName: string): string[] {
   if (!match)
     throw new Error(`Could not find ${arrayName} in ${scriptPath}`)
 
-  return [...match[1].matchAll(/'([^']+)'/g)].map(m => m[1])
+  return Array.from(match[1]!.matchAll(/'([^']+)'/g), m => m[1]!)
 }
 
 describe('page smoke test routes', () => {

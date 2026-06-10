@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
       ? and(eq(alertRule.id, id!), eq(alertRule.organizationId, principal.organizationId))
       : eq(alertRule.id, id!)
     const [res] = await db.delete(alertRule).where(where).returning()
-    if (!res) { return responseSuccess(null, '规则不存在', 404) }
+    if (!res) {
+      return responseError(null, '规则不存在', { statusCode: 404 })
+    }
     return responseSuccess(res)
   }
   catch (err) { return responseError(err) }

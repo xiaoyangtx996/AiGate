@@ -12,6 +12,7 @@ const { getMcpMarketplace, installMcpPreset } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
 const router = useRouter()
+const p = (key: string) => t(`pages.aigate.mcpTools.marketplace.${key}`)
 
 const { data, pending: loading } = await useAsyncData('mcp-marketplace-presets', async () => {
   const res = await getMcpMarketplace()
@@ -22,7 +23,8 @@ const searchQuery = ref('')
 const installing = ref<string | null>(null)
 
 const filteredPresets = computed(() => {
-  if (!searchQuery.value) return presets.value
+  if (!searchQuery.value)
+    return presets.value
   const q = searchQuery.value.toLowerCase()
   return presets.value.filter(tool =>
     tool.name?.toLowerCase().includes(q)
@@ -51,16 +53,18 @@ async function handleInstall(presetId: string) {
   }
   finally { installing.value = null }
 }
-
-const p = (key: string) => t(`pages.aigate.mcpTools.marketplace.${key}`)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-bold">{{ p('title') }}</h2>
-        <p class="text-sm text-muted">{{ p('subtitle') }}</p>
+        <h2 class="text-xl font-bold">
+          {{ p('title') }}
+        </h2>
+        <p class="text-sm text-muted">
+          {{ p('subtitle') }}
+        </p>
       </div>
       <UInput v-model="searchQuery" :placeholder="p('search')" icon="lucide:search" class="w-64" />
     </div>
@@ -79,11 +83,17 @@ const p = (key: string) => t(`pages.aigate.mcpTools.marketplace.${key}`)
             <UIcon :name="categoryIcons[tool.category || 'default'] || categoryIcons.default" class="text-primary text-lg" />
           </div>
           <div class="flex-1">
-            <h3 class="font-bold">{{ tool.name }}</h3>
-            <p class="text-xs text-muted">{{ tool.vendor }} · {{ tool.type }}</p>
+            <h3 class="font-bold">
+              {{ tool.name }}
+            </h3>
+            <p class="text-xs text-muted">
+              {{ tool.vendor }} · {{ tool.type }}
+            </p>
           </div>
         </div>
-        <p class="text-sm text-muted mb-4 line-clamp-2">{{ tool.description }}</p>
+        <p class="text-sm text-muted mb-4 line-clamp-2">
+          {{ tool.description }}
+        </p>
         <UButton block size="sm" icon="lucide:download" :loading="installing === tool.id" @click="handleInstall(tool.id)">
           {{ p('install') }}
         </UButton>

@@ -18,12 +18,15 @@
         "generate": "nuxt generate",
         "preview": "nuxt preview",
         "postinstall": "nuxt prepare",
-        "lint": "eslint",
-        "lint:fix": "eslint --fix",
+        "lint": "eslint app server shared test e2e --ext .ts,.vue,.js,.mjs,.cjs",
+        "lint:fix": "eslint app server shared test e2e --ext .ts,.vue,.js,.mjs,.cjs --fix",
+        "typecheck:server": "tsc --noEmit -p tsconfig.server.prod.json",
+        "typecheck:server:test": "tsc --noEmit -p tsconfig.server.test.json",
         "release": "release-it",
         "prepare": "husky",
         "test": "vitest",
         "test:coverage": "vitest run --coverage",
+        "test:openapi": "node scripts/verify-openapi-coverage.mjs",
         "test:smoke": "node scripts/page-smoke-test.mjs",
         "test:e2e": "playwright test"
     },
@@ -93,6 +96,7 @@
         "prettier": "^3.8.3",
         "release-it": "^19.2.4",
         "tsx": "^4.22.3",
+        "typescript": "5.9.2",
         "vitest": "^2.1.8"
     },
     "lint-staged": {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CommandPaletteGroup, CommandPaletteItem } from '@nuxt/ui'
 
-type SearchResult = {
+interface SearchResult {
   id: string
   name: string
   description?: string | null
@@ -21,9 +21,9 @@ const results = ref<SearchResult[]>([])
 const loading = ref(false)
 
 const typeIcons: Record<string, string> = {
-  Agent: 'lucide:bot',
-  Prompt: 'lucide:file-text',
-  Channel: 'lucide:server',
+  'Agent': 'lucide:bot',
+  'Prompt': 'lucide:file-text',
+  'Channel': 'lucide:server',
   'MCP Tool': 'lucide:wrench',
 }
 

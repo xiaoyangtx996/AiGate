@@ -19,7 +19,7 @@ const loading = ref(false)
  */
 async function onSubmit(data: SignUpFormSchema) {
   loading.value = true
-  const { error } = await $authClient.signUp.email({ ...data, callbackURL: '/' }).finally(() => {
+  const { error } = await $authClient.signUp.email({ ...data, callbackURL: '/aigate/my-workbench' }).finally(() => {
     loading.value = false
   })
   if (error) {

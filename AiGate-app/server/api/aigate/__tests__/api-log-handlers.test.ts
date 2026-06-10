@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import cleanupHandler from '../api-log/cleanup.post'
+
 import { createMockEvent, expectForbidden } from './nitro-test-utils'
 
 const mockCleanupOldApiLogs = vi.fn()
@@ -7,8 +9,6 @@ const mockCleanupOldApiLogs = vi.fn()
 vi.mock('#server/utils/log-cleanup', () => ({
   cleanupOldApiLogs: (...args: unknown[]) => mockCleanupOldApiLogs(...args),
 }))
-
-import cleanupHandler from '../api-log/cleanup.post'
 
 describe('aigate api-log handlers', () => {
   beforeEach(() => {

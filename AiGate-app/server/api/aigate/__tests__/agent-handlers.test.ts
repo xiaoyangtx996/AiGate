@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import agentPutHandler from '../agent/[id].put'
+
+import agentListHandler from '../agent/index.get'
+import agentPostHandler from '../agent/index.post'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -46,10 +50,6 @@ vi.mock('#server/utils/validation', () => {
     },
   }
 })
-
-import agentListHandler from '../agent/index.get'
-import agentPostHandler from '../agent/index.post'
-import agentPutHandler from '../agent/[id].put'
 
 function parseAgentPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -128,7 +128,7 @@ describe('aigate agent handlers', () => {
         body: {},
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(response.msg).toBe('Validation failed')
       expect(mockInsert).not.toHaveBeenCalled()
     })
@@ -145,6 +145,28 @@ describe('aigate agent handlers', () => {
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
       expect(mockInsert).toHaveBeenCalledTimes(1)
+    })
+
+    it('should reject non-admin create without organization context', async () => {
+      const response = await agentPostHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        body: { name: 'Global Agent' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should reject creating agent for another organization', async () => {
+      const response = await agentPostHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        body: { name: 'Other Agent', organizationId: 'org-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('无权向其他组织创建 Agent')
+      expect(mockInsert).not.toHaveBeenCalled()
     })
   })
 
@@ -177,11 +199,38 @@ describe('aigate agent handlers', () => {
       expect(mockUpdate).toHaveBeenCalledTimes(1)
     })
 
-    it('should update agent by id when principal has no organization', async () => {
+    it('should reject non-admin update without organization context', async () => {
       const updated = { id: 'agent-2', name: 'Global Bot' }
       mockUpdate.mockReturnValue(createUpdateChain([updated]))
 
       const response = await agentPutHandler(createMockEvent({
+        params: { id: 'agent-2' },
+        body: { name: 'Global Bot' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should reject moving agent to another organization', async () => {
+      const response = await agentPutHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'agent-1' },
+        body: { organizationId: 'org-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('无权转移 Agent 到其他组织')
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to update agent without organization context', async () => {
+      const updated = { id: 'agent-2', name: 'Global Bot' }
+      mockUpdate.mockReturnValue(createUpdateChain([updated]))
+
+      const response = await agentPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'agent-2' },
         body: { name: 'Global Bot' },
       }))

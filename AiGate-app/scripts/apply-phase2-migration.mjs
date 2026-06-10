@@ -1,6 +1,7 @@
 import pg from 'pg'
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres@localhost:5432/AiGate'
+const dryRun = process.argv.includes('--dry-run')
 
 const statements = [
   `CREATE TABLE IF NOT EXISTS prompt_version (
@@ -33,6 +34,11 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS idx_agent_org_status ON agent(organization_id, status)`,
   `CREATE INDEX IF NOT EXISTS idx_alert_org_read_created ON alert(organization_id, read, created_at)`,
 ]
+
+if (dryRun) {
+  console.log(`Dry run: ${statements.length} Phase 2 statements would be applied.`)
+  process.exit(0)
+}
 
 const pool = new pg.Pool({ connectionString })
 

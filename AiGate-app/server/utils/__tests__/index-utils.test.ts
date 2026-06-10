@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
 import {
   catchError,
@@ -9,6 +9,12 @@ import {
 } from '../index'
 
 describe('index utils', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+    vi.useRealTimers()
+  })
+
   describe('responseSuccess', () => {
     it('should return success response with defaults', () => {
       vi.useFakeTimers()
@@ -50,13 +56,54 @@ describe('index utils', () => {
       expect(result.data).toEqual({ detail: 'fail' })
       expect(result.msg).toBe('操作失败')
     })
+
+    it('should set HTTP status when event is provided', () => {
+      const setResponseStatus = vi.fn()
+      vi.stubGlobal('setResponseStatus', setResponseStatus)
+      const event = {} as never
+
+      const result = responseError({ statusCode: 401, statusMessage: 'Unauthorized' }, undefined, { event })
+
+      expect(result.code).toBe(RESPONSE_CODE.UNAUTHORIZED)
+      expect(result.msg).toBe('Unauthorized')
+      expect(setResponseStatus).toHaveBeenCalledWith(event, RESPONSE_CODE.UNAUTHORIZED)
+    })
+
+    it('should map validation issues to 400', () => {
+      const issues = [{ path: ['name'], message: 'Required' }]
+      const setResponseStatus = vi.fn()
+      vi.stubGlobal('setResponseStatus', setResponseStatus)
+      const event = {} as never
+
+      const result = responseError({ name: 'ZodError', issues }, undefined, { event })
+
+      expect(result.code).toBe(RESPONSE_CODE.BAD_REQUEST)
+      expect(result.data).toEqual(issues)
+      expect(setResponseStatus).toHaveBeenCalledWith(event, RESPONSE_CODE.BAD_REQUEST)
+    })
+
+    it('should map database unique violation to 409', () => {
+      const result = responseError({ code: RESPONSE_CODE.UNIQUE_VIOLATION, message: 'duplicate key value' })
+
+      expect(result.code).toBe(RESPONSE_CODE.CONFLICT)
+      expect(result.msg).toBe('duplicate key value')
+    })
+
+    it('should hide 500 messages in production by default', () => {
+      vi.stubEnv('NODE_ENV', 'production')
+
+      const result = responseError(new Error('database password leaked'))
+
+      expect(result.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(result.msg).toBe(RESPONSE_CODE.label(RESPONSE_CODE.SERVER_ERROR))
+    })
   })
 
   describe('catchError', () => {
     it('should extract message from Error instance', () => {
       const result = catchError(new Error('数据库连接失败'))
 
-      expect(result.data).toBeNull()
+      expect(result.data).toBeInstanceOf(Error)
       expect(result.msg).toBe('数据库连接失败')
       expect(result.code).toBe(RESPONSE_CODE.SERVER_ERROR)
     })
@@ -91,11 +138,11 @@ describe('index utils', () => {
       const tree = convertFlatDataToTree(flat, null)
 
       expect(tree).toHaveLength(1)
-      expect(tree[0].id).toBe('1')
-      expect(tree[0].children).toHaveLength(2)
-      expect(tree[0].children?.[0].id).toBe('2')
-      expect(tree[0].children?.[0].children?.[0].id).toBe('4')
-      expect(tree[0].children?.[0].children?.[0].children).toBeUndefined()
+      expect(tree[0]!.id).toBe('1')
+      expect(tree[0]!.children).toHaveLength(2)
+      expect(tree[0]!.children?.[0]!.id).toBe('2')
+      expect(tree[0]!.children?.[0]!.children?.[0]!.id).toBe('4')
+      expect(tree[0]!.children?.[0]!.children?.[0]!.children).toBeUndefined()
     })
 
     it('should treat nodes without parent as roots', () => {
@@ -123,7 +170,7 @@ describe('index utils', () => {
       ]
 
       const tree = convertFlatDataToTree(flat, null)
-      const leaf = tree[0].children?.[0].children?.[0]
+      const leaf = tree[0]!.children?.[0]!.children?.[0]
 
       expect(leaf?.id).toBe('4')
       expect(leaf?.children).toBeUndefined()
@@ -133,7 +180,7 @@ describe('index utils', () => {
       const flat = [{ id: 'solo', name: 'Solo', parentId: null }]
       const tree = convertFlatDataToTree(flat, null)
 
-      expect(tree[0].children).toBeUndefined()
+      expect(tree[0]!.children).toBeUndefined()
     })
   })
 
@@ -157,7 +204,7 @@ describe('index utils', () => {
           zh: '仪表盘',
           children: [],
         },
-      ] as InternalizationTree[]
+      ] as unknown as InternalizationTree[]
 
       const result = transformToLangTree(nodes)
 
@@ -172,14 +219,14 @@ describe('index utils', () => {
     })
 
     it('should return empty locale objects for empty input', () => {
-      expect(transformToLangTree([])).toEqual({ en: {}, 'zh-CN': {} })
+      expect(transformToLangTree([])).toEqual({ 'en': {}, 'zh-CN': {} })
     })
 
     it('should skip missing locale values on leaf nodes', () => {
       const nodes = [
         { id: '1', name: 'onlyEn', en: 'Hello', zh: null, children: [] },
         { id: '2', name: 'onlyZh', en: null, zh: '你好', children: [] },
-      ] as InternalizationTree[]
+      ] as unknown as InternalizationTree[]
 
       const result = transformToLangTree(nodes)
 
@@ -206,7 +253,7 @@ describe('index utils', () => {
             },
           ],
         },
-      ] as InternalizationTree[]
+      ] as unknown as InternalizationTree[]
 
       const result = transformToLangTree(nodes)
 

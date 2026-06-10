@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 interface MemberRow {
   id: string
   userId: string
@@ -40,7 +40,7 @@ const { data, pending: loading, refresh } = await useAsyncData(
 
 const { data: orgs } = await useAsyncData('aigate-orgs-for-member', async () => {
   const res = await getOrgList()
-  return (res.data ?? []) as OrgOption[]
+  return (res.data?.items ?? []) as OrgOption[]
 })
 
 const list = computed(() => (data.value?.items ?? []) as MemberRow[])
@@ -67,7 +67,8 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.userId || !form.organizationId) return
+  if (!form.userId || !form.organizationId)
+    return
   saveLoading.value = true
   try {
     await insertMember(form)
@@ -85,7 +86,9 @@ const p = (key: string) => t(`pages.aigate.members.${key}`)
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="handleSearch" />
-      <UButton icon="lucide:user-plus" @click="handleAdd">{{ p('add') }}</UButton>
+      <UButton icon="lucide:user-plus" @click="handleAdd">
+        {{ p('add') }}
+      </UButton>
     </div>
 
     <TableSkeleton v-if="loading" :cols="5" :rows="5" />
@@ -96,16 +99,18 @@ const p = (key: string) => t(`pages.aigate.members.${key}`)
       :description="p('emptyDescription')"
     />
     <template v-else>
-      <UTable :data="list" :columns="[
-        { accessorKey: 'userName', header: p('username') },
-        { accessorKey: 'userEmail', header: p('email') },
-        { accessorKey: 'organizationId', header: p('org') },
-        { accessorKey: 'createdAt', header: p('joinDate') },
-        { accessorKey: 'actions', header: $t('common.action') },
-      ]">
+      <UTable
+        :data="list" :columns="[
+          { accessorKey: 'userName', header: p('username') },
+          { accessorKey: 'userEmail', header: p('email') },
+          { accessorKey: 'organizationId', header: p('org') },
+          { accessorKey: 'createdAt', header: p('joinDate') },
+          { accessorKey: 'actions', header: $t('common.action') },
+        ]"
+      >
         <template #userName-cell="{ row }">
           <div class="flex items-center gap-2">
-            <UAvatar :src="row.original.userImage" size="xs" />
+            <UAvatar :src="row.original.userImage ?? undefined" size="xs" />
             <span>{{ row.original.userName || '-' }}</span>
           </div>
         </template>
@@ -127,7 +132,9 @@ const p = (key: string) => t(`pages.aigate.members.${key}`)
 
     <UModal v-model:open="open">
       <template #header>
-        <h3 class="text-lg font-bold">{{ p('add') }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ p('add') }}
+        </h3>
       </template>
       <template #body>
         <div class="space-y-4">
@@ -145,8 +152,12 @@ const p = (key: string) => t(`pages.aigate.members.${key}`)
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
-          <UButton :loading="saveLoading" @click="handleSubmit">{{ $t('common.confirm') }}</UButton>
+          <UButton variant="ghost" @click="open = false">
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton :loading="saveLoading" @click="handleSubmit">
+            {{ $t('common.confirm') }}
+          </UButton>
         </div>
       </template>
     </UModal>

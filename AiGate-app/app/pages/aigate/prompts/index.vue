@@ -3,6 +3,15 @@ const { getPromptList, insertPrompt, updatePrompt, delPrompt, getPromptVersions,
 const { successToast } = useAppToast()
 const { t } = useI18n()
 
+interface PromptRow {
+  id: string
+  name?: string
+  description?: string
+  content?: string
+  category?: string
+  usageCount?: number
+}
+
 const DEFAULT_CATEGORY = '通用'
 
 const page = ref(1)
@@ -21,7 +30,8 @@ const { data, pending: loading, refresh } = await useAsyncData(
 )
 const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
-const listIds = computed(() => list.value.map((item: { id: string }) => item.id))
+const promptList = computed(() => list.value as PromptRow[])
+const listIds = computed(() => promptList.value.map(item => item.id))
 
 const {
   selectedCount,
@@ -50,7 +60,7 @@ const form = reactive({
   category: DEFAULT_CATEGORY,
 })
 
-const p = (key: string) => t(`pages.aigate.prompts.${key}`)
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.prompts.${key}`, params ?? {})
 
 const categoryOptions = computed(() => [
   { label: p('categories.general'), value: '通用' },
@@ -69,7 +79,7 @@ function handleAdd() {
   open.value = true
 }
 
-function handleEdit(row: { id: string, name?: string, description?: string, content?: string, category?: string }) {
+function handleEdit(row: PromptRow) {
   editData.value = row
   form.name = row.name || ''
   form.description = row.description || ''
@@ -85,18 +95,21 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.name || !form.content) return
+  if (!form.name || !form.content)
+    return
   saveLoading.value = true
   try {
     if (editData.value?.id) {
       await updatePrompt({ ...form, id: editData.value.id })
-    } else {
+    }
+    else {
       await insertPrompt(form)
     }
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -138,7 +151,8 @@ async function handleExport() {
 const importInput = ref<HTMLInputElement | null>(null)
 async function handleImportFile(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
+  if (!file)
+    return
   const text = await file.text()
   const items = JSON.parse(text)
   const res = await importPrompts(items)
@@ -150,12 +164,20 @@ async function handleImportFile(e: Event) {
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
+      <h2 class="text-xl font-bold">
+        {{ p('title') }}
+      </h2>
       <div class="flex gap-2">
-        <UButton icon="lucide:upload" variant="outline" @click="importInput?.click()">{{ p('import') }}</UButton>
+        <UButton v-permission="'ADD'" icon="lucide:upload" variant="outline" @click="importInput?.click()">
+          {{ p('import') }}
+        </UButton>
         <input ref="importInput" type="file" accept=".json" class="hidden" @change="handleImportFile">
-        <UButton icon="lucide:download" variant="outline" @click="handleExport">{{ p('export') }}</UButton>
-        <UButton icon="lucide:plus" @click="handleAdd">{{ p('create') }}</UButton>
+        <UButton v-permission="'SEARCH'" icon="lucide:download" variant="outline" @click="handleExport">
+          {{ p('export') }}
+        </UButton>
+        <UButton v-permission="'ADD'" icon="lucide:plus" @click="handleAdd">
+          {{ p('create') }}
+        </UButton>
       </div>
     </div>
 
@@ -166,12 +188,14 @@ async function handleImportFile(e: Event) {
       :title="$t('common.noData')"
     >
       <template #action>
-        <UButton icon="lucide:plus" @click="handleAdd">{{ p('create') }}</UButton>
+        <UButton v-permission="'ADD'" icon="lucide:plus" @click="handleAdd">
+          {{ p('create') }}
+        </UButton>
       </template>
     </EmptyState>
     <UTable
       v-else
-      :data="list"
+      :data="promptList"
       :columns="[
         { accessorKey: 'select', header: '' },
         { accessorKey: 'name', header: p('name') },
@@ -198,7 +222,9 @@ async function handleImportFile(e: Event) {
         <span class="font-medium">{{ row.original.name }}</span>
       </template>
       <template #category-cell="{ row }">
-        <UBadge variant="outline" size="xs">{{ row.original.category }}</UBadge>
+        <UBadge variant="outline" size="xs">
+          {{ row.original.category }}
+        </UBadge>
       </template>
       <template #description-cell="{ row }">
         <span class="text-sm text-muted line-clamp-2">{{ row.original.description || '-' }}</span>
@@ -209,8 +235,8 @@ async function handleImportFile(e: Event) {
       <template #actions-cell="{ row }">
         <div class="flex gap-1">
           <UButton size="xs" variant="ghost" icon="lucide:history" @click="handleShowVersions(row.original)" />
-          <UButton size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
-          <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
+          <UButton v-permission="'EDIT'" size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(row.original)" />
+          <UButton v-permission="'DELETE'" size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(row.original.id)" />
         </div>
       </template>
     </UTable>
@@ -229,11 +255,12 @@ async function handleImportFile(e: Event) {
       >
         <span class="text-sm font-medium">{{ $t('common.selectedCount', { count: selectedCount }) }}</span>
         <UButton
+          v-permission="'BATCH_DELETE'"
           size="sm"
           color="error"
           variant="soft"
           icon="lucide:trash-2"
-          @click="batchDelete(list)"
+          @click="batchDelete(promptList)"
         >
           {{ $t('common.batchDelete') }}
         </UButton>
@@ -250,7 +277,9 @@ async function handleImportFile(e: Event) {
 
     <UModal v-model:open="open">
       <template #header>
-        <h3 class="text-lg font-bold">{{ editData ? $t('common.save') : p('create') }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ editData ? $t('common.save') : p('create') }}
+        </h3>
       </template>
       <template #body>
         <div class="space-y-4">
@@ -270,7 +299,9 @@ async function handleImportFile(e: Event) {
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
+          <UButton variant="ghost" @click="open = false">
+            {{ $t('common.cancel') }}
+          </UButton>
           <UButton :loading="saveLoading" :disabled="!form.name || !form.content" @click="handleSubmit">
             {{ $t('common.save') }}
           </UButton>
@@ -279,18 +310,32 @@ async function handleImportFile(e: Event) {
     </UModal>
 
     <UModal v-model:open="versionOpen">
-      <template #header><h3 class="font-bold">{{ p('versionHistory') }}</h3></template>
+      <template #header>
+        <h3 class="font-bold">
+          {{ p('versionHistory') }}
+        </h3>
+      </template>
       <template #body>
-        <div v-if="versionLoading" class="text-center py-6">{{ p('loading') }}</div>
-        <div v-else-if="versions.length === 0" class="text-center py-6 text-muted">{{ p('noVersions') }}</div>
+        <div v-if="versionLoading" class="text-center py-6">
+          {{ p('loading') }}
+        </div>
+        <div v-else-if="versions.length === 0" class="text-center py-6 text-muted">
+          {{ p('noVersions') }}
+        </div>
         <div v-else class="space-y-3">
           <UCard v-for="v in versions" :key="v.id">
             <div class="flex items-center justify-between mb-2">
-              <UBadge variant="subtle">v{{ v.version }}</UBadge>
+              <UBadge variant="subtle">
+                v{{ v.version }}
+              </UBadge>
               <span class="text-xs text-muted">{{ new Date(v.createdAt).toLocaleString() }}</span>
             </div>
-            <p class="text-sm font-mono line-clamp-3">{{ v.content }}</p>
-            <UButton size="xs" class="mt-2" variant="outline" @click="handleRestore(v.id)">{{ p('restoreVersion') }}</UButton>
+            <p class="text-sm font-mono line-clamp-3">
+              {{ v.content }}
+            </p>
+            <UButton v-permission="'EDIT'" size="xs" class="mt-2" variant="outline" @click="handleRestore(v.id)">
+              {{ p('restoreVersion') }}
+            </UButton>
           </UCard>
         </div>
       </template>

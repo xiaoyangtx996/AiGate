@@ -1,4 +1,6 @@
 /** 将嵌套对象展平为点分键名，数组序列化为 JSON 字符串 */
+const csvQuotePattern = /"/g
+
 export function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(obj)) {
@@ -22,6 +24,6 @@ export function escapeCsvCell(value: unknown): string {
     return ''
   const str = String(value)
   if (str.includes(',') || str.includes('"') || str.includes('\n'))
-    return `"${str.replace(/"/g, '""')}"`
+    return `"${str.replace(csvQuotePattern, '""')}"`
   return str
 }

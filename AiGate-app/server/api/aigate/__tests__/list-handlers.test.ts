@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import alertListHandler from '../alert/index.get'
+
+import apiKeyListHandler from '../api-key/index.get'
+import channelListHandler from '../channel/index.get'
+import mcpToolListHandler from '../mcp-tool/index.get'
+import memberListHandler from '../member/index.get'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -49,12 +55,6 @@ vi.mock('@/db/schema', () => ({
     image: 'image',
   },
 }))
-
-import apiKeyListHandler from '../api-key/index.get'
-import alertListHandler from '../alert/index.get'
-import mcpToolListHandler from '../mcp-tool/index.get'
-import memberListHandler from '../member/index.get'
-import channelListHandler from '../channel/index.get'
 
 function parseListPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -135,6 +135,15 @@ describe('aigate list handlers', () => {
   })
 
   describe('api-key index.get', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await apiKeyListHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return paginated items scoped to organization with filters', async () => {
       const items = [{ id: 'key-1', name: 'Prod Key' }]
       mockSelect
@@ -142,7 +151,7 @@ describe('aigate list handlers', () => {
         .mockReturnValueOnce(createListSelectChain(items))
 
       const response = await apiKeyListHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         query: { page: '1', pageSize: '10', keyword: 'prod', status: 'active' },
       }))
 
@@ -163,7 +172,7 @@ describe('aigate list handlers', () => {
         .mockReturnValueOnce(createListSelectChain(items))
 
       const response = await apiKeyListHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
       }))
 
       expect(response.data).toEqual(items)
@@ -215,6 +224,15 @@ describe('aigate list handlers', () => {
   })
 
   describe('channel index.get', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await channelListHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return paginated channels scoped to organization with filters', async () => {
       const items = [{ id: 'ch-1', name: 'OpenAI', vendor: 'openai', status: 'active' }]
       mockSelect
@@ -222,7 +240,7 @@ describe('aigate list handlers', () => {
         .mockReturnValueOnce(createListSelectChain(items))
 
       const response = await channelListHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         query: { page: '2', pageSize: '10', keyword: 'open', status: 'active' },
       }))
 
@@ -243,7 +261,7 @@ describe('aigate list handlers', () => {
         .mockReturnValueOnce(createListSelectChain(items))
 
       const response = await channelListHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
       }))
 
       expect(response.data).toEqual(items)
@@ -255,7 +273,7 @@ describe('aigate list handlers', () => {
         .mockReturnValueOnce(createListSelectChain([]))
 
       const response = await channelListHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         query: { page: '0', pageSize: '500' },
       }))
 

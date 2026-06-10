@@ -1,4 +1,4 @@
-﻿import { and, asc, eq, ilike, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { member, user } from '@/db/schema'
 
@@ -10,8 +10,10 @@ export default defineEventHandler(async (event) => {
     const offset = (page - 1) * pageSize
     const principal = event.context.principal as { organizationId?: string | null } | undefined
     const conditions = []
-    if (principal?.organizationId) { conditions.push(eq(member.organizationId, principal.organizationId)) }
-    if (query.keyword) { conditions.push(ilike(user.name, `%${query.keyword}%`)) }
+    if (principal?.organizationId)
+      conditions.push(eq(member.organizationId, principal.organizationId))
+    if (query.keyword)
+      conditions.push(ilike(user.name, `%${query.keyword}%`))
     const where = conditions.length ? and(...conditions) : undefined
 
     const [countRow] = await db

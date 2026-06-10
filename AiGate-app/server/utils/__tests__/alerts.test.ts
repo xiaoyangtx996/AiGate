@@ -1,25 +1,41 @@
 import { describe, expect, it } from 'vitest'
 
 function getQuotaUsagePercent(tokenUsed: number, tokenLimit: number) {
-  if (tokenLimit <= 0) return 0
+  if (tokenLimit <= 0)
+    return 0
   return Math.round((tokenUsed / tokenLimit) * 100)
 }
 
 function shouldGenerateQuotaAlert(tokenLimit: number, usagePercent: number) {
-  if (tokenLimit <= 0) return false
-  return usagePercent >= 90
+  if (tokenLimit <= 0)
+    return false
+  return usagePercent >= 70
 }
 
 function getQuotaAlertSeverity(usagePercent: number) {
-  return usagePercent >= 95 ? 'critical' : 'warning'
+  return usagePercent >= 100 ? 'critical' : 'warning'
 }
 
-function formatQuotaAlertTitle(orgName: string) {
-  return `配额预警：${orgName}`
+function getQuotaAlertTier(usagePercent: number) {
+  if (usagePercent >= 100)
+    return 100
+  if (usagePercent >= 90)
+    return 90
+  if (usagePercent >= 70)
+    return 70
+  return 0
 }
 
-function formatQuotaAlertMessage(orgName: string, usagePercent: number, tokenUsed: number, tokenLimit: number) {
-  return `组织 "${orgName}" 配额使用已达 ${usagePercent}%（${tokenUsed}/${tokenLimit} tokens）`
+function formatQuotaAlertResourceId(orgId: string, tier: number) {
+  return `quota:${orgId}:${tier}`
+}
+
+function formatQuotaAlertTitle(orgName: string, tier: number) {
+  return `配额预警：${orgName} ${tier}%`
+}
+
+function formatQuotaAlertMessage(orgName: string, usagePercent: number, tokenUsed: number, tokenLimit: number, tier: number) {
+  return `组织 "${orgName}" 配额使用已达 ${usagePercent}%（${tokenUsed}/${tokenLimit} tokens），触发 ${tier}% 阈值`
 }
 
 function isKeyExpiringSoon(expiresAt: Date, now: Date, windowDays = 7) {
@@ -40,7 +56,8 @@ function getRuleThreshold(condition: { threshold?: number } | null | undefined, 
 }
 
 function shouldTriggerRuleQuotaAlert(tokenLimit: number, usagePercent: number, threshold: number) {
-  if (tokenLimit <= 0) return false
+  if (tokenLimit <= 0)
+    return false
   return usagePercent >= threshold
 }
 
@@ -81,10 +98,11 @@ describe('alerts utils', () => {
       expect(getQuotaUsagePercent(100, 0)).toBe(0)
     })
 
-    it('shouldGenerateQuotaAlert should trigger at 90% when limit is set', () => {
-      expect(shouldGenerateQuotaAlert(1000, 89)).toBe(false)
+    it('shouldGenerateQuotaAlert should trigger at 70% when limit is set', () => {
+      expect(shouldGenerateQuotaAlert(1000, 69)).toBe(false)
+      expect(shouldGenerateQuotaAlert(1000, 70)).toBe(true)
       expect(shouldGenerateQuotaAlert(1000, 90)).toBe(true)
-      expect(shouldGenerateQuotaAlert(1000, 95)).toBe(true)
+      expect(shouldGenerateQuotaAlert(1000, 100)).toBe(true)
     })
 
     it('shouldGenerateQuotaAlert should ignore orgs without limits', () => {
@@ -92,17 +110,27 @@ describe('alerts utils', () => {
       expect(shouldGenerateQuotaAlert(-1, 100)).toBe(false)
     })
 
-    it('getQuotaAlertSeverity should escalate at 95%', () => {
+    it('getQuotaAlertSeverity should escalate at 100%', () => {
+      expect(getQuotaAlertSeverity(70)).toBe('warning')
       expect(getQuotaAlertSeverity(90)).toBe('warning')
-      expect(getQuotaAlertSeverity(94)).toBe('warning')
-      expect(getQuotaAlertSeverity(95)).toBe('critical')
+      expect(getQuotaAlertSeverity(99)).toBe('warning')
       expect(getQuotaAlertSeverity(100)).toBe('critical')
     })
 
-    it('should format quota alert title and message', () => {
-      expect(formatQuotaAlertTitle('Acme Corp')).toBe('配额预警：Acme Corp')
-      expect(formatQuotaAlertMessage('Acme Corp', 92, 920, 1000))
-        .toBe('组织 "Acme Corp" 配额使用已达 92%（920/1000 tokens）')
+    it('getQuotaAlertTier should return configured threshold tiers', () => {
+      expect(getQuotaAlertTier(69)).toBe(0)
+      expect(getQuotaAlertTier(70)).toBe(70)
+      expect(getQuotaAlertTier(89)).toBe(70)
+      expect(getQuotaAlertTier(90)).toBe(90)
+      expect(getQuotaAlertTier(99)).toBe(90)
+      expect(getQuotaAlertTier(100)).toBe(100)
+    })
+
+    it('should format quota alert resource, title and message', () => {
+      expect(formatQuotaAlertResourceId('org-1', 90)).toBe('quota:org-1:90')
+      expect(formatQuotaAlertTitle('Acme Corp', 90)).toBe('配额预警：Acme Corp 90%')
+      expect(formatQuotaAlertMessage('Acme Corp', 92, 920, 1000, 90))
+        .toBe('组织 "Acme Corp" 配额使用已达 92%（920/1000 tokens），触发 90% 阈值')
     })
   })
 

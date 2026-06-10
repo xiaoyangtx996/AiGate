@@ -25,7 +25,7 @@ test.describe('Authenticated business flows', () => {
       expect(response?.status()).toBeLessThan(500)
       expect(page.url()).not.toMatch(/\/auth\/sign-in/)
 
-      const bodyText = await page.locator('body').innerText()
+      const bodyText = await page.locator('body').textContent()
       expect(bodyText.trim().length).toBeGreaterThan(50)
     })
   }

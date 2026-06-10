@@ -1,4 +1,4 @@
-﻿import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { channel } from '@/db/schema'
 
@@ -12,15 +12,18 @@ interface HealthResult {
   checkedAt: string
 }
 
+const trailingSlashPattern = /\/$/
+
 export async function checkChannelHealth(channelId: string): Promise<HealthResult> {
   const [ch] = await db.select().from(channel).where(eq(channel.id, channelId))
-  if (!ch) return { channelId, name: '', endpoint: '', healthy: false, latency: 0, error: 'Channel not found', checkedAt: new Date().toISOString() }
+  if (!ch)
+    return { channelId, name: '', endpoint: '', healthy: false, latency: 0, error: 'Channel not found', checkedAt: new Date().toISOString() }
 
   const startTime = Date.now()
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
-    const response = await fetch(`${ch.endpoint.replace(/\/$/, '')}/models`, {
+    const response = await fetch(`${ch.endpoint.replace(trailingSlashPattern, '')}/models`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,

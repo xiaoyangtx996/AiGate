@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import modelListHandler from '../model/index.get'
+
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -17,8 +19,6 @@ vi.mock('@/db/schema', () => ({
     status: 'status',
   },
 }))
-
-import modelListHandler from '../model/index.get'
 
 function parseModelPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)

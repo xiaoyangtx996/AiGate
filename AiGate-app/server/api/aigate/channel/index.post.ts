@@ -1,15 +1,16 @@
-﻿import { db } from '@/db/drizzle'
-import { insertChannelSchema, channel } from '@/db/schema'
+import { db } from '@/db/drizzle'
+import { channel, insertChannelSchema } from '@/db/schema'
 
 export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean } | undefined
+    if (!principal?.isAdmin) {
+      return responseError(null, '当前账号无权访问该资源', { statusCode: 403 })
+    }
+
     const body = await readBody(event)
     const parsed = insertChannelSchema.parse(body)
-    const [res] = await db.insert(channel).values({
-      ...parsed,
-      ...(principal?.organizationId && !parsed.organizationId ? { organizationId: principal.organizationId } : {}),
-    }).returning()
+    const [res] = await db.insert(channel).values(parsed).returning()
     return responseSuccess(res)
   }
   catch (err) { return responseError(err) }

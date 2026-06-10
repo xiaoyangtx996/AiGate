@@ -34,7 +34,7 @@ describe('defaultMenuSeeds structure', () => {
   })
 
   it('should keep child menus sorted within each parent', () => {
-    const byParent = new Map<string | undefined, number[]>()
+    const byParent = new Map<string | null | undefined, number[]>()
 
     for (const menu of defaultMenuSeeds) {
       const sorts = byParent.get(menu.parentId) ?? []

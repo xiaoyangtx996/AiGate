@@ -32,6 +32,10 @@ const AIGATE_PAGES = [
   '/aigate/prompts',
   '/aigate/alerts',
   '/aigate/alerts/rules',
+  '/aigate/my-workbench',
+  '/aigate/my-api-keys',
+  '/aigate/my-api-logs',
+  '/aigate/quota-requests',
   '/aigate/billing',
   '/aigate/gateway',
   '/aigate/gateway/routes',
@@ -54,7 +58,8 @@ async function waitForServer(maxMs = 120000) {
   while (Date.now() - start < maxMs) {
     try {
       const res = await fetch(`${BASE}/auth/sign-in`)
-      if (res.ok) return true
+      if (res.ok)
+        return true
     }
     catch { /* retry */ }
     await new Promise(r => setTimeout(r, 2000))
@@ -64,8 +69,8 @@ async function waitForServer(maxMs = 120000) {
 
 const AUTH_HEADERS = {
   'Content-Type': 'application/json',
-  Origin: BASE,
-  Referer: `${BASE}/auth/sign-up`,
+  'Origin': BASE,
+  'Referer': `${BASE}/auth/sign-up`,
 }
 
 async function ensureUser() {
@@ -80,7 +85,8 @@ async function ensureUser() {
     }),
   })
   const text = await res.text()
-  if (res.ok) return { ok: true, action: 'registered' }
+  if (res.ok)
+    return { ok: true, action: 'registered' }
   if (text.includes('already') || text.includes('exists') || res.status === 422) {
     return { ok: true, action: 'exists' }
   }
@@ -99,7 +105,7 @@ async function testPage(page, path, expectAuth = false) {
       }
     }
   }
-  const onPageError = (err) => pageErrors.push(err.message.slice(0, 200))
+  const onPageError = err => pageErrors.push(err.message.slice(0, 200))
 
   page.on('console', onConsole)
   page.on('pageerror', onPageError)
@@ -131,14 +137,16 @@ async function testPage(page, path, expectAuth = false) {
   catch {
     title = '(navigation interrupted)'
   }
-  const bodyText = await page.locator('body').innerText().catch(() => '')
+  const bodyText = await page.locator('body').textContent().catch(() => '')
   const hasContent = bodyText.trim().length > 50
 
   if (expectAuth && finalUrl.includes('/auth/sign-in')) {
     note = 'redirected to sign-in (auth required)'
   }
-  if (status === 500) note = 'server error 500'
-  if (!hasContent) note = (note ? `${note}; ` : '') + 'empty or minimal content'
+  if (status === 500)
+    note = 'server error 500'
+  if (!hasContent)
+    note = `${note ? `${note}; ` : ''}empty or minimal content`
 
   return {
     path,
@@ -265,8 +273,10 @@ async function main() {
     console.log('\nFailed pages:')
     for (const f of failed) {
       console.log(`  ${f.path} -> status=${f.status} url=${f.finalUrl} ${f.note || ''}`)
-      if (f.consoleErrors.length) console.log(`    console: ${f.consoleErrors[0]}`)
-      if (f.errors.length) console.log(`    page: ${f.errors[0]}`)
+      if (f.consoleErrors.length)
+        console.log(`    console: ${f.consoleErrors[0]}`)
+      if (f.errors.length)
+        console.log(`    page: ${f.errors[0]}`)
     }
     process.exitCode = 1
   }

@@ -1,9 +1,9 @@
-﻿import { validateApiKeyFromHeader, selectChannel, proxyToChannel, checkIpWhitelist, checkDailyLimit, checkApiKeyScopes } from '#server/utils/gateway'
-import { rateLimiter } from '#server/utils/rate-limit'
+import { eq, sql } from 'drizzle-orm'
+import { checkApiKeyScopes, checkDailyLimit, checkIpWhitelist, proxyToChannel, selectChannel, validateApiKeyFromHeader } from '#server/utils/gateway'
 import { consumeQuota } from '#server/utils/quota'
+import { rateLimiter } from '#server/utils/rate-limit'
 import { db } from '@/db/drizzle'
 import { apiKey, apiLog } from '@/db/schema'
-import { eq, sql } from 'drizzle-orm'
 
 async function updateKeyUsage(keyId: string, cost: number) {
   await db.update(apiKey).set({
@@ -12,6 +12,8 @@ async function updateKeyUsage(keyId: string, cost: number) {
     lastUsed: new Date(),
   }).where(eq(apiKey.id, keyId)).execute().catch(() => {})
 }
+
+const DEFAULT_RATE_LIMIT_PER_MIN = 100
 
 export default defineEventHandler(async (event) => {
   const startTime = Date.now()
@@ -46,10 +48,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 429, statusMessage: `Daily limit exceeded (${dailyCheck.used}/${dailyCheck.limit})` })
   }
 
-  const rateCheck = rateLimiter.check(keyRecord.id, keyRecord.rateLimitPerMin || 100)
+  const rateCheck = rateLimiter.check(keyRecord.id, DEFAULT_RATE_LIMIT_PER_MIN)
   if (!rateCheck.allowed) {
     setResponseHeaders(event, {
-      'X-RateLimit-Limit': String(keyRecord.rateLimitPerMin || 100),
+      'X-RateLimit-Limit': String(DEFAULT_RATE_LIMIT_PER_MIN),
       'X-RateLimit-Remaining': '0',
       'X-RateLimit-Reset': String(Math.ceil(rateCheck.resetIn / 1000)),
       'Retry-After': String(Math.ceil(rateCheck.resetIn / 1000)),
@@ -58,7 +60,7 @@ export default defineEventHandler(async (event) => {
   }
 
   setResponseHeaders(event, {
-    'X-RateLimit-Limit': String(keyRecord.rateLimitPerMin || 100),
+    'X-RateLimit-Limit': String(DEFAULT_RATE_LIMIT_PER_MIN),
     'X-RateLimit-Remaining': String(rateCheck.remaining),
     'X-RateLimit-Reset': String(Math.ceil(rateCheck.resetIn / 1000)),
   })
@@ -75,7 +77,8 @@ export default defineEventHandler(async (event) => {
   const forwardHeaders = ['accept', 'accept-encoding']
   for (const h of forwardHeaders) {
     const val = getRequestHeader(event, h)
-    if (val) upstreamHeaders[h] = val
+    if (val)
+      upstreamHeaders[h] = val
   }
 
   try {
@@ -83,7 +86,7 @@ export default defineEventHandler(async (event) => {
     const latency = Date.now() - startTime
 
     let totalTokens = 0
-    let cost = 0
+    const cost = 0
     try {
       const parsed = JSON.parse(result.body)
       totalTokens = parsed.usage?.total_tokens || 0

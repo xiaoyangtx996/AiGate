@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { channel } from '@/db/schema'
 
@@ -64,21 +64,25 @@ async function checkOneChannel(ch: typeof channel.$inferSelect): Promise<Channel
 
 export default defineEventHandler(async (event) => {
   try {
+    const principal = event.context.principal as { isAdmin?: boolean } | undefined
+    if (!principal?.isAdmin) {
+      return responseError(null, '当前账号无权访问该资源', { statusCode: 403 })
+    }
+
     const body = await readBody(event).catch(() => ({}))
     const channelId = body?.channelId as string | undefined
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
 
     const conditions = []
-    if (channelId) conditions.push(eq(channel.id, channelId))
-    if (principal?.organizationId) conditions.push(eq(channel.organizationId, principal.organizationId))
+    if (channelId)
+      conditions.push(eq(channel.id, channelId))
 
     const channels = await db
       .select()
       .from(channel)
-      .where(conditions.length ? and(...conditions) : undefined)
+      .where(conditions[0])
 
     if (channelId && channels.length === 0) {
-      return responseSuccess(null, '渠道不存在或无权访问', 404)
+      return responseError(null, '渠道不存在或无权访问', { statusCode: 404 })
     }
 
     const results = await Promise.all(channels.map(checkOneChannel))

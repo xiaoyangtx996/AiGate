@@ -1,13 +1,15 @@
-﻿import { and, desc, eq, gte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { apiKey, apiLog, channel, organization } from '@/db/schema'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
-const dashboardCache = new Map<string, { data: unknown; expiresAt: number }>()
+const dashboardCache = new Map<string, { data: unknown, expiresAt: number }>()
 
 function parseRangeDays(range?: string): number {
-  if (range === '30d') return 30
-  if (range === '90d') return 90
+  if (range === '30d')
+    return 30
+  if (range === '90d')
+    return 90
   return 7
 }
 
@@ -17,7 +19,8 @@ function getCacheKey(orgId: string | null | undefined, rangeDays: number): strin
 
 function getCached<T>(key: string): T | null {
   const entry = dashboardCache.get(key)
-  if (!entry) return null
+  if (!entry)
+    return null
   if (Date.now() > entry.expiresAt) {
     dashboardCache.delete(key)
     return null
@@ -38,7 +41,8 @@ export default defineEventHandler(async (event) => {
 
     const cacheKey = getCacheKey(orgId, rangeDays)
     const cached = getCached<IResponse>(cacheKey)
-    if (cached) return cached
+    if (cached)
+      return cached
 
     const orgFilter = orgId ? eq(apiKey.organizationId, orgId) : undefined
     const logOrgFilter = orgId ? eq(apiLog.organizationId, orgId) : undefined

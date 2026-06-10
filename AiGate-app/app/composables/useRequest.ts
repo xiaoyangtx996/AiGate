@@ -1,11 +1,12 @@
 type RequestOptions = Parameters<typeof $fetch>[1]
+type RequestBody = NonNullable<RequestOptions>['body']
 
-export type CacheConfig = {
+export interface CacheConfig {
   staleTime: number
   gcTime?: number
 }
 
-type CacheEntry<T> = {
+interface CacheEntry<T> {
   data: T
   fetchedAt: number
   staleTime: number
@@ -67,7 +68,7 @@ export function useRequest() {
    */
   const get = async <T = unknown>(
     url: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     cacheOrOptions?: CacheConfig | RequestOptions,
     maybeOptions?: RequestOptions,
   ): Promise<IResponse<T>> => {
@@ -114,14 +115,14 @@ export function useRequest() {
   /**
    * @description: POST 请求
    */
-  const post = <T = unknown, B extends Record<string, any> = Record<string, any>>(
+  const post = <T = unknown>(
     url: string,
-    body?: B,
+    body?: unknown,
     options?: RequestOptions,
   ) => {
     return request<T>(url, {
       method: 'POST',
-      body,
+      body: body as RequestBody,
       ...options,
     })
   }
@@ -129,14 +130,14 @@ export function useRequest() {
   /**
    * @description: PUT 请求
    */
-  const put = <T = unknown, B extends Record<string, any> = Record<string, any>>(
+  const put = <T = unknown>(
     url: string,
-    body?: B,
+    body?: unknown,
     options?: RequestOptions,
   ) => {
     return request<T>(url, {
       method: 'PUT',
-      body,
+      body: body as RequestBody,
       ...options,
     })
   }
@@ -146,7 +147,7 @@ export function useRequest() {
    */
   const del = <T = unknown>(
     url: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     options?: RequestOptions,
   ) => {
     return request<T>(url, {

@@ -13,10 +13,11 @@ interface ChannelRoute {
 
 const { getChannelList } = useAigateApi()
 const { t } = useI18n()
+const p = (key: string) => t(`pages.aigate.gateway.${key}`)
 
 const { data, pending: loading } = await useAsyncData('gateway-routes', async () => {
   const res = await getChannelList()
-  return (res.data ?? []) as ChannelRoute[]
+  return (res.data?.items ?? []) as ChannelRoute[]
 })
 
 const routes = computed(() => (data.value || []).map(c => ({
@@ -30,8 +31,6 @@ const routes = computed(() => (data.value || []).map(c => ({
   health: c.health,
   models: (c.models || []).join(', ') || p('allModels'),
 })))
-
-const p = (key: string) => t(`pages.aigate.gateway.${key}`)
 </script>
 
 <template>
@@ -39,8 +38,12 @@ const p = (key: string) => t(`pages.aigate.gateway.${key}`)
     <div class="flex items-center gap-3">
       <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/gateway" />
       <div>
-        <h2 class="text-xl font-bold">{{ p('routesTitle') }}</h2>
-        <p class="text-sm text-muted">{{ p('routesSubtitle') }}</p>
+        <h2 class="text-xl font-bold">
+          {{ p('routesTitle') }}
+        </h2>
+        <p class="text-sm text-muted">
+          {{ p('routesSubtitle') }}
+        </p>
       </div>
     </div>
 
@@ -52,17 +55,21 @@ const p = (key: string) => t(`pages.aigate.gateway.${key}`)
         :title="$t('common.noData')"
         :description="p('routesSubtitle')"
       />
-      <UTable v-else :data="routes" :columns="[
-        { accessorKey: 'name', header: p('routesChannel') },
-        { accessorKey: 'vendor', header: p('vendor') },
-        { accessorKey: 'models', header: p('routesModels') },
-        { accessorKey: 'priority', header: p('priority') },
-        { accessorKey: 'weight', header: p('routesWeight') },
-        { accessorKey: 'status', header: p('status') },
-        { accessorKey: 'health', header: p('health') },
-      ]">
+      <UTable
+        v-else :data="routes" :columns="[
+          { accessorKey: 'name', header: p('routesChannel') },
+          { accessorKey: 'vendor', header: p('vendor') },
+          { accessorKey: 'models', header: p('routesModels') },
+          { accessorKey: 'priority', header: p('priority') },
+          { accessorKey: 'weight', header: p('routesWeight') },
+          { accessorKey: 'status', header: p('status') },
+          { accessorKey: 'health', header: p('health') },
+        ]"
+      >
         <template #name-cell="{ row }">
-          <NuxtLink :to="`/aigate/channels/${row.original.id}`" class="text-primary hover:underline">{{ row.original.name }}</NuxtLink>
+          <NuxtLink :to="`/aigate/channels/${row.original.id}`" class="text-primary hover:underline">
+            {{ row.original.name }}
+          </NuxtLink>
         </template>
       </UTable>
     </UCard>

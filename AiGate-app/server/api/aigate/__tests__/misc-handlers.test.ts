@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { convertFlatDataToTree } from '#server/utils/index'
 import { RESPONSE_CODE } from '@/enums'
+import orgListHandler from '../organization/index.get'
+
+import promptPostHandler from '../prompt/index.post'
+import roleListHandler from '../role/index.get'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -54,10 +58,6 @@ vi.mock('@/db/schema', () => ({
   },
 }))
 
-import promptPostHandler from '../prompt/index.post'
-import roleListHandler from '../role/index.get'
-import orgListHandler from '../organization/index.get'
-
 interface OrgRow {
   id: string
   name: string
@@ -103,7 +103,7 @@ describe('aigate misc handlers', () => {
         body: { name: 'Only name' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -260,6 +260,15 @@ describe('aigate misc handlers', () => {
   })
 
   describe('organization index.get', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await orgListHandler(createMockEvent({
+        context: { principal: { isAdmin: false } },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
     it('should return nested tree from flat organizations', async () => {
       const orgs: OrgRow[] = [
         { id: 'root', name: 'Group', parentId: null },
@@ -267,7 +276,9 @@ describe('aigate misc handlers', () => {
       ]
       mockSelect.mockReturnValue(createListSelectNoWhereChain(orgs))
 
-      const response = await orgListHandler(createMockEvent())
+      const response = await orgListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(convertFlatDataToTree(orgs))
@@ -277,7 +288,10 @@ describe('aigate misc handlers', () => {
       const orgs: OrgRow[] = [{ id: 'org-1', name: 'HQ', parentId: null }]
       mockSelect.mockReturnValue(createListSelectChain(orgs))
 
-      const response = await orgListHandler(createMockEvent({ query: { keyword: 'HQ' } }))
+      const response = await orgListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        query: { keyword: 'HQ' },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(convertFlatDataToTree(orgs))
@@ -286,7 +300,9 @@ describe('aigate misc handlers', () => {
     it('should return empty tree when no organizations exist', async () => {
       mockSelect.mockReturnValue(createListSelectNoWhereChain([]))
 
-      const response = await orgListHandler(createMockEvent())
+      const response = await orgListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual([])
@@ -300,7 +316,9 @@ describe('aigate misc handlers', () => {
       ]
       mockSelect.mockReturnValue(createListSelectNoWhereChain(orgs))
 
-      const response = await orgListHandler(createMockEvent())
+      const response = await orgListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+      }))
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toHaveLength(2)

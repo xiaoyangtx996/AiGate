@@ -70,18 +70,18 @@ describe('logs utils', () => {
     it('should redact sensitive headers', () => {
       const result = sanitizeHeaders({
         'content-type': 'application/json',
-        authorization: 'Bearer token',
+        'authorization': 'Bearer token',
         'x-api-key': 'secret',
-        cookie: 'sid=1',
+        'cookie': 'sid=1',
         'set-cookie': 'sid=1; HttpOnly',
         'proxy-authorization': 'Basic abc',
       })
 
       expect(result).toEqual({
         'content-type': 'application/json',
-        authorization: '***REDACTED***',
+        'authorization': '***REDACTED***',
         'x-api-key': '***REDACTED***',
-        cookie: '***REDACTED***',
+        'cookie': '***REDACTED***',
         'set-cookie': '***REDACTED***',
         'proxy-authorization': '***REDACTED***',
       })
@@ -89,8 +89,8 @@ describe('logs utils', () => {
 
     it('should redact headers case-insensitively', () => {
       const result = sanitizeHeaders({
-        Authorization: 'Bearer token',
-        Cookie: 'sid=1',
+        'Authorization': 'Bearer token',
+        'Cookie': 'sid=1',
         'Content-Type': 'text/plain',
       })
 
@@ -105,13 +105,13 @@ describe('logs utils', () => {
 
     it('should preserve non-sensitive headers unchanged', () => {
       const result = sanitizeHeaders({
-        accept: 'application/json',
+        'accept': 'application/json',
         'user-agent': 'vitest',
         'x-request-id': 'req-1',
       })
 
       expect(result).toEqual({
-        accept: 'application/json',
+        'accept': 'application/json',
         'user-agent': 'vitest',
         'x-request-id': 'req-1',
       })

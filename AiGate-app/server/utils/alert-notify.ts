@@ -1,17 +1,21 @@
-﻿import { Resend } from 'resend'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
+import { Resend } from 'resend'
 import { db } from '@/db/drizzle'
-import { alert, user, member } from '@/db/schema'
+import { alert, member, user } from '@/db/schema'
 
 function getResend() {
   const apiKey = process.env.NUXT_RESEND_API_KEY
-  if (!apiKey) return null
+  if (!apiKey)
+    return null
+
   return new Resend(apiKey)
 }
 
 export async function sendAlertEmail(to: string, title: string, message: string, severity: string) {
   const resend = getResend()
-  if (!resend) return null
+  if (!resend)
+    return null
+
   try {
     const color = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f59e0b' : '#3b82f6'
     const result = await resend.emails.send({
@@ -34,9 +38,13 @@ export async function sendAlertEmail(to: string, title: string, message: string,
   }
 }
 
-export async function notifyAlertSubscribers(alertId: string) {
+export async function notifyAlertSubscribers(alertId: string, channels: string[] = ['email']) {
+  if (!channels.includes('email'))
+    return
+
   const [alertRecord] = await db.select().from(alert).where(eq(alert.id, alertId))
-  if (!alertRecord) return
+  if (!alertRecord)
+    return
 
   if (alertRecord.userId) {
     const [targetUser] = await db.select().from(user).where(eq(user.id, alertRecord.userId))

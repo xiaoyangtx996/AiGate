@@ -1,30 +1,57 @@
-﻿import { and, count, eq, gte, lt } from 'drizzle-orm'
+import { and, eq, gte, lt } from 'drizzle-orm'
+import { notifyAlertSubscribers } from '#server/utils/alert-notify'
 import { db } from '@/db/drizzle'
 import { alert, alertRule, apiKey, organization } from '@/db/schema'
-import { notifyAlertSubscribers } from '#server/utils/alert-notify'
+
+export function getQuotaAlertTier(usagePercent: number) {
+  if (usagePercent >= 100)
+    return 100
+  if (usagePercent >= 90)
+    return 90
+  if (usagePercent >= 70)
+    return 70
+  return 0
+}
+
+export function getQuotaAlertSeverityByTier(tier: number) {
+  return tier >= 100 ? 'critical' : 'warning'
+}
+
+export function getQuotaAlertResourceId(organizationId: string, tier: number) {
+  return `quota:${organizationId}:${tier}`
+}
+
+export function formatQuotaAlertMessage(org: { name: string, tokenLimit: number, tokenUsed: number }, usagePercent: number, tier: number) {
+  return `组织 "${org.name}" 配额使用已达 ${usagePercent}%（${org.tokenUsed}/${org.tokenLimit} tokens），触发 ${tier}% 阈值`
+}
 
 export async function generateQuotaAlerts() {
   const orgs = await db.select().from(organization).where(eq(organization.enabled, true))
   for (const org of orgs) {
-    if (org.tokenLimit <= 0) continue
+    if (org.tokenLimit <= 0)
+      continue
     const usagePercent = Math.round((org.tokenUsed / org.tokenLimit) * 100)
-    if (usagePercent >= 90) {
+    const tier = getQuotaAlertTier(usagePercent)
+    if (tier > 0) {
       const existing = await db.select().from(alert).where(
         and(
           eq(alert.type, 'quota_warning'),
           eq(alert.organizationId, org.id),
+          eq(alert.resourceId, getQuotaAlertResourceId(org.id, tier)),
           eq(alert.read, false),
         ),
       )
       if (existing.length === 0) {
         const [newAlert] = await db.insert(alert).values({
           type: 'quota_warning',
-          severity: usagePercent >= 95 ? 'critical' : 'warning',
-          title: `配额预警：${org.name}`,
-          message: `组织 "${org.name}" 配额使用已达 ${usagePercent}%（${org.tokenUsed}/${org.tokenLimit} tokens）`,
+          severity: getQuotaAlertSeverityByTier(tier),
+          title: `配额预警：${org.name} ${tier}%`,
+          message: formatQuotaAlertMessage(org, usagePercent, tier),
           organizationId: org.id,
+          resourceId: getQuotaAlertResourceId(org.id, tier),
         }).returning()
-        await notifyAlertSubscribers(newAlert.id).catch(() => {})
+        if (newAlert)
+          await notifyAlertSubscribers(newAlert.id, ['email']).catch(() => {})
       }
     }
   }
@@ -57,7 +84,8 @@ export async function generateKeyExpiryAlerts() {
         userId: key.userId,
         resourceId: key.id,
       }).returning()
-      await notifyAlertSubscribers(newAlert.id).catch(() => {})
+      if (newAlert)
+        await notifyAlertSubscribers(newAlert.id, ['email']).catch(() => {})
     }
   }
 }
@@ -67,28 +95,42 @@ export async function generateRuleBasedAlerts() {
   for (const rule of rules) {
     const condition = (rule.condition || {}) as { threshold?: number }
     const threshold = condition.threshold ?? 90
+    const notifyChannels = Array.isArray(rule.notifyChannels) ? rule.notifyChannels : []
 
     if (rule.type === 'quota_warning') {
       const orgs = await db.select().from(organization).where(eq(organization.enabled, true))
       for (const org of orgs) {
-        if (rule.organizationId && org.id !== rule.organizationId) continue
-        if (org.tokenLimit <= 0) continue
+        if (rule.organizationId && org.id !== rule.organizationId)
+          continue
+        if (org.tokenLimit <= 0)
+          continue
         const usagePercent = Math.round((org.tokenUsed / org.tokenLimit) * 100)
-        if (usagePercent < threshold) continue
+        if (usagePercent < threshold)
+          continue
+        const tier = getQuotaAlertTier(usagePercent)
+        const resourceId = getQuotaAlertResourceId(org.id, tier || threshold)
 
         const existing = await db.select().from(alert).where(
-          and(eq(alert.type, 'quota_warning'), eq(alert.organizationId, org.id), eq(alert.read, false)),
+          and(
+            eq(alert.type, 'quota_warning'),
+            eq(alert.organizationId, org.id),
+            eq(alert.resourceId, resourceId),
+            eq(alert.read, false),
+          ),
         )
-        if (existing.length > 0) continue
+        if (existing.length > 0)
+          continue
 
         const [newAlert] = await db.insert(alert).values({
           type: 'quota_warning',
-          severity: usagePercent >= 95 ? 'critical' : 'warning',
+          severity: getQuotaAlertSeverityByTier(tier || threshold),
           title: `[规则] ${rule.name}`,
           message: `规则 "${rule.name}" 触发：组织 "${org.name}" 配额使用 ${usagePercent}%`,
           organizationId: org.id,
+          resourceId,
         }).returning()
-        await notifyAlertSubscribers(newAlert.id).catch(() => {})
+        if (newAlert)
+          await notifyAlertSubscribers(newAlert.id, notifyChannels).catch(() => {})
       }
     }
 
@@ -99,11 +141,13 @@ export async function generateRuleBasedAlerts() {
         and(eq(apiKey.status, 'active'), lt(apiKey.expiresAt, deadline), gte(apiKey.expiresAt, new Date())),
       )
       for (const key of expiringKeys) {
-        if (rule.organizationId && key.organizationId !== rule.organizationId) continue
+        if (rule.organizationId && key.organizationId !== rule.organizationId)
+          continue
         const existing = await db.select().from(alert).where(
           and(eq(alert.type, 'key_expiring'), eq(alert.resourceId, key.id), eq(alert.read, false)),
         )
-        if (existing.length > 0) continue
+        if (existing.length > 0)
+          continue
 
         const [newAlert] = await db.insert(alert).values({
           type: 'key_expiring',
@@ -114,7 +158,8 @@ export async function generateRuleBasedAlerts() {
           userId: key.userId,
           resourceId: key.id,
         }).returning()
-        await notifyAlertSubscribers(newAlert.id).catch(() => {})
+        if (newAlert)
+          await notifyAlertSubscribers(newAlert.id, notifyChannels).catch(() => {})
       }
     }
   }

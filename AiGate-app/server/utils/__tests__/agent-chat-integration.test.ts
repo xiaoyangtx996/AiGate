@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getAgentWithConfig, getUserConversations, sendAgentMessage, streamAgentMessage } from '#server/utils/agent-chat'
+
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
@@ -27,8 +29,6 @@ vi.mock('#server/utils/gateway', () => ({
   proxyToChannel: (...args: unknown[]) => mockProxyToChannel(...args),
   proxyToChannelStream: (...args: unknown[]) => mockProxyToChannelStream(...args),
 }))
-
-import { getAgentWithConfig, getUserConversations, sendAgentMessage, streamAgentMessage } from '#server/utils/agent-chat'
 
 function createAgentSelectChain(result: unknown[]) {
   return {

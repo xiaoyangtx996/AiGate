@@ -2,6 +2,9 @@
 const { getMcpToolList, insertMcpTool, updateMcpTool, delMcpTool, testMcpTool } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const { i18nCommon } = useMessage()
+const confirm = useConfirmDialog()
+const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.mcpTools.${key}`, params ?? {})
 
 const keyword = ref('')
 const page = ref(1)
@@ -19,7 +22,7 @@ const { data, pending: loading, refresh } = await useAsyncData(
   },
 )
 
-const list = computed(() => data.value?.items ?? [])
+const list = computed<McpToolRow[]>(() => data.value?.items as McpToolRow[] ?? [])
 const total = computed(() => data.value?.total ?? 0)
 
 interface McpToolRow {
@@ -66,24 +69,38 @@ function handleEdit(row: McpToolRow) {
 }
 
 async function handleDelete(id: string) {
-  await delMcpTool(id)
-  successToast()
-  refresh()
+  const confirmed = await confirm({
+    title: i18nCommon('confirmDeleteTitle'),
+    description: i18nCommon('confirmDeleteDescription'),
+    confirmLabel: i18nCommon('confirmDelete'),
+    loadingLabel: i18nCommon('inDelete'),
+    onConfirm: async () => {
+      await delMcpTool(id)
+      return true
+    },
+  })
+  if (confirmed) {
+    successToast(i18nCommon('deleteSuccess'))
+    refresh()
+  }
 }
 
 async function handleSubmit() {
-  if (!form.name) return
+  if (!form.name)
+    return
   saveLoading.value = true
   try {
     if (editData.value?.id) {
       await updateMcpTool({ ...form, id: editData.value.id })
-    } else {
+    }
+    else {
       await insertMcpTool(form)
     }
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -104,15 +121,15 @@ async function handleTest(tool: McpToolRow) {
   }
   finally { testingId.value = null }
 }
-
-const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.mcpTools.${key}`, params ?? {})
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <UInput v-model="keyword" :placeholder="p('search')" icon="lucide:search" @keyup.enter="() => { page = 1; refresh() }" />
-      <UButton icon="lucide:plus" @click="handleAdd">{{ p('add') }}</UButton>
+      <UButton v-permission="'ADD'" icon="lucide:plus" @click="handleAdd">
+        {{ p('add') }}
+      </UButton>
     </div>
     <AgentCardSkeleton v-if="loading" :count="6" />
     <EmptyState
@@ -125,19 +142,29 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.mcp
       <UCard v-for="tool in list" :key="tool.id" class="hover:border-primary transition-colors">
         <div class="flex items-start justify-between mb-3">
           <div>
-            <h3 class="font-bold">{{ tool.name }}</h3>
-            <p class="text-sm text-muted">{{ tool.description }}</p>
+            <h3 class="font-bold">
+              {{ tool.name }}
+            </h3>
+            <p class="text-sm text-muted">
+              {{ tool.description }}
+            </p>
           </div>
-          <UBadge :color="healthColor[tool.healthStatus || 'healthy'] || 'neutral'" variant="subtle" size="sm">{{ tool.healthStatus || 'unknown' }}</UBadge>
+          <UBadge :color="healthColor[tool.healthStatus || 'healthy'] || 'neutral'" variant="subtle" size="sm">
+            {{ tool.healthStatus || 'unknown' }}
+          </UBadge>
         </div>
         <div class="flex items-center justify-between text-sm">
-          <UBadge variant="outline" size="xs">{{ tool.type }}</UBadge>
+          <UBadge variant="outline" size="xs">
+            {{ tool.type }}
+          </UBadge>
           <span class="text-muted">{{ (tool.usageCount || 0).toLocaleString() }} {{ p('calls') }}</span>
         </div>
         <div class="flex gap-2 mt-3">
-          <UButton size="xs" variant="outline" class="flex-1" @click="handleEdit(tool)">{{ p('config') }}</UButton>
-          <UButton size="xs" variant="outline" icon="lucide:plug" :loading="testingId === tool.id" @click="handleTest(tool)" />
-          <UButton size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(tool.id)" />
+          <UButton v-permission="'EDIT'" size="xs" variant="outline" class="flex-1" @click="handleEdit(tool)">
+            {{ p('config') }}
+          </UButton>
+          <UButton v-permission="'EDIT'" size="xs" variant="outline" icon="lucide:plug" :loading="testingId === tool.id" @click="handleTest(tool)" />
+          <UButton v-permission="'DELETE'" size="xs" variant="ghost" color="error" icon="lucide:trash-2" @click="handleDelete(tool.id)" />
         </div>
       </UCard>
     </div>
@@ -152,7 +179,9 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.mcp
 
     <UModal v-model:open="open">
       <template #header>
-        <h3 class="text-lg font-bold">{{ editData ? $t('common.save') : p('add') }}</h3>
+        <h3 class="text-lg font-bold">
+          {{ editData ? $t('common.save') : p('add') }}
+        </h3>
       </template>
       <template #body>
         <div class="space-y-4">
@@ -163,27 +192,33 @@ const p = (key: string, params?: Record<string, unknown>) => t(`pages.aigate.mcp
             <UInput v-model="form.description" :placeholder="p('descriptionPlaceholder')" />
           </UFormField>
           <UFormField :label="p('type')">
-            <USelect v-model="form.type" :items="[
-              { label: p('typeSse'), value: 'sse' },
-              { label: p('typeStreamable'), value: 'streamable_http' },
-              { label: p('typeStdio'), value: 'stdio' },
-            ]" />
+            <USelect
+              v-model="form.type" :items="[
+                { label: p('typeSse'), value: 'sse' },
+                { label: p('typeStreamable'), value: 'streamable_http' },
+                { label: p('typeStdio'), value: 'stdio' },
+              ]"
+            />
           </UFormField>
           <UFormField :label="p('endpoint')">
             <UInput v-model="form.endpoint" :placeholder="p('endpointPlaceholder')" />
           </UFormField>
           <UFormField :label="p('status')">
-            <USelect v-model="form.status" :items="[
-              { label: p('enabled'), value: 'enabled' },
-              { label: p('disabled'), value: 'disabled' },
-            ]" />
+            <USelect
+              v-model="form.status" :items="[
+                { label: p('enabled'), value: 'enabled' },
+                { label: p('disabled'), value: 'disabled' },
+              ]"
+            />
           </UFormField>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">{{ $t('common.cancel') }}</UButton>
-          <UButton :loading="saveLoading" :disabled="!form.name" @click="handleSubmit">
+          <UButton variant="ghost" @click="open = false">
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton v-permission="editData ? 'EDIT' : 'ADD'" :loading="saveLoading" :disabled="!form.name" @click="handleSubmit">
             {{ $t('common.save') }}
           </UButton>
         </div>

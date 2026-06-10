@@ -11,19 +11,20 @@ const { data: localeRes } = useAsyncData('locales', () => getLocales(), { lazy: 
 
 watch(localeRes, (res) => {
   const code = res?.code
-  if (!code || !isSuccess(code)) return
+  if (!code || !isSuccess(code))
+    return
   const data = res.data
-  if (!data) return
+  if (!data)
+    return
   for (const key in data) {
-    const localeKey = key as Locale | 'zh'
-    setLocaleMessage(localeKey, merge({}, getLocaleMessage(localeKey), data[localeKey]))
+    const localeKey = key as Locale
+    setLocaleMessage(localeKey, merge(getLocaleMessage(localeKey), data[localeKey]))
   }
 }, { immediate: true })
 
 const localeMap = {
   'en': 'en',
   'zh-CN': 'zh_cn',
-  'zh': 'zh_cn',
 } as const
 
 const uiLocale = computed(() => locales[localeMap[locale.value as keyof typeof localeMap] ?? 'zh_cn'])

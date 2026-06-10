@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { getDashboard } = useAigateApi()
 const { t } = useI18n()
+const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
 
 const timeRange = ref('7d')
 const timeRangeOptions = computed(() => [
@@ -15,9 +16,8 @@ const { data, pending: loading, refresh } = await useAsyncData('aigate-dashboard
 }, { watch: [timeRange], dedupe: 'defer' })
 
 const overview = computed(() => data.value?.overview || {})
-const trend = computed(() => data.value?.trend?.daily || [])
-const modelBreakdown = computed(() => data.value?.modelBreakdown || [])
-const statusDistribution = computed(() => data.value?.statusDistribution || {})
+const trend = computed<TrendPoint[]>(() => data.value?.trend?.daily as TrendPoint[] || [])
+const modelBreakdown = computed<ModelPoint[]>(() => data.value?.modelBreakdown as ModelPoint[] || [])
 const quotaStatus = computed(() => data.value?.quotaStatus || [])
 
 interface TrendPoint { date: string, tokens: number }
@@ -59,7 +59,8 @@ const modelData = computed(() => ({
 }))
 
 function formatTokens(n: number) {
-  if (!n) return '0'
+  if (!n)
+    return '0'
   return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : String(n)
 }
 
@@ -68,14 +69,14 @@ function getQuotaColor(pct: number) {
 }
 
 const DashboardCharts = defineAsyncComponent(() => import('@/components/aigate/DashboardCharts.vue'))
-
-const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
+      <h2 class="text-xl font-bold">
+        {{ p('title') }}
+      </h2>
       <div class="flex items-center gap-2">
         <USelect v-model="timeRange" :items="timeRangeOptions" class="w-36" />
         <UButton icon="lucide:refresh-cw" variant="ghost" :loading="loading" @click="refresh()" />
@@ -85,26 +86,42 @@ const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <UCard>
         <div class="text-center">
-          <p class="text-2xl font-bold text-primary">{{ formatTokens(overview.totalTokens) }}</p>
-          <p class="text-sm text-muted">{{ p('totalTokens') }}</p>
+          <p class="text-2xl font-bold text-primary">
+            {{ formatTokens(overview.totalTokens) }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ p('totalTokens') }}
+          </p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-2xl font-bold text-success">{{ overview.activeKeys || 0 }}</p>
-          <p class="text-sm text-muted">{{ p('activeKeys') }}</p>
+          <p class="text-2xl font-bold text-success">
+            {{ overview.activeKeys || 0 }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ p('activeKeys') }}
+          </p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-2xl font-bold text-warning">{{ overview.expiringSoon || 0 }}</p>
-          <p class="text-sm text-muted">{{ p('expiringSoon') }}</p>
+          <p class="text-2xl font-bold text-warning">
+            {{ overview.expiringSoon || 0 }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ p('expiringSoon') }}
+          </p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-2xl font-bold">{{ overview.activeChannels || 0 }}/{{ overview.totalChannels || 0 }}</p>
-          <p class="text-sm text-muted">{{ p('activeChannels') }}</p>
+          <p class="text-2xl font-bold">
+            {{ overview.activeChannels || 0 }}/{{ overview.totalChannels || 0 }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ p('activeChannels') }}
+          </p>
         </div>
       </UCard>
     </div>
@@ -132,16 +149,24 @@ const p = (key: string) => t(`pages.aigate.dashboard.${key}`)
 
     <UCard v-if="quotaStatus.length > 0">
       <template #header>
-        <h3 class="font-bold">{{ p('orgQuota') }}</h3>
+        <h3 class="font-bold">
+          {{ p('orgQuota') }}
+        </h3>
       </template>
       <div class="space-y-3">
         <div v-for="org in quotaStatus" :key="org.organizationId" class="flex items-center gap-4">
-          <div class="w-40 truncate font-medium">{{ org.organizationName }}</div>
+          <div class="w-40 truncate font-medium">
+            {{ org.organizationName }}
+          </div>
           <div class="flex-1">
             <UProgress :model-value="org.usedPercentage" :color="getQuotaColor(org.usedPercentage)" />
           </div>
-          <div class="w-16 text-right text-sm font-mono">{{ org.usedPercentage }}%</div>
-          <UBadge v-if="org.isWarning" color="warning" variant="subtle" size="xs">{{ p('quotaWarning') }}</UBadge>
+          <div class="w-16 text-right text-sm font-mono">
+            {{ org.usedPercentage }}%
+          </div>
+          <UBadge v-if="org.isWarning" color="warning" variant="subtle" size="xs">
+            {{ p('quotaWarning') }}
+          </UBadge>
         </div>
       </div>
     </UCard>

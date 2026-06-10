@@ -1,8 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  generateKeyExpiryAlerts,
+  generateQuotaAlerts,
+  generateRuleBasedAlerts,
+  runAlertChecks,
+} from '#server/utils/alerts'
 
-const mockSelect = vi.fn()
-const mockInsert = vi.fn()
-const mockNotify = vi.fn()
+const { mockInsert, mockNotify, mockSelect } = vi.hoisted(() => ({
+  mockInsert: vi.fn(),
+  mockNotify: vi.fn(),
+  mockSelect: vi.fn(),
+}))
 
 vi.mock('@/db/drizzle', () => ({
   db: {
@@ -15,19 +23,12 @@ vi.mock('@/db/schema', () => ({
   organization: { id: 'id', name: 'name', enabled: 'enabled', tokenLimit: 'tokenLimit', tokenUsed: 'tokenUsed' },
   alert: { type: 'type', organizationId: 'organizationId', read: 'read', resourceId: 'resourceId' },
   apiKey: { status: 'status', expiresAt: 'expiresAt', id: 'id', name: 'name', organizationId: 'organizationId', userId: 'userId' },
-  alertRule: { enabled: 'enabled', type: 'type', organizationId: 'organizationId', condition: 'condition', name: 'name' },
+  alertRule: { enabled: 'enabled', type: 'type', organizationId: 'organizationId', condition: 'condition', name: 'name', notifyChannels: 'notifyChannels' },
 }))
 
 vi.mock('#server/utils/alert-notify', () => ({
   notifyAlertSubscribers: (...args: unknown[]) => mockNotify(...args),
 }))
-
-import {
-  generateKeyExpiryAlerts,
-  generateQuotaAlerts,
-  generateRuleBasedAlerts,
-  runAlertChecks,
-} from '#server/utils/alerts'
 
 function createSelectChain(result: unknown[]) {
   return {
@@ -52,8 +53,8 @@ describe('alerts integration', () => {
   })
 
   describe('generateQuotaAlerts', () => {
-    it('should create alert when usage >= 90% and no unread alert exists', async () => {
-      const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 920 }
+    it('should create alert when usage reaches 70% tier and no unread alert exists', async () => {
+      const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 720 }
       mockSelect
         .mockReturnValueOnce(createSelectChain([org]))
         .mockReturnValueOnce(createSelectChain([]))
@@ -62,7 +63,26 @@ describe('alerts integration', () => {
       await generateQuotaAlerts()
 
       expect(mockInsert).toHaveBeenCalledTimes(1)
-      expect(mockNotify).toHaveBeenCalledWith('alert-1')
+      expect(mockNotify).toHaveBeenCalledWith('alert-1', ['email'])
+    })
+
+    it('should create critical alert when usage reaches 100% tier', async () => {
+      const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 1000 }
+      const values = vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 'alert-critical' }]),
+      })
+      mockSelect
+        .mockReturnValueOnce(createSelectChain([org]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue({ values })
+
+      await generateQuotaAlerts()
+
+      expect(values).toHaveBeenCalledWith(expect.objectContaining({
+        severity: 'critical',
+        resourceId: 'quota:org-1:100',
+      }))
+      expect(mockNotify).toHaveBeenCalledWith('alert-critical', ['email'])
     })
 
     it('should skip when unread quota alert already exists', async () => {
@@ -99,13 +119,13 @@ describe('alerts integration', () => {
       await generateKeyExpiryAlerts()
 
       expect(mockInsert).toHaveBeenCalledTimes(1)
-      expect(mockNotify).toHaveBeenCalledWith('alert-2')
+      expect(mockNotify).toHaveBeenCalledWith('alert-2', ['email'])
     })
   })
 
   describe('generateRuleBasedAlerts', () => {
     it('should create quota alert when rule threshold is met', async () => {
-      const rules = [{ id: 'r1', name: 'Quota Rule', type: 'quota_warning', enabled: true, organizationId: null, condition: { threshold: 80 } }]
+      const rules = [{ id: 'r1', name: 'Quota Rule', type: 'quota_warning', enabled: true, organizationId: null, condition: { threshold: 80 }, notifyChannels: ['email'] }]
       const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 850 }
       mockSelect
         .mockReturnValueOnce(createSelectChain(rules))
@@ -116,11 +136,11 @@ describe('alerts integration', () => {
       await generateRuleBasedAlerts()
 
       expect(mockInsert).toHaveBeenCalledTimes(1)
-      expect(mockNotify).toHaveBeenCalledWith('alert-rule-1')
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-1', ['email'])
     })
 
     it('should create key expiry alert from rule threshold days', async () => {
-      const rules = [{ id: 'r2', name: 'Key Rule', type: 'key_expiring', enabled: true, organizationId: null, condition: { threshold: 7 } }]
+      const rules = [{ id: 'r2', name: 'Key Rule', type: 'key_expiring', enabled: true, organizationId: null, condition: { threshold: 7 }, notifyChannels: ['email'] }]
       const expiresAt = new Date(Date.now() + 2 * 86400000)
       const key = { id: 'key-2', name: 'Dev Key', status: 'active', expiresAt, organizationId: 'org-1', userId: 'user-1' }
       mockSelect
@@ -132,11 +152,11 @@ describe('alerts integration', () => {
       await generateRuleBasedAlerts()
 
       expect(mockInsert).toHaveBeenCalledTimes(1)
-      expect(mockNotify).toHaveBeenCalledWith('alert-rule-2')
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-2', ['email'])
     })
 
     it('should skip when organization filter does not match', async () => {
-      const rules = [{ id: 'r3', name: 'Org Rule', type: 'quota_warning', enabled: true, organizationId: 'org-other', condition: { threshold: 80 } }]
+      const rules = [{ id: 'r3', name: 'Org Rule', type: 'quota_warning', enabled: true, organizationId: 'org-other', condition: { threshold: 80 }, notifyChannels: ['email'] }]
       const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 900 }
       mockSelect
         .mockReturnValueOnce(createSelectChain(rules))
@@ -145,6 +165,21 @@ describe('alerts integration', () => {
       await generateRuleBasedAlerts()
 
       expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should skip subscriber email when rule only uses in-app channel', async () => {
+      const rules = [{ id: 'r4', name: 'In App Rule', type: 'quota_warning', enabled: true, organizationId: null, condition: { threshold: 80 }, notifyChannels: ['in_app'] }]
+      const org = { id: 'org-1', name: 'Acme', enabled: true, tokenLimit: 1000, tokenUsed: 900 }
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([org]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-rule-4' }]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-4', ['in_app'])
     })
   })
 

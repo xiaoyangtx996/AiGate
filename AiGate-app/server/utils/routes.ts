@@ -1,4 +1,4 @@
-﻿const adminRoutes = [
+const adminRoutes = [
   '/api/aigate/organization',
   '/api/aigate/api-key',
   '/api/aigate/channel',
@@ -20,7 +20,12 @@ const authenticatedRoutes = [
 ]
 
 export function matchApiRoute(path: string, routes: string[]) {
-  return routes.some((route) => path === route || path.startsWith(route))
+  return routes.some((route) => {
+    if (path === route || path.startsWith(`${route}/`))
+      return true
+
+    return route.endsWith('_') && path.startsWith(route)
+  })
 }
 
 export const apiRoutePolicy = {

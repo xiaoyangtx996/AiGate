@@ -6,9 +6,9 @@ function parseBillingPeriod(period: string) {
   return {
     year,
     month,
-    startDate: new Date(year, month - 1, 1),
-    endDate: new Date(year, month, 1),
-    dueDate: new Date(year, month, 15),
+    startDate: new Date(year!, month! - 1, 1),
+    endDate: new Date(year!, month!, 1),
+    dueDate: new Date(year!, month!, 15),
   }
 }
 
@@ -17,7 +17,7 @@ function formatBillingPeriod(date: Date) {
 }
 
 function isValidBillingPeriod(period: string) {
-  return /^\d{4}-(0[1-9]|1[0-2])$/.test(period)
+  return /^\d{4}-(?:0[1-9]|1[0-2])$/.test(period)
 }
 
 describe('billing period utils', () => {

@@ -18,13 +18,6 @@ export const useMenuStore = defineStore('menu-store', () => {
   const { getMenuList } = useSystemApi()
 
   const fetchMenuTree = async () => {
-    const token = useCookie('better-auth.session-token').value
-    if (!token) {
-      menuTree.value = []
-      inited.value = true
-      return
-    }
-
     loading.value = true
     try {
       const res = await getMenuList({ enabled: true })
@@ -40,7 +33,7 @@ export const useMenuStore = defineStore('menu-store', () => {
   }
 
   const init = async () => {
-    if (inited.value)
+    if (inited.value && menuTree.value.length > 0)
       return
     await fetchMenuTree()
   }

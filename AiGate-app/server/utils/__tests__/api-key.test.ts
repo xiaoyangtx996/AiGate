@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { generateApiKey, validateApiKeyFormat } from '../api-key'
 
 describe('api-key utils', () => {
@@ -30,7 +30,10 @@ describe('api-key utils', () => {
     })
 
     it('should generate unique keys', () => {
-      const keys = new Set(Array.from({ length: 10 }, () => generateApiKey()))
+      const keys = new Set<string>()
+      for (let index = 0; index < 10; index++) {
+        keys.add(generateApiKey())
+      }
       expect(keys.size).toBe(10)
     })
   })

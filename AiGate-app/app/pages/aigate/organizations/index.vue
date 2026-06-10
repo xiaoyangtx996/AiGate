@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 interface OrgNode {
   id: string
   name: string
@@ -20,23 +20,31 @@ const { data: tree, pending: loading } = await useAsyncData('aigate-org-tree', a
 const expandedIds = ref<Set<string>>(new Set())
 
 function toggleExpand(id: string) {
-  if (expandedIds.value.has(id)) expandedIds.value.delete(id)
+  if (expandedIds.value.has(id))
+    expandedIds.value.delete(id)
   else expandedIds.value.add(id)
 }
 
 function expandAll(nodes: OrgNode[]) {
   for (const node of nodes) {
     expandedIds.value.add(node.id)
-    if (node.children?.length) expandAll(node.children)
+    if (node.children?.length)
+      expandAll(node.children)
   }
 }
 
-function collapseAll() { expandedIds.value.clear() }
+function collapseAll() {
+  expandedIds.value.clear()
+}
 
-watchEffect(() => { if (tree.value?.length) expandAll(tree.value) })
+watchEffect(() => {
+  if (tree.value?.length)
+    expandAll(tree.value)
+})
 
 function formatTokens(n: number) {
-  if (!n) return '0'
+  if (!n)
+    return '0'
   return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : String(n)
 }
 
@@ -61,10 +69,16 @@ const p = (key: string) => t(`pages.aigate.organizations.${key}`)
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">{{ p('title') }}</h2>
+      <h2 class="text-xl font-bold">
+        {{ p('title') }}
+      </h2>
       <div class="flex gap-2">
-        <UButton size="sm" variant="outline" icon="lucide:chevrons-down" @click="tree && expandAll(tree)">{{ p('expandAll') }}</UButton>
-        <UButton size="sm" variant="outline" icon="lucide:chevrons-up" @click="collapseAll">{{ p('collapseAll') }}</UButton>
+        <UButton size="sm" variant="outline" icon="lucide:chevrons-down" @click="tree && expandAll(tree)">
+          {{ p('expandAll') }}
+        </UButton>
+        <UButton size="sm" variant="outline" icon="lucide:chevrons-up" @click="collapseAll">
+          {{ p('collapseAll') }}
+        </UButton>
       </div>
     </div>
 
@@ -96,7 +110,9 @@ const p = (key: string) => t(`pages.aigate.organizations.${key}`)
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <span class="font-medium">{{ node.name }}</span>
-                <UBadge variant="outline" size="xs">{{ node.level }}</UBadge>
+                <UBadge variant="outline" size="xs">
+                  {{ node.level }}
+                </UBadge>
               </div>
               <div v-if="node.tokenLimit > 0" class="mt-1">
                 <div class="flex items-center gap-2 text-xs text-muted">

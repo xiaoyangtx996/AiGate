@@ -1,33 +1,42 @@
-﻿import { and, count, desc, eq, sql } from 'drizzle-orm'
-import { db } from '@/db/drizzle'
-import { agent, conversation, conversationMessage } from '@/db/schema'
-import { apiLog } from '@/db/schema'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { proxyToChannel, proxyToChannelStream, selectChannel } from '#server/utils/gateway'
+import { db } from '@/db/drizzle'
+import { agent, apiLog, conversation, conversationMessage } from '@/db/schema'
 
-export async function getAgentWithConfig(agentId: string) {
-  const [agentRecord] = await db.select().from(agent).where(eq(agent.id, agentId))
+interface AgentScope {
+  isAdmin?: boolean
+  organizationId?: string | null
+}
+
+export async function getAgentWithConfig(agentId: string, scope?: AgentScope) {
+  const where = scope && !scope.isAdmin && scope.organizationId
+    ? and(eq(agent.id, agentId), eq(agent.organizationId, scope.organizationId))
+    : eq(agent.id, agentId)
+  const [agentRecord] = await db.select().from(agent).where(where)
   return agentRecord
 }
 
-export async function getOrCreateConversation(agentId: string, userId: string, conversationId?: string) {
+export async function getOrCreateConversation(agentId: string, userId: string, conversationId?: string, scope?: AgentScope) {
   if (conversationId) {
     const [existing] = await db.select().from(conversation).where(eq(conversation.id, conversationId))
-    if (existing) return existing
+    if (existing)
+      return existing
   }
-  const agentRecord = await getAgentWithConfig(agentId)
+  const agentRecord = await getAgentWithConfig(agentId, scope)
   const title = `${agentRecord?.name || 'Agent'} 对话`
   const [conv] = await db.insert(conversation).values({
     agentId,
     userId,
     title,
   }).returning()
+  if (!conv) {
+    throw createError({ statusCode: 500, statusMessage: 'Conversation creation failed' })
+  }
   return conv
 }
 
 export async function getConversationHistory(conversationId: string) {
-  const messages = await db.select().from(conversationMessage)
-    .where(eq(conversationMessage.conversationId, conversationId))
-    .orderBy(conversationMessage.createdAt)
+  const messages = await db.select().from(conversationMessage).where(eq(conversationMessage.conversationId, conversationId)).orderBy(conversationMessage.createdAt)
   return messages.map(m => ({ role: m.role, content: m.content }))
 }
 
@@ -44,17 +53,19 @@ export async function saveMessage(conversationId: string, role: string, content:
   }).where(eq(conversation.id, conversationId))
 }
 
-export async function sendAgentMessage(agentId: string, userId: string, userMessage: string, conversationId?: string) {
-  const agentRecord = await getAgentWithConfig(agentId)
-  if (!agentRecord) throw createError({ statusCode: 404, statusMessage: 'Agent not found' })
+export async function sendAgentMessage(agentId: string, userId: string, userMessage: string, conversationId?: string, scope?: AgentScope) {
+  const agentRecord = await getAgentWithConfig(agentId, scope)
+  if (!agentRecord)
+    throw createError({ statusCode: 404, statusMessage: 'Agent not found' })
 
-  const conv = await getOrCreateConversation(agentId, userId, conversationId)
+  const conv = await getOrCreateConversation(agentId, userId, conversationId, scope)
   const history = await getConversationHistory(conv.id)
 
   await saveMessage(conv.id, 'user', userMessage)
 
   const channelConfig = await selectChannel()
-  if (!channelConfig) throw createError({ statusCode: 503, statusMessage: 'No available channel' })
+  if (!channelConfig)
+    throw createError({ statusCode: 503, statusMessage: 'No available channel' })
 
   const systemPrompt = agentRecord.systemPrompt || 'You are a helpful assistant.'
   const allMessages = [
@@ -118,16 +129,18 @@ async function logAgentApiCall(agentId: string, userId: string, organizationId: 
   }).execute().catch(() => {})
 }
 
-export async function* streamAgentMessage(agentId: string, userId: string, userMessage: string, conversationId?: string) {
-  const agentRecord = await getAgentWithConfig(agentId)
-  if (!agentRecord) throw createError({ statusCode: 404, statusMessage: 'Agent not found' })
+export async function* streamAgentMessage(agentId: string, userId: string, userMessage: string, conversationId?: string, scope?: AgentScope) {
+  const agentRecord = await getAgentWithConfig(agentId, scope)
+  if (!agentRecord)
+    throw createError({ statusCode: 404, statusMessage: 'Agent not found' })
 
-  const conv = await getOrCreateConversation(agentId, userId, conversationId)
+  const conv = await getOrCreateConversation(agentId, userId, conversationId, scope)
   const history = await getConversationHistory(conv.id)
   await saveMessage(conv.id, 'user', userMessage)
 
   const channelConfig = await selectChannel()
-  if (!channelConfig) throw createError({ statusCode: 503, statusMessage: 'No available channel' })
+  if (!channelConfig)
+    throw createError({ statusCode: 503, statusMessage: 'No available channel' })
 
   const allMessages = [
     { role: 'system', content: agentRecord.systemPrompt || 'You are a helpful assistant.' },
@@ -159,12 +172,15 @@ export async function* streamAgentMessage(agentId: string, userId: string, userM
 
   while (true) {
     const { done, value } = await reader.read()
-    if (done) break
+    if (done)
+      break
     const chunk = decoder.decode(value, { stream: true })
     for (const line of chunk.split('\n')) {
-      if (!line.startsWith('data: ')) continue
+      if (!line.startsWith('data: '))
+        continue
       const payload = line.slice(6).trim()
-      if (payload === '[DONE]') continue
+      if (payload === '[DONE]')
+        continue
       try {
         const parsed = JSON.parse(payload)
         const delta = parsed.choices?.[0]?.delta?.content || ''
@@ -172,7 +188,8 @@ export async function* streamAgentMessage(agentId: string, userId: string, userM
           fullReply += delta
           yield { type: 'delta', content: delta }
         }
-        if (parsed.usage?.total_tokens) totalTokens = parsed.usage.total_tokens
+        if (parsed.usage?.total_tokens)
+          totalTokens = parsed.usage.total_tokens
       }
       catch { /* skip malformed chunks */ }
     }
@@ -187,9 +204,7 @@ export async function* streamAgentMessage(agentId: string, userId: string, userM
 
 export async function getUserConversations(userId: string, agentId?: string) {
   const conditions = [eq(conversation.userId, userId)]
-  if (agentId) conditions.push(eq(conversation.agentId, agentId))
-  return db.select().from(conversation)
-    .where(and(...conditions))
-    .orderBy(desc(conversation.updatedAt))
-    .limit(50)
+  if (agentId)
+    conditions.push(eq(conversation.agentId, agentId))
+  return db.select().from(conversation).where(and(...conditions)).orderBy(desc(conversation.updatedAt)).limit(50)
 }

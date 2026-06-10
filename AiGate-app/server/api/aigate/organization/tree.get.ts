@@ -1,4 +1,3 @@
-﻿import { eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { organization } from '@/db/schema'
 
@@ -21,14 +20,31 @@ function buildTree(orgs: OrgNode[], parentId: string | null = null): OrgNode[] {
     }))
 }
 
+function toOrgNodes(orgs: Array<typeof organization.$inferSelect>): OrgNode[] {
+  return orgs.map(org => ({
+    id: org.id,
+    name: org.name,
+    parentId: org.parentId,
+    level: org.level,
+    tokenLimit: org.tokenLimit,
+    tokenUsed: org.tokenUsed,
+    children: [],
+  }))
+}
+
 export default defineEventHandler(async (event) => {
   try {
+    const principal = event.context.principal as { isAdmin?: boolean } | undefined
+    if (!principal?.isAdmin) {
+      return responseError(null, '当前账号无权访问该资源', { statusCode: 403 })
+    }
+
     const query = getQuery(event)
     const allOrgs = await db.select().from(organization).orderBy(organization.name)
     if (query.flat === 'true') {
       return responseSuccess(allOrgs)
     }
-    const tree = buildTree(allOrgs as OrgNode[])
+    const tree = buildTree(toOrgNodes(allOrgs))
     return responseSuccess(tree)
   }
   catch (err) { return responseError(err) }

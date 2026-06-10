@@ -49,11 +49,17 @@ const p = (key: string) => t(`pages.aigate.agents.logs.${key}`)
       <div class="flex items-center gap-3">
         <UButton variant="ghost" icon="lucide:arrow-left" to="/aigate/agents" />
         <div>
-          <h2 class="text-xl font-bold">{{ p('title') }}</h2>
-          <p class="text-sm text-muted">{{ agent?.name || agentId }}</p>
+          <h2 class="text-xl font-bold">
+            {{ p('title') }}
+          </h2>
+          <p class="text-sm text-muted">
+            {{ agent?.name || agentId }}
+          </p>
         </div>
       </div>
-      <UButton variant="outline" icon="lucide:refresh-cw" :loading="loading" @click="refresh()">{{ p('refresh') }}</UButton>
+      <UButton variant="outline" icon="lucide:refresh-cw" :loading="loading" @click="refresh()">
+        {{ p('refresh') }}
+      </UButton>
     </div>
 
     <TableSkeleton v-if="loading" :cols="8" :rows="8" />
@@ -63,21 +69,25 @@ const p = (key: string) => t(`pages.aigate.agents.logs.${key}`)
       :title="p('emptyTitle')"
       :description="p('emptyDescription')"
     />
-    <UTable v-else :data="list" :columns="[
-      { accessorKey: 'createdAt', header: p('time') },
-      { accessorKey: 'model', header: p('model') },
-      { accessorKey: 'provider', header: p('provider') },
-      { accessorKey: 'status', header: p('status') },
-      { accessorKey: 'totalTokens', header: p('tokens') },
-      { accessorKey: 'cost', header: p('cost') },
-      { accessorKey: 'latency', header: p('latency') },
-      { accessorKey: 'errorMessage', header: p('error') },
-    ]">
+    <UTable
+      v-else :data="list" :columns="[
+        { accessorKey: 'createdAt', header: p('time') },
+        { accessorKey: 'model', header: p('model') },
+        { accessorKey: 'provider', header: p('provider') },
+        { accessorKey: 'status', header: p('status') },
+        { accessorKey: 'totalTokens', header: p('tokens') },
+        { accessorKey: 'cost', header: p('cost') },
+        { accessorKey: 'latency', header: p('latency') },
+        { accessorKey: 'errorMessage', header: p('error') },
+      ]"
+    >
       <template #createdAt-cell="{ row }">
         <span class="text-sm text-muted">{{ new Date(row.original.createdAt).toLocaleString() }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">{{ row.original.statusCode || row.original.status }}</UBadge>
+        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">
+          {{ row.original.statusCode || row.original.status }}
+        </UBadge>
       </template>
       <template #totalTokens-cell="{ row }">
         <span class="font-mono">{{ (row.original.totalTokens || 0).toLocaleString() }}</span>

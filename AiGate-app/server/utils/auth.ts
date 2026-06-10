@@ -1,4 +1,3 @@
-﻿import { render } from '@vue-email/render'
 import { betterAuth } from 'better-auth'
 import { localization } from 'better-auth-localization'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
@@ -35,8 +34,8 @@ export const auth = betterAuth({
   plugins: [
     username(),
     magicLink({
-      sendMagicLink: async ({ email, url }) => {
-        console.log('Magic link:', url)
+      sendMagicLink: async ({ email: _email, url }) => {
+        console.warn('Magic link:', url)
       },
     }),
     lastLoginMethod({ storeInDatabase: true }),

@@ -18,7 +18,7 @@ const loading = ref(false)
  */
 async function onSubmit(data: EmailFormSchema) {
   loading.value = true
-  const { error } = await $authClient.signIn.magicLink({ ...data, callbackURL: '/' }).finally(() => {
+  const { error } = await $authClient.signIn.magicLink({ ...data, callbackURL: '/aigate/my-workbench' }).finally(() => {
     loading.value = false
   })
   if (error) {

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import memberDeleteHandler from '../member/[id].delete'
+
+import memberPostHandler from '../member/index.post'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockInsert = vi.fn()
@@ -29,9 +32,6 @@ vi.mock('@/db/schema', () => ({
   },
 }))
 
-import memberPostHandler from '../member/index.post'
-import memberDeleteHandler from '../member/[id].delete'
-
 function createInsertChain(result: unknown[]) {
   return {
     values: vi.fn().mockReturnValue({
@@ -59,7 +59,7 @@ describe('aigate member handlers', () => {
         body: { organizationId: 'org-1' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -77,17 +77,37 @@ describe('aigate member handlers', () => {
       expect(mockInsert).toHaveBeenCalledTimes(1)
     })
 
-    it('should respect explicit organizationId in body', async () => {
-      const created = { id: 'member-2', userId: 'user-2', organizationId: 'org-2' }
-      mockInsert.mockReturnValue(createInsertChain([created]))
-
+    it('should reject explicit organizationId outside non-admin principal organization', async () => {
       const response = await memberPostHandler(createMockEvent({
         context: { principal: { organizationId: 'org-1' } },
         body: { userId: 'user-2', organizationId: 'org-2' },
       }))
 
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to create member in explicit organization', async () => {
+      const created = { id: 'member-2', userId: 'user-2', organizationId: 'org-2' }
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const response = await memberPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        body: { userId: 'user-2', organizationId: 'org-2' },
+      }))
+
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
+    })
+
+    it('should reject non-admin principals without organization context', async () => {
+      const response = await memberPostHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+        body: { userId: 'user-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockInsert).not.toHaveBeenCalled()
     })
   })
 
@@ -96,6 +116,7 @@ describe('aigate member handlers', () => {
       mockDelete.mockReturnValue(createDeleteChain([]))
 
       const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
         params: { id: 'missing' },
       }))
 
@@ -115,10 +136,11 @@ describe('aigate member handlers', () => {
       expect(mockDelete).toHaveBeenCalledTimes(1)
     })
 
-    it('should delete member by id when principal has no organization', async () => {
+    it('should allow admin to delete member by id without organization context', async () => {
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'member-2' }]))
 
       const response = await memberDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'member-2' },
       }))
 
@@ -138,17 +160,14 @@ describe('aigate member handlers', () => {
       expect(mockDelete).toHaveBeenCalledTimes(1)
     })
 
-    it('should delete by id only when principal organizationId is null', async () => {
-      mockDelete.mockReturnValue(createDeleteChain([{ id: 'member-3' }]))
-
+    it('should reject non-admin delete without organization context', async () => {
       const response = await memberDeleteHandler(createMockEvent({
         context: { principal: { organizationId: null } },
         params: { id: 'member-3' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toBeNull()
-      expect(mockDelete).toHaveBeenCalledTimes(1)
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockDelete).not.toHaveBeenCalled()
     })
 
     it('should return null data on successful delete', async () => {

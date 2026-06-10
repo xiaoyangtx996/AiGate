@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import HeaderContent from './components/HeaderContent.vue'
 
 const { getApiLogList } = useAigateApi()
@@ -24,7 +24,9 @@ const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const statusColor: Record<string, 'success' | 'error' | 'warning'> = { success: 'success', error: 'error', rate_limited: 'warning' }
 
-function formatLatency(ms: number) { return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms` }
+function formatLatency(ms: number) {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`
+}
 
 function handleExport() {
   exportToCSV(
@@ -54,14 +56,16 @@ const p = (key: string) => t(`pages.aigate.apiLogs.${key}`)
       :title="p('emptyTitle')"
       :description="p('emptyDescription')"
     />
-    <UTable v-else :data="list" :columns="[
-      { accessorKey: 'createdAt', header: p('time') },
-      { accessorKey: 'model', header: p('model') },
-      { accessorKey: 'totalTokens', header: p('tokens') },
-      { accessorKey: 'latency', header: p('latency') },
-      { accessorKey: 'cost', header: p('cost') },
-      { accessorKey: 'status', header: p('status') },
-    ]">
+    <UTable
+      v-else :data="list" :columns="[
+        { accessorKey: 'createdAt', header: p('time') },
+        { accessorKey: 'model', header: p('model') },
+        { accessorKey: 'totalTokens', header: p('tokens') },
+        { accessorKey: 'latency', header: p('latency') },
+        { accessorKey: 'cost', header: p('cost') },
+        { accessorKey: 'status', header: p('status') },
+      ]"
+    >
       <template #createdAt-cell="{ row }">
         <span class="text-sm text-muted">{{ new Date(row.original.createdAt).toLocaleString() }}</span>
       </template>

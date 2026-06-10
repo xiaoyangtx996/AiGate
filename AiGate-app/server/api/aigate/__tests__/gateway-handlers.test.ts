@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RESPONSE_CODE } from '@/enums'
 import { createCacheKey, getCached, setCached } from '#server/utils/cache'
-import { createMockEvent } from './nitro-test-utils'
+import { RESPONSE_CODE } from '@/enums'
+import gatewayHandler from '../gateway/index.get'
+
+import { asResponse, createMockEvent } from './nitro-test-utils'
 
 const GATEWAY_CACHE_TTL_MS = 60 * 1000
 
@@ -38,8 +40,6 @@ vi.mock('@/db/schema', () => ({
     priority: 'priority',
   },
 }))
-
-import gatewayHandler from '../gateway/index.get'
 
 function getGatewayCacheKey(orgId: string | null | undefined): string {
   return createCacheKey('gateway', orgId)
@@ -310,12 +310,12 @@ describe('aigate gateway index.get', () => {
       recentLogs: [],
     })
 
-    const org1 = await gatewayHandler(createMockEvent({
+    const org1 = asResponse<any>(await gatewayHandler(createMockEvent({
       context: { principal: { organizationId: 'org-split-a' } },
-    }))
-    const org2 = await gatewayHandler(createMockEvent({
+    })))
+    const org2 = asResponse<any>(await gatewayHandler(createMockEvent({
       context: { principal: { organizationId: 'org-split-b' } },
-    }))
+    })))
 
     expect(org1.data?.overview.requestsLastHour).toBe(1)
     expect(org2.data?.overview.requestsLastHour).toBe(2)

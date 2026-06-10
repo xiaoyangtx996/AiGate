@@ -9,7 +9,7 @@ describe('flattenObject', () => {
     })
 
     expect(result).toEqual({
-      name: 'Alice',
+      'name': 'Alice',
       'profile.age': 30,
       'profile.city': 'Beijing',
     })

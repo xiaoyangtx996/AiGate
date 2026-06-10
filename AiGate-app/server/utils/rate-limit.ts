@@ -1,4 +1,4 @@
-﻿interface RateLimitEntry {
+interface RateLimitEntry {
   count: number
   resetTime: number
   windowMs: number
@@ -60,7 +60,7 @@ export class RateLimiter {
   /**
    * 获取当前使用情况（用于监控）
    */
-  getStats(): { totalKeys: number; totalRequests: number } {
+  getStats(): { totalKeys: number, totalRequests: number } {
     let totalRequests = 0
     for (const entry of this.requests.values()) {
       totalRequests += entry.count
@@ -77,5 +77,6 @@ export const rateLimiter = new RateLimiter()
 
 // 定期清理（每小时，如果不在测试环境）
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(() => rateLimiter.cleanup(), 60 * 60 * 1000)
+  const cleanupTimer = setInterval(() => rateLimiter.cleanup(), 60 * 60 * 1000)
+  cleanupTimer.unref()
 }

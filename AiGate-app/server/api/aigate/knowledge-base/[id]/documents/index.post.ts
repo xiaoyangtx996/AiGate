@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { document, knowledgeBase } from '@/db/schema'
+
 const allowedTypes = new Set([
   'application/pdf',
   'text/plain',
@@ -12,7 +13,11 @@ const maxSize = 10 * 1024 * 1024
 
 export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean, organizationId?: string | null } | undefined
+    if (!principal?.isAdmin && !principal?.organizationId) {
+      return responseError(null, '当前账号缺少组织上下文', { statusCode: 403 })
+    }
+
     const id = getRouterParam(event, 'id')
     if (!id) {
       return responseError(null, '缺少知识库 ID')
@@ -23,8 +28,8 @@ export default defineEventHandler(async (event) => {
       return responseError(null, '知识库不存在')
     }
 
-    if (principal?.organizationId && kb.organizationId !== principal.organizationId) {
-      return responseError(null, '无权操作此知识库')
+    if (!principal.isAdmin && kb.organizationId !== principal.organizationId) {
+      return responseError(null, '无权操作此知识库', { statusCode: 403 })
     }
 
     const formData = await readMultipartFormData(event)
@@ -64,6 +69,9 @@ export default defineEventHandler(async (event) => {
         chunkSize: Number.isNaN(chunkSize) ? 1000 : chunkSize,
       },
     }).returning()
+    if (!insertedDoc) {
+      throw createError({ statusCode: 500, statusMessage: 'Document upload failed' })
+    }
 
     await db.update(knowledgeBase).set({
       documentCount: sql`${knowledgeBase.documentCount} + 1`,

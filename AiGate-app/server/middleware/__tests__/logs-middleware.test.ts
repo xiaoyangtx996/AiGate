@@ -3,9 +3,12 @@ import { sanitizeHeaders, sanitizeLogData } from '#server/utils/logs'
 
 /** mirrors server/middleware/logs.ts skip conditions */
 function shouldSkipOperationLog(path: string, method: string): boolean {
-  if (!path.startsWith('/api')) return true
-  if (method === 'GET') return true
-  if (path.startsWith('/api/system-settings/operation-log')) return true
+  if (!path.startsWith('/api'))
+    return true
+  if (method === 'GET')
+    return true
+  if (path.startsWith('/api/system-settings/operation-log'))
+    return true
   return false
 }
 
@@ -46,8 +49,8 @@ describe('logs middleware behavior', () => {
         { name: 'agent-1', password: 'secret123', token: 'abc' },
         {
           'content-type': 'application/json',
-          authorization: 'Bearer token',
-          cookie: 'sid=1',
+          'authorization': 'Bearer token',
+          'cookie': 'sid=1',
         },
       )
 
@@ -59,8 +62,8 @@ describe('logs middleware behavior', () => {
         },
         headers: {
           'content-type': 'application/json',
-          authorization: '***REDACTED***',
-          cookie: '***REDACTED***',
+          'authorization': '***REDACTED***',
+          'cookie': '***REDACTED***',
         },
       })
     })
@@ -68,11 +71,11 @@ describe('logs middleware behavior', () => {
     it('should preserve non-sensitive request metadata', () => {
       const payload = buildOperationLogPayload(
         { action: 'update', count: 2 },
-        { 'user-agent': 'Playwright', accept: 'application/json' },
+        { 'user-agent': 'Playwright', 'accept': 'application/json' },
       )
 
       expect(payload.params).toEqual({ action: 'update', count: 2 })
-      expect(payload.headers).toEqual({ 'user-agent': 'Playwright', accept: 'application/json' })
+      expect(payload.headers).toEqual({ 'user-agent': 'Playwright', 'accept': 'application/json' })
     })
   })
 })

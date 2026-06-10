@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
+import apiKeyDeleteHandler from '../api-key/[id].delete'
+
+import apiKeyPutHandler from '../api-key/[id].put'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockUpdate = vi.fn()
@@ -21,9 +24,6 @@ vi.mock('@/db/schema', () => ({
     organizationId: 'organizationId',
   },
 }))
-
-import apiKeyPutHandler from '../api-key/[id].put'
-import apiKeyDeleteHandler from '../api-key/[id].delete'
 
 function createUpdateChain(result: unknown[]) {
   return {
@@ -49,11 +49,22 @@ describe('aigate api-key extended handlers', () => {
   })
 
   describe('api-key [id].put', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await apiKeyPutHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        params: { id: 'key-1' },
+        body: { name: 'Forbidden' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
     it('should return 404 when api key not found', async () => {
       mockUpdate.mockReturnValue(createUpdateChain([]))
 
       const response = await apiKeyPutHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         params: { id: 'missing' },
         body: { name: 'Renamed Key' },
       }))
@@ -74,7 +85,7 @@ describe('aigate api-key extended handlers', () => {
       mockUpdate.mockReturnValue(createUpdateChain([updated]))
 
       const response = await apiKeyPutHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         params: { id: 'key-1' },
         body: { name: 'Renamed Key' },
       }))
@@ -94,6 +105,7 @@ describe('aigate api-key extended handlers', () => {
       mockUpdate.mockReturnValue(createUpdateChain([updated]))
 
       const response = await apiKeyPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'key-2' },
         body: { name: 'Global Key' },
       }))
@@ -104,11 +116,21 @@ describe('aigate api-key extended handlers', () => {
   })
 
   describe('api-key [id].delete', () => {
+    it('should reject non-admin principals', async () => {
+      const response = await apiKeyDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: false, organizationId: 'org-1' } },
+        params: { id: 'key-1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockDelete).not.toHaveBeenCalled()
+    })
+
     it('should return 404 when api key not found', async () => {
       mockDelete.mockReturnValue(createDeleteChain([]))
 
       const response = await apiKeyDeleteHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         params: { id: 'missing' },
       }))
 
@@ -121,7 +143,7 @@ describe('aigate api-key extended handlers', () => {
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'key-1' }]))
 
       const response = await apiKeyDeleteHandler(createMockEvent({
-        context: { principal: { organizationId: 'org-1' } },
+        context: { principal: { isAdmin: true, organizationId: 'org-1' } },
         params: { id: 'key-1' },
       }))
 
@@ -134,6 +156,7 @@ describe('aigate api-key extended handlers', () => {
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'key-2' }]))
 
       const response = await apiKeyDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'key-2' },
       }))
 

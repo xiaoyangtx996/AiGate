@@ -1,8 +1,8 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { apiRoutePolicy } from '../routes'
 
-describe('API Route Policy', () => {
-  describe('Admin Routes', () => {
+describe('aPI Route Policy', () => {
+  describe('admin Routes', () => {
     it('should identify admin routes', () => {
       expect(apiRoutePolicy.isAdminRoute('/api/aigate/organization')).toBe(true)
       expect(apiRoutePolicy.isAdminRoute('/api/aigate/api-key')).toBe(true)
@@ -22,10 +22,11 @@ describe('API Route Policy', () => {
       expect(apiRoutePolicy.isAdminRoute('/api/aigate/dashboard')).toBe(false)
       expect(apiRoutePolicy.isAdminRoute('/api/aigate/agents')).toBe(false)
       expect(apiRoutePolicy.isAdminRoute('/api/auth/sign-in')).toBe(false)
+      expect(apiRoutePolicy.isAdminRoute('/api/aigate/api-key-extra')).toBe(false)
     })
   })
 
-  describe('Public Routes', () => {
+  describe('public Routes', () => {
     it('should identify public routes', () => {
       expect(apiRoutePolicy.isPublicRoute('/api/auth')).toBe(true)
       expect(apiRoutePolicy.isPublicRoute('/api/auth/callback')).toBe(true)
@@ -45,10 +46,11 @@ describe('API Route Policy', () => {
       expect(apiRoutePolicy.isPublicRoute('/api/aigate/dashboard')).toBe(false)
       expect(apiRoutePolicy.isPublicRoute('/api/aigate/api-key')).toBe(false)
       expect(apiRoutePolicy.isPublicRoute('/api/system-settings/menu-manage')).toBe(false)
+      expect(apiRoutePolicy.isPublicRoute('/api/authentication')).toBe(false)
     })
   })
 
-  describe('Authenticated Routes', () => {
+  describe('authenticated Routes', () => {
     it('should identify authenticated GET routes', () => {
       expect(apiRoutePolicy.isAuthenticatedRoute('/api/system-settings/menu-manage', 'GET')).toBe(true)
       expect(apiRoutePolicy.isAuthenticatedRoute('/api/system-settings/menu-manage/children', 'GET')).toBe(true)
@@ -63,10 +65,11 @@ describe('API Route Policy', () => {
     it('should not classify admin or public routes as authenticated-only', () => {
       expect(apiRoutePolicy.isAuthenticatedRoute('/api/aigate/dashboard', 'GET')).toBe(false)
       expect(apiRoutePolicy.isAuthenticatedRoute('/api/auth/session', 'GET')).toBe(false)
+      expect(apiRoutePolicy.isAuthenticatedRoute('/api/system-settings/menu-manage-extra', 'GET')).toBe(false)
     })
   })
 
-  describe('Route classification boundaries', () => {
+  describe('route classification boundaries', () => {
     it('normal business routes should not be classified as public or admin-only', () => {
       expect(apiRoutePolicy.isPublicRoute('/api/aigate/dashboard')).toBe(false)
       expect(apiRoutePolicy.isAdminRoute('/api/aigate/dashboard')).toBe(false)

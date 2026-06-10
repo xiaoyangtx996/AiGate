@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { alertRule } from '@/db/schema'
 

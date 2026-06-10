@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import mcpToolDeleteHandler from '../mcp-tool/[id].delete'
+
+import mcpToolPutHandler from '../mcp-tool/[id].put'
+import mcpToolPostHandler from '../mcp-tool/index.post'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockInsert = vi.fn()
@@ -12,7 +16,7 @@ const insertMcpToolBodySchema = z.object({
   description: z.string().optional(),
   type: z.string().optional(),
   organizationId: z.string().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   status: z.string().optional(),
 })
 
@@ -37,10 +41,6 @@ vi.mock('@/db/schema', () => ({
     parse: (body: unknown) => insertMcpToolBodySchema.parse(body),
   },
 }))
-
-import mcpToolPostHandler from '../mcp-tool/index.post'
-import mcpToolPutHandler from '../mcp-tool/[id].put'
-import mcpToolDeleteHandler from '../mcp-tool/[id].delete'
 
 function createInsertChain(result: unknown[]) {
   return {
@@ -80,7 +80,7 @@ describe('aigate mcp-tool extended handlers', () => {
         body: { type: 'sse' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -89,7 +89,7 @@ describe('aigate mcp-tool extended handlers', () => {
         body: { name: '' },
       }))
 
-      expect(response.code).toBe(RESPONSE_CODE.SERVER_ERROR)
+      expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -113,7 +113,7 @@ describe('aigate mcp-tool extended handlers', () => {
       expect(mockInsert).toHaveBeenCalledTimes(1)
     })
 
-    it('should preserve body organizationId when explicitly provided', async () => {
+    it('should reject creating tool for another organization', async () => {
       const created = {
         id: 'tool-2',
         name: 'Shared MCP',
@@ -126,15 +126,47 @@ describe('aigate mcp-tool extended handlers', () => {
         body: { name: 'Shared MCP', organizationId: 'org-2' },
       }))
 
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('无权向其他组织创建 MCP 工具')
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to create tool with explicit organizationId', async () => {
+      const created = {
+        id: 'tool-2',
+        name: 'Shared MCP',
+        organizationId: 'org-2',
+      }
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const response = await mcpToolPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        body: { name: 'Shared MCP', organizationId: 'org-2' },
+      }))
+
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
     })
 
-    it('should create tool without organization when principal has none', async () => {
+    it('should reject non-admin create without organization context', async () => {
       const created = { id: 'tool-3', name: 'Global MCP', organizationId: null }
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await mcpToolPostHandler(createMockEvent({
+        body: { name: 'Global MCP' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockInsert).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to create tool without organization context', async () => {
+      const created = { id: 'tool-3', name: 'Global MCP', organizationId: null }
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const response = await mcpToolPostHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         body: { name: 'Global MCP' },
       }))
 
@@ -192,11 +224,38 @@ describe('aigate mcp-tool extended handlers', () => {
       expect(mockUpdate).toHaveBeenCalledTimes(1)
     })
 
-    it('should update tool by id when principal has no organization', async () => {
+    it('should reject non-admin update without organization context', async () => {
       const updated = { id: 'tool-2', name: 'Global MCP', status: 'active' }
       mockUpdate.mockReturnValue(createUpdateChain([updated]))
 
       const response = await mcpToolPutHandler(createMockEvent({
+        params: { id: 'tool-2' },
+        body: { name: 'Global MCP' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should reject moving tool to another organization', async () => {
+      const response = await mcpToolPutHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+        params: { id: 'tool-1' },
+        body: { organizationId: 'org-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('无权转移 MCP 工具到其他组织')
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to update tool without organization context', async () => {
+      const updated = { id: 'tool-2', name: 'Global MCP', status: 'active' }
+      mockUpdate.mockReturnValue(createUpdateChain([updated]))
+
+      const response = await mcpToolPutHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'tool-2' },
         body: { name: 'Global MCP' },
       }))
@@ -233,10 +292,23 @@ describe('aigate mcp-tool extended handlers', () => {
       expect(mockDelete).toHaveBeenCalledTimes(1)
     })
 
-    it('should delete tool by id when principal has no organization', async () => {
+    it('should reject non-admin delete without organization context', async () => {
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'tool-2' }]))
 
       const response = await mcpToolDeleteHandler(createMockEvent({
+        params: { id: 'tool-2' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(mockDelete).not.toHaveBeenCalled()
+    })
+
+    it('should allow admin to delete tool without organization context', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([{ id: 'tool-2' }]))
+
+      const response = await mcpToolDeleteHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
         params: { id: 'tool-2' },
       }))
 

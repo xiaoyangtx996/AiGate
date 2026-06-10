@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RESPONSE_CODE } from '@/enums'
 import { MCP_MARKETPLACE_PRESETS } from '#server/utils/mcp-marketplace'
+import { RESPONSE_CODE } from '@/enums'
+import apiLogListHandler from '../api-log/index.get'
+
+import mcpInstallHandler from '../mcp-tool/install.post'
+import marketplaceHandler from '../mcp-tool/marketplace.get'
 import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
@@ -26,10 +30,6 @@ vi.mock('@/db/schema', () => ({
     parse: (value: unknown) => value,
   },
 }))
-
-import marketplaceHandler from '../mcp-tool/marketplace.get'
-import apiLogListHandler from '../api-log/index.get'
-import mcpInstallHandler from '../mcp-tool/install.post'
 
 function parseApiLogPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -126,7 +126,9 @@ describe('aigate query handlers', () => {
         .mockReturnValueOnce(createCountSelectChain([{ total: 0 }]))
         .mockReturnValueOnce(createListSelectChain([]))
 
-      const response = await apiLogListHandler(createMockEvent())
+      const response = await apiLogListHandler(createMockEvent({
+        context: { principal: { organizationId: 'org-1' } },
+      }))
 
       expect(response.data).toEqual({
         items: [],
@@ -134,6 +136,35 @@ describe('aigate query handlers', () => {
         page: 1,
         pageSize: 20,
       })
+    })
+
+    it('should allow admin to query logs without organization context', async () => {
+      const logs = [{ id: 'global-log' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(logs))
+
+      const response = await apiLogListHandler(createMockEvent({
+        context: { principal: { isAdmin: true } },
+        query: { page: '1' },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items: logs,
+        total: 1,
+        page: 1,
+        pageSize: 20,
+      })
+    })
+
+    it('should reject non-admin principals without organization context', async () => {
+      const response = await apiLogListHandler(createMockEvent({
+        context: { principal: { organizationId: null } },
+      }))
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(mockSelect).not.toHaveBeenCalled()
     })
   })
 

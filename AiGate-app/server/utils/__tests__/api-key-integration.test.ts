@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { checkApiKeyLimit } from '#server/utils/api-key'
+
 const mockSelect = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
@@ -11,8 +13,6 @@ vi.mock('@/db/drizzle', () => ({
 vi.mock('@/db/schema', () => ({
   apiKey: { userId: 'userId', status: 'status' },
 }))
-
-import { checkApiKeyLimit } from '#server/utils/api-key'
 
 function createCountSelectChain(count: number) {
   return {

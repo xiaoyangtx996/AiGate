@@ -2,6 +2,7 @@
 const { getBillingList, generateBilling } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
+const p = (key: string) => t(`pages.aigate.billing.${key}`)
 
 const page = ref(1)
 const pageSize = ref(20)
@@ -28,21 +29,30 @@ async function handleGenerate() {
     successToast(p('generateDone'))
     refresh()
   }
-  finally { generating.value = false }
+  finally {
+    generating.value = false
+  }
 }
 
 const statusColor: Record<string, 'warning' | 'success' | 'error'> = { pending: 'warning', paid: 'success', overdue: 'error' }
-function formatCost(cents: number) { return `¥${(cents / 100).toFixed(2)}` }
-function formatTokens(n: number) { return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n) }
+function formatCost(cents: number) {
+  return `¥${(cents / 100).toFixed(2)}`
+}
 
-const p = (key: string) => t(`pages.aigate.billing.${key}`)
+function formatTokens(n: number) {
+  return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n)
+}
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">{{ $t('menu.billing') }}</h2>
-      <UButton :loading="generating" icon="lucide:calculator" variant="outline" @click="handleGenerate">{{ p('generate') }}</UButton>
+      <h2 class="text-xl font-bold">
+        {{ $t('menu.billing') }}
+      </h2>
+      <UButton :loading="generating" icon="lucide:calculator" variant="outline" @click="handleGenerate">
+        {{ p('generate') }}
+      </UButton>
     </div>
     <TableSkeleton v-if="loading" :cols="6" :rows="6" />
     <EmptyState
@@ -52,15 +62,17 @@ const p = (key: string) => t(`pages.aigate.billing.${key}`)
       :description="p('emptyDescription')"
     />
     <template v-else>
-      <UTable :data="list" :columns="[
-        { accessorKey: 'organizationName', header: p('org') },
-        { accessorKey: 'period', header: p('period') },
-        { accessorKey: 'tokenUsage', header: p('tokenUsage') },
-        { accessorKey: 'cost', header: p('cost') },
-        { accessorKey: 'status', header: p('status') },
-        { accessorKey: 'dueDate', header: p('dueDate') },
-        { id: 'actions', header: '' },
-      ]">
+      <UTable
+        :data="list" :columns="[
+          { accessorKey: 'organizationName', header: p('org') },
+          { accessorKey: 'period', header: p('period') },
+          { accessorKey: 'tokenUsage', header: p('tokenUsage') },
+          { accessorKey: 'cost', header: p('cost') },
+          { accessorKey: 'status', header: p('status') },
+          { accessorKey: 'dueDate', header: p('dueDate') },
+          { id: 'actions', header: '' },
+        ]"
+      >
         <template #tokenUsage-cell="{ row }">
           <span class="font-mono">{{ formatTokens(row.original.tokenUsage) }}</span>
         </template>
@@ -68,7 +80,9 @@ const p = (key: string) => t(`pages.aigate.billing.${key}`)
           <span class="font-mono font-bold">{{ formatCost(row.original.cost) }}</span>
         </template>
         <template #status-cell="{ row }">
-          <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">{{ row.original.status }}</UBadge>
+          <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">
+            {{ row.original.status }}
+          </UBadge>
         </template>
         <template #dueDate-cell="{ row }">
           {{ row.original.dueDate ? new Date(row.original.dueDate).toLocaleDateString() : '-' }}
