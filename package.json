@@ -10,7 +10,7 @@
     "url": "https://baiwumm.com"
   },
   "git": {
-    "url": "https://github.com/baiwumm/better-nuxt.git"
+    "url": "https://github.com/xiaoyangtx996/AiGate.git"
   },
   "scripts": {
     "build": "nuxt build",
@@ -18,8 +18,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "eslint app server shared test e2e --ext .ts,.vue,.js,.mjs,.cjs",
-    "lint:fix": "eslint app server shared test e2e --ext .ts,.vue,.js,.mjs,.cjs --fix",
+    "lint": "eslint app server shared e2e --ext .ts,.vue,.js,.mjs,.cjs",
+    "lint:fix": "eslint app server shared e2e --ext .ts,.vue,.js,.mjs,.cjs --fix",
     "typecheck:server": "tsc --noEmit -p tsconfig.server.prod.json",
     "typecheck:server:test": "tsc --noEmit -p tsconfig.server.test.json",
     "release": "release-it",

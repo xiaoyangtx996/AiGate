@@ -1,38 +1,5 @@
-﻿# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.exe
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.kiro/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-.codex/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-.pytest_cache/
-.mypy_cache/
-
-# Node
+﻿# Node
 node_modules/
-
-# 虚拟环境
-venv/
-ENV/
-env/
-.venv/
 
 # Nuxt dev/build outputs
 .output
@@ -45,6 +12,7 @@ env/
 .idea/
 .vscode/
 .cursor/
+.codex/
 .claude/worktrees/
 .claude/settings.local.json
 .mcp.json
@@ -91,6 +59,3 @@ test-results/
 *.tmp
 *.temp
 false/
-
-# 扁平化后遗留的空目录（可手动删除）
-AiGate-app/
