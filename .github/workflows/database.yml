@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
 
-defaults:
-  run:
-    working-directory: AiGate-app
-
 jobs:
   migrate:
     runs-on: ubuntu-latest
@@ -41,7 +37,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

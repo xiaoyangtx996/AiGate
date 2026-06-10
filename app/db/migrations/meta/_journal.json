@@ -1,0 +1,69 @@
+{
+  "version": "8",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777445803663,
+      "tag": "0000_nebulous_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778031898723,
+      "tag": "0001_gorgeous_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778134948830,
+      "tag": "0002_lowly_black_crow",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779357922860,
+      "tag": "0003_sour_nocturne",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779431977241,
+      "tag": "0004_goofy_sunspot",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779440653262,
+      "tag": "0005_nosy_viper",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779771274373,
+      "tag": "0006_empty_klaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "8",
+      "when": 1779771274373,
+      "tag": "0008_add_api_key_role_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "8",
+      "when": 1779771274374,
+      "tag": "0009_phase2_phase3_schema",
+      "breakpoints": true
+    }
+  ]
+}

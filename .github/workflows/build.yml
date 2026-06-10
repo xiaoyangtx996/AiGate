@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-defaults:
-  run:
-    working-directory: AiGate-app
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,16 +40,16 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Cache Nuxt and Vitest
         uses: actions/cache@v4
         with:
           path: |
-            AiGate-app/.nuxt
-            AiGate-app/node_modules/.cache
-            AiGate-app/node_modules/.vite
-          key: ${{ runner.os }}-build-${{ hashFiles('AiGate-app/pnpm-lock.yaml') }}
+            .nuxt
+            node_modules/.cache
+            node_modules/.vite
+          key: ${{ runner.os }}-build-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-build-
 

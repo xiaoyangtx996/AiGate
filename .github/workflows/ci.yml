@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main, develop]
 
-defaults:
-  run:
-    working-directory: AiGate-app
-
 env:
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aigate
   BETTER_AUTH_SECRET: ci-build-secret-min-32-chars-long
@@ -28,7 +24,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
@@ -45,7 +41,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec nuxt typecheck
 
@@ -62,7 +58,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck:server
 
@@ -79,7 +75,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck:server:test
 
@@ -96,7 +92,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:openapi
 
@@ -113,7 +109,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec vitest run --reporter=dot
 
@@ -144,7 +140,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: node scripts/verify-migration-consistency.mjs
       - run: node scripts/apply-all-migrations.mjs --dry-run
@@ -186,14 +182,14 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - uses: actions/cache@v4
         with:
           path: |
-            AiGate-app/.nuxt
-            AiGate-app/node_modules/.cache
-            AiGate-app/node_modules/.vite
-          key: ${{ runner.os }}-build-${{ hashFiles('AiGate-app/pnpm-lock.yaml') }}
+            .nuxt
+            node_modules/.cache
+            node_modules/.vite
+          key: ${{ runner.os }}-build-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-build-
       - run: pnpm install --frozen-lockfile
@@ -228,7 +224,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: AiGate-app/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec drizzle-kit migrate
       - run: node scripts/apply-all-migrations.mjs

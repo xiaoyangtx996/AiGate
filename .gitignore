@@ -34,6 +34,13 @@ ENV/
 env/
 .venv/
 
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+
 # IDE
 .idea/
 .vscode/
@@ -41,6 +48,7 @@ env/
 .claude/worktrees/
 .claude/settings.local.json
 .mcp.json
+.fleet
 *.swp
 *.swo
 *~
@@ -54,7 +62,6 @@ Desktop.ini
 # 项目特定
 data/*.json
 data/locks/*.lock
-*.log
 target/
 *.class
 
@@ -62,8 +69,28 @@ target/
 !data/.gitkeep
 !data/locks/.gitkeep
 
+# Logs
+logs/
+*.log
+dev-server*.log
+
+# Script outputs
+scripts/*-result*.txt
+scripts/browser-audit-result.txt
+
+# Test coverage
+coverage/
+test-results/
+
+# Local env files
+.env
+.env.*
+!.env.example
+
 # 临时文件
 *.tmp
 *.temp
-.cache/
 false/
+
+# 扁平化后遗留的空目录（可手动删除）
+AiGate-app/
