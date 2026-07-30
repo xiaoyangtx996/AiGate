@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
@@ -91,5 +92,29 @@ func TestUserWithoutProjectRoleCannotCheckACL(t *testing.T) {
 	app.handler().ServeHTTP(response, request)
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", response.Code)
+	}
+}
+
+type revokeKeys struct{}
+
+func (revokeKeys) Create(context.Context, apikey.Key, string) error { return nil }
+func (revokeKeys) FindByHash(context.Context, string) (apikey.Principal, error) {
+	return apikey.Principal{}, apikey.ErrInvalidKey
+}
+func (revokeKeys) Touch(context.Context, string) error              { return nil }
+func (revokeKeys) List(context.Context, string) ([]apikey.Key, error) { return nil, nil }
+func (revokeKeys) Revoke(context.Context, string, string) error {
+	return apikey.ErrNotFound
+}
+
+func TestRevokeMissingAPIKeyReturnsNotFound(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	app := &api{tokens: manager, keys: apikey.NewService(revokeKeys{})}
+	request := httptest.NewRequest(http.MethodDelete, "/v1/api-keys/missing", nil)
+	request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "admin-a", Roles: []string{domain.RolePlatformAdmin}}))
+	response := httptest.NewRecorder()
+	app.handler().ServeHTTP(response, request)
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d body=%s, want 404", response.Code, response.Body.String())
 	}
 }

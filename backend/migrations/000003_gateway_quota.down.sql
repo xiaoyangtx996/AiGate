@@ -1,0 +1,12 @@
+BEGIN;
+DROP TABLE IF EXISTS api_logs;
+DROP TABLE IF EXISTS channels;
+DROP TABLE IF EXISTS model_prices;
+DROP TABLE IF EXISTS quota_reservations;
+DROP TRIGGER IF EXISTS users_cleanup_quota ON users;
+DROP FUNCTION IF EXISTS cleanup_user_quota_account();
+DROP TRIGGER IF EXISTS organizations_cleanup_quota ON organizations;
+DROP FUNCTION IF EXISTS cleanup_organization_quota_account();
+DROP TABLE IF EXISTS quota_accounts;
+DROP TABLE IF EXISTS api_keys;
+COMMIT;

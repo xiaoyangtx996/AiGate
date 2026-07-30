@@ -2,15 +2,20 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
+	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/db"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
+	"github.com/xiaoyangtx996/AiGate/internal/gateway"
 	"github.com/xiaoyangtx996/AiGate/internal/org"
+	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
 )
 
@@ -33,9 +38,21 @@ func main() {
 	if err := bootstrapAdmin(ctx, rbacService); err != nil {
 		log.Fatal(err)
 	}
+	encryptionKey, err := base64.StdEncoding.DecodeString(os.Getenv("AIGATE_CHANNEL_ENCRYPTION_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	cipher, err := channel.NewCipher(encryptionKey)
+	if err != nil {
+		log.Fatal(err)
+	}
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
 		rbac: rbacService, org: org.NewService(store),
+		keys:     apikey.NewService(apikey.NewPostgres(store)),
+		quota:    quota.NewService(quota.NewPostgres(store)),
+		channels: channel.NewService(channel.NewPostgres(store), cipher),
+		logs:     gateway.NewPostgresLogger(store),
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)

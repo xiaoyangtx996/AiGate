@@ -4,18 +4,27 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
+	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
+	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
+	"github.com/xiaoyangtx996/AiGate/internal/gateway"
 	"github.com/xiaoyangtx996/AiGate/internal/org"
+	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
 )
 
 type api struct {
-	auth   *auth.Service
-	tokens *auth.TokenManager
-	rbac   *rbac.Service
-	org    *org.Service
+	auth     *auth.Service
+	tokens   *auth.TokenManager
+	rbac     *rbac.Service
+	org      *org.Service
+	keys     *apikey.Service
+	quota    *quota.Service
+	channels *channel.Service
+	logs     *gateway.PostgresLogger
 }
 
 func (a *api) handler() http.Handler {
@@ -42,6 +51,15 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("PUT /v1/projects/{projectID}/members/{userID}", a.admin(a.grantProject))
 	protected.HandleFunc("DELETE /v1/projects/{projectID}/members/{userID}", a.admin(a.revokeProject))
 	protected.HandleFunc("GET /v1/projects/{projectID}/access", a.projectAccess)
+	protected.HandleFunc("GET /v1/api-keys", a.admin(a.listAPIKeys))
+	protected.HandleFunc("POST /v1/api-keys", a.admin(a.createAPIKey))
+	protected.HandleFunc("DELETE /v1/api-keys/{id}", a.admin(a.revokeAPIKey))
+	protected.HandleFunc("PUT /v1/quotas/{scope}/{id}", a.admin(a.setQuota))
+	protected.HandleFunc("GET /v1/channels", a.admin(a.listChannels))
+	protected.HandleFunc("POST /v1/channels", a.admin(a.createChannel))
+	protected.HandleFunc("PUT /v1/channels/{id}", a.admin(a.updateChannel))
+	protected.HandleFunc("PUT /v1/model-prices/{model}", a.admin(a.setModelPrice))
+	protected.HandleFunc("GET /v1/api-logs", a.admin(a.listAPILogs))
 	root.Handle("/v1/", auth.Middleware(a.tokens, protected))
 	return root
 }
@@ -229,6 +247,125 @@ func (a *api) projectAccess(w http.ResponseWriter, r *http.Request) {
 	respond(w, map[string]bool{"allowed": allowed}, err, http.StatusOK)
 }
 
+func (a *api) listAPIKeys(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	keys, err := a.keys.List(r.Context(), identity.TenantID)
+	respond(w, keys, err, http.StatusOK)
+}
+
+func (a *api) createAPIKey(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		OrganizationID string   `json:"organization_id"`
+		UserID         string   `json:"user_id"`
+		Name           string   `json:"name"`
+		AllowedCIDRs   []string `json:"allowed_cidrs"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	key, plain, err := a.keys.Issue(r.Context(), identity.TenantID, input.OrganizationID, input.UserID, input.Name, input.AllowedCIDRs)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"key": key, "secret": plain})
+}
+
+func (a *api) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	respondEmpty(w, a.keys.Revoke(r.Context(), identity.TenantID, r.PathValue("id")))
+}
+
+func (a *api) setQuota(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		LimitTokens int64 `json:"limit_tokens"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	scope, id := quota.Scope(r.PathValue("scope")), r.PathValue("id")
+	if scope == quota.Tenant && id != identity.TenantID {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	respondEmpty(w, a.quota.SetLimit(r.Context(), quota.Account{TenantID: identity.TenantID, Scope: scope, ScopeID: id, LimitTokens: input.LimitTokens}))
+}
+
+func (a *api) listChannels(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	channels, err := a.channels.List(r.Context(), identity.TenantID)
+	respond(w, channels, err, http.StatusOK)
+}
+
+func (a *api) createChannel(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name       string `json:"name"`
+		BaseURL    string `json:"base_url"`
+		Credential string `json:"credential"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	config, err := a.channels.Create(r.Context(), identity.TenantID, input.Name, input.BaseURL, input.Credential)
+	respond(w, config, err, http.StatusCreated)
+}
+
+func (a *api) updateChannel(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name       *string `json:"name"`
+		BaseURL    *string `json:"base_url"`
+		Credential *string `json:"credential"`
+		Active     *bool   `json:"active"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	config, err := a.channels.Update(r.Context(), identity.TenantID, r.PathValue("id"), channel.UpdateInput{
+		Name: input.Name, BaseURL: input.BaseURL, Credential: input.Credential, Active: input.Active,
+	})
+	respond(w, config, err, http.StatusOK)
+}
+
+func (a *api) listAPILogs(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	filter := gateway.LogFilter{TenantID: identity.TenantID, UserID: r.URL.Query().Get("user_id")}
+	if raw := r.URL.Query().Get("blocked"); raw != "" {
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid blocked query")
+			return
+		}
+		filter.Blocked = &value
+	}
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		limit, err := strconv.Atoi(raw)
+		if err != nil || limit <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid limit query")
+			return
+		}
+		filter.Limit = limit
+	}
+	logs, err := a.logs.List(r.Context(), filter)
+	respond(w, logs, err, http.StatusOK)
+}
+
+func (a *api) setModelPrice(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		UpstreamModel string `json:"upstream_model"`
+		InputMicros   int64  `json:"input_micros_per_million"`
+		OutputMicros  int64  `json:"output_micros_per_million"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	respondEmpty(w, a.channels.SetPrice(r.Context(), identity.TenantID, r.PathValue("model"), input.UpstreamModel, input.InputMicros, input.OutputMicros))
+}
+
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	decoder.DisallowUnknownFields()
@@ -256,7 +393,7 @@ func respondEmpty(w http.ResponseWriter, err error) {
 }
 
 func writeServiceError(w http.ResponseWriter, err error) {
-	if errors.Is(err, rbac.ErrNotFound) {
+	if errors.Is(err, rbac.ErrNotFound) || errors.Is(err, channel.ErrNotFound) || errors.Is(err, apikey.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}

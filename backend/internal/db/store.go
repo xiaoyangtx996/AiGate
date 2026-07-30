@@ -26,6 +26,8 @@ func Open(ctx context.Context, dsn string) (*Store, error) {
 
 func (s *Store) Close() { s.pool.Close() }
 
+func (s *Store) Pool() *pgxpool.Pool { return s.pool }
+
 func (s *Store) FindLoginUser(ctx context.Context, tenantID, email string) (domain.User, []domain.Role, error) {
 	user, err := scanUser(s.pool.QueryRow(ctx, `
 		SELECT id, tenant_id, organization_id, email, display_name, password_hash, active, created_at, updated_at
@@ -103,6 +105,11 @@ func (s *Store) writeUser(ctx context.Context, user domain.User, roleIDs []strin
 	}
 	if err != nil {
 		return mapError(err)
+	}
+	if !create {
+		if _, err = tx.Exec(ctx, `UPDATE api_keys SET organization_id=$3, updated_at=now() WHERE tenant_id=$1 AND user_id=$2 AND active=true`, user.TenantID, user.ID, user.OrganizationID); err != nil {
+			return err
+		}
 	}
 	if create {
 		var exists bool
@@ -250,11 +257,26 @@ func (s *Store) DeleteOrganization(ctx context.Context, tenantID, id string) err
 }
 
 func (s *Store) AttachUser(ctx context.Context, tenantID, organizationID, userID string) error {
-	return requireOne(s.pool.Exec(ctx, `
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	tag, err := tx.Exec(ctx, `
 		UPDATE users u SET organization_id = o.id, updated_at = now()
 		FROM organizations o
 		WHERE u.tenant_id = $1 AND u.id = $2 AND o.tenant_id = $1 AND o.id = $3`,
-		tenantID, userID, organizationID))
+		tenantID, userID, organizationID)
+	if err != nil {
+		return mapError(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return rbac.ErrNotFound
+	}
+	if _, err = tx.Exec(ctx, `UPDATE api_keys SET organization_id=$3, updated_at=now() WHERE tenant_id=$1 AND user_id=$2 AND active=true`, tenantID, userID, organizationID); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 type scanner interface{ Scan(...any) error }

@@ -63,7 +63,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 |---|---|---|---|---|
 | 1 | Go 仓库骨架与领域边界 | 可编译 Go workspace；Tenant/Org/Project 模型与迁移可跑 | complete | `.claude/plans/01-go-scaffold.md` |
 | 2 | 多租户 RBAC 与身份 | 用户/角色/组织树；请求带租户上下文 | complete | `.claude/plans/02-tenant-rbac.md` |
-| 3 | LLM 网关与密钥配额 | Key 走兼容入口；配额拦截；调用日志；真实成本字段 | pending | `.claude/plans/03-gateway-quota.md` |
+| 3 | LLM 网关与密钥配额 | Key 走兼容入口；配额拦截；调用日志；真实成本字段 | complete | `.claude/plans/03-gateway-quota.md` |
 | 3b | 审计 / Job / 配额预警 | 统一 audit 事件；共享 worker；配额阈值告警 + webhook | pending | `.claude/plans/03b-audit-jobs-alerts.md` |
 | 4 | 项目知识库 RAG | 上传/向量化/检索；项目隔离；本地对象存储 | pending | `.claude/plans/04-project-knowledge.md` |
 | 5 | MCP 资产治理 | 私有注册 + 公共市场启用；授权/计量/健康；调用入审计 | pending | `.claude/plans/05-mcp-assets.md` |
@@ -106,5 +106,5 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Skill 过早投入 | Medium | Medium | 08 后置；06 仅预留扩展点 |
 
 ---
-*Status: READY — Milestones 1–2 complete; continue with Plan 03 `/goal`.*
+*Status: READY — Milestones 1–3 complete; continue with Plan 03b `/goal`.*
 *Legacy snapshot tag: `legacy-nuxt-aigate`.*

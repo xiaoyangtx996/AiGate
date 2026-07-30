@@ -94,3 +94,23 @@ func TestProjectMembershipRejectsCrossTenantWrite(t *testing.T) {
 		t.Fatalf("cross-tenant grant error = %v, want not found", err)
 	}
 }
+
+func TestProjectMembershipCrossTenantReadDenied(t *testing.T) {
+	repo := newMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+	if err := service.GrantProject(ctx, "tenant-b", "project-b", "user-b"); err != nil {
+		t.Fatal(err)
+	}
+	allowed, err := service.CanAccessProject(ctx, "tenant-a", "project-b", "user-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if allowed {
+		t.Fatal("cross-tenant read must be denied")
+	}
+	allowed, err = service.CanAccessProject(ctx, "tenant-a", "project-b", "user-b")
+	if err != nil || allowed {
+		t.Fatalf("foreign user must be denied: allowed=%v err=%v", allowed, err)
+	}
+}
