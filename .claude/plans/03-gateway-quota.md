@@ -13,14 +13,15 @@ inputs:
   prd: .claude/prds/aigate-go-platform.prd.md
   gateway_strategy: newapi-sidecar-with-aigate-precheck
   target_paths:
-    - internal/gateway/
-    - internal/apikey/
-    - internal/quota/
-    - internal/billing/
-    - internal/channel/
-    - cmd/gateway/
-    - cmd/api/
+    - backend/internal/gateway/
+    - backend/internal/apikey/
+    - backend/internal/quota/
+    - backend/internal/billing/
+    - backend/internal/channel/
+    - backend/cmd/gateway/
+    - backend/cmd/api/
 constraints:
+  - work only under backend/; do not put Go packages at repo root
   - must not use sub2api as base
   - NewAPI runs as sidecar or sibling process; AiGate owns employee keys quota precheck and api_log
   - API keys bind to user + tenant/org and optional IP allowlist
@@ -28,6 +29,7 @@ constraints:
   - quota conservation parent>=sum(children) for tenant-dept-employee hierarchy
   - encrypt upstream provider credentials at rest
   - compute cost from model input/output unit prices when available; never hardcode zero when prices exist
+  - every new/changed table and column must have detailed COMMENT ON (Chinese OK)
 success_criteria:
   - Bearer employee key can complete a chat completions proxy call in test/env
   - exhausted quota returns explicit blocked error and writes api_log or audit row
@@ -40,6 +42,7 @@ common_failure_modes:
   - in-process rate limit broken under multi-instance without shared store note
 short_test:
   - shell: |
+      cd backend
       go test ./internal/gateway/... ./internal/apikey/... ./internal/quota/... ./internal/channel/...
 deliverables:
   - Gateway precheck packages channel credentials quota and call logging

@@ -14,10 +14,10 @@ inputs:
   vector_backend: pgvector
   object_storage: local-configurable-path
   target_paths:
-    - internal/knowledge/
-    - internal/rag/
-    - internal/storage/
-    - migrations/
+    - backend/internal/knowledge/
+    - backend/internal/rag/
+    - backend/internal/storage/
+    - backend/migrations/
 constraints:
   - knowledge base belongs to Project not global tenant dump
   - unauthorized project members cannot search or read chunks
@@ -37,6 +37,7 @@ common_failure_modes:
   - storing files only in DB bytea without size policy
 short_test:
   - shell: |
+      cd backend
       go test ./internal/knowledge/... ./internal/rag/... ./internal/storage/...
 deliverables:
   - KB upload parse embed search APIs with project ACL and local storage

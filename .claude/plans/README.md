@@ -14,9 +14,14 @@ Legacy Nuxt snapshot tag: `legacy-nuxt-aigate`
 06 / 07b → 08                         (Skill, post-MVP)
 ```
 
-Frontend/backend separation: Go owns APIs; `web/` is Vue SPA only (see PRD D4).
+Frontend/backend separation (see PRD D4):
 
-**Schema comments (mandatory):** every new/changed table and column in `migrations/` must include detailed `COMMENT ON TABLE` / `COMMENT ON COLUMN` (Chinese OK). Do not ship uncommented DDL.
+```text
+backend/    # Go API + migrations
+frontend/   # Vue3 SPA only
+```
+
+**Schema comments (mandatory):** every new/changed table and column in `backend/migrations/` must include detailed `COMMENT ON TABLE` / `COMMENT ON COLUMN` (Chinese OK). Do not ship uncommented DDL.
 
 ## Run order
 

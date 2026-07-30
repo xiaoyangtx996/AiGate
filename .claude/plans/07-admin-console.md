@@ -11,10 +11,10 @@ inputs:
   repo: .
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
-    - web/
-    - cmd/api/
+    - frontend/
+    - backend/cmd/api/
 constraints:
-  - keep frontend/backend separation; extend SPA only; do not rewrite auth shell
+  - keep frontend/backend separation; extend SPA under frontend/ only; do not rewrite auth shell
   - extend thin console from 07a
   - required screens: project list membership switcher KB upload job status MCP private register public marketplace enable grant health Agent create chat usage dashboard channel providers Bot panel optional
   - role-gated nav for IT admin vs project lead vs finance/audit read-only
@@ -35,8 +35,9 @@ common_failure_modes:
   - rebuilding all Nuxt pages at once
 short_test:
   - shell: |
+      cd backend
       go test ./...
-      if (Test-Path web/package.json) { Get-Content web/package.json | Select-String '"name"' } else { exit 1 }
+      if (Test-Path ../frontend/package.json) { Get-Content ../frontend/package.json | Select-String '"name"' } else { exit 1 }
 deliverables:
   - Full Vue admin MVP wired to Go APIs plus Demo3 smoke notes
 ```

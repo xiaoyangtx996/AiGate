@@ -11,7 +11,7 @@ inputs:
   repo: .
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
-    - internal/mcp/
+    - backend/internal/mcp/
 constraints:
   - MCP is an asset with register authorize meter health version hooks
   - support two catalogs: enterprise private registry (MVP must) and curated public marketplace entries (MVP can be seed/read-only list)
@@ -33,6 +33,7 @@ common_failure_modes:
   - conflating public marketplace install with unrestricted global access
 short_test:
   - shell: |
+      cd backend
       go test ./internal/mcp/...
 deliverables:
   - MCP private registry plus public catalog APIs with authorization proxy metering health tests

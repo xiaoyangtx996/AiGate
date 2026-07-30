@@ -11,10 +11,10 @@ inputs:
   repo: .
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
-    - web/
-    - cmd/api/
+    - frontend/
+    - backend/cmd/api/
 constraints:
-  - frontend/backend separation: Vue3 SPA in web/ with own Vite build; consumes Go REST/SSE APIs only
+  - frontend/backend separation: Vue3 SPA in frontend/ with own Vite build; consumes Go REST/SSE APIs only
   - no SSR fullstack; no Go-rendered admin HTML as primary UI
   - configure API base URL via env; handle CORS on backend
   - Chinese default copy
@@ -30,15 +30,16 @@ success_criteria:
   - alert inbox shows at least one quota threshold alert when 03b is present
   - CSV export of call logs works for a date range in smoke or test
   - README documents Demo0 click path
-  - web package installs and build or dev script runs
+  - frontend package installs and build or dev script runs
 common_failure_modes:
   - waiting for Plan 06 before any console
   - embedding full Nuxt feature set
   - missing quota parent-child conservation UX feedback
 short_test:
   - shell: |
+      cd backend
       go test ./...
-      if (Test-Path web/package.json) { Get-Content web/package.json | Select-String '"name"' } else { exit 1 }
+      if (Test-Path ../frontend/package.json) { Get-Content ../frontend/package.json | Select-String '"name"' } else { exit 1 }
 deliverables:
   - Thin Vue console for Demo0 plus smoke notes in README
 ```

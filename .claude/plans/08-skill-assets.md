@@ -11,15 +11,15 @@ inputs:
   repo: .
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
-    - internal/skill/
-    - web/
+    - backend/internal/skill/
+    - frontend/
 constraints:
   - do this only after Demo2/Demo3 MVP paths are usable
   - skill stores call-context memory and supports periodic optimization job hook
   - emit billable usage events with skill_id even if pricing UI is later
   - skills are project or tenant assets with authorization like MCP
   - wire into agent skill extension point from Plan 06
-  - add minimal Skill admin screens in web/
+  - add minimal Skill admin screens in frontend/
 success_criteria:
   - skill version create/update and attach to agent works
   - invocation appends memory records retrievable by skill id
@@ -32,6 +32,7 @@ common_failure_modes:
   - billing event missing skill_id dimension
 short_test:
   - shell: |
+      cd backend
       go test ./internal/skill/...
 deliverables:
   - Skill memory versioning optimization-hook usage-event APIs and thin admin UI

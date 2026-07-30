@@ -12,8 +12,8 @@ inputs:
   prd: .claude/prds/aigate-go-platform.prd.md
   reference_capabilities: Snail-AI-agent-rag-mcp-boundaries
   target_paths:
-    - internal/agent/
-    - internal/bot/
+    - backend/internal/agent/
+    - backend/internal/bot/
 constraints:
   - reference Snail AI capability boundaries only; do not require Java runtime
   - each Project can own Agents bound to that project KB and authorized MCP tools
@@ -33,6 +33,7 @@ common_failure_modes:
   - implementing full Skill optimizer in this milestone
 short_test:
   - shell: |
+      cd backend
       go test ./internal/agent/... ./internal/bot/...
 deliverables:
   - Agent and Bot conversation APIs with permission citation tests and Skill extension point

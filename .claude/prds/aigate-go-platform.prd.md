@@ -62,7 +62,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
 | 1 | Go 仓库骨架与领域边界 | 可编译 Go workspace；Tenant/Org/Project 模型与迁移可跑 | complete | `.claude/plans/01-go-scaffold.md` |
-| 2 | 多租户 RBAC 与身份 | 用户/角色/组织树；请求带租户上下文 | pending | `.claude/plans/02-tenant-rbac.md` |
+| 2 | 多租户 RBAC 与身份 | 用户/角色/组织树；请求带租户上下文 | complete | `.claude/plans/02-tenant-rbac.md` |
 | 3 | LLM 网关与密钥配额 | Key 走兼容入口；配额拦截；调用日志；真实成本字段 | pending | `.claude/plans/03-gateway-quota.md` |
 | 3b | 审计 / Job / 配额预警 | 统一 audit 事件；共享 worker；配额阈值告警 + webhook | pending | `.claude/plans/03b-audit-jobs-alerts.md` |
 | 4 | 项目知识库 RAG | 上传/向量化/检索；项目隔离；本地对象存储 | pending | `.claude/plans/04-project-knowledge.md` |
@@ -87,13 +87,14 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 - [x] **D1 网关**：旁路部署 NewAPI；AiGate 负责 Key/配额预检、审计写入、配置下发。不选 sub2api。
 - [x] **D2 向量库**：MVP 用 **pgvector**（与业务库同 Postgres）。
 - [x] **D3 组织层级**：MVP **三级**（租户 → 部门 → 员工）；Project 为资产容器，不做第四组织级。
-- [x] **D4 前后端分离**：后端 Go（`cmd/` + `internal/`）只提供 REST/SSE API；前端同仓 **Vue3 SPA（`web/`）** 独立构建部署，仅通过 HTTP 调用后端。禁止 Go template 主控制台、禁止 Nuxt/SSR 全栈回潮。CORS 与 API 契约由后端暴露、前端消费。
+- [x] **D4 前后端分离**：同仓两目录——**`backend/`**（Go：`cmd/` + `internal/` + `migrations/`）只提供 REST/SSE API；**`frontend/`**（Vue3 SPA）独立 `package.json` 构建部署，仅通过 HTTP 调用后端。禁止 Go template 主控制台、禁止 Nuxt/SSR 全栈回潮。CORS 与 API 契约由后端暴露、前端消费。
 - [x] **D5 Job**：MVP **DB-backed jobs** + `cmd/worker`；不做 Redis 队列强依赖。
 - [x] **D6 对象存储**：MVP **本地目录可配**；MinIO 后置。
 
 ## Engineering conventions
 
-- **Schema comments**：`migrations/` 中每张业务表、每个业务字段必须有详细的 `COMMENT ON TABLE` / `COMMENT ON COLUMN`（可用中文）；表达业务意图的索引也应注释。禁止提交无注释 DDL。
+- **Schema comments**：`backend/migrations/` 中每张业务表、每个业务字段必须有详细的 `COMMENT ON TABLE` / `COMMENT ON COLUMN`（可用中文）；表达业务意图的索引也应注释。禁止提交无注释 DDL。
+- **Repo layout**：`backend/` = Go API；`frontend/` = Vue SPA；不要把前端塞进 `backend/`，也不要把 Go 模块放回仓库根。
 
 ## Risks
 
@@ -105,5 +106,5 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Skill 过早投入 | Medium | Medium | 08 后置；06 仅预留扩展点 |
 
 ---
-*Status: READY — Milestone 1 complete; continue with Plan 02 `/goal`.*
+*Status: READY — Milestones 1–2 complete; continue with Plan 03 `/goal`.*
 *Legacy snapshot tag: `legacy-nuxt-aigate`.*

@@ -11,11 +11,11 @@ inputs:
   repo: .
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
-    - internal/audit/
-    - internal/jobs/
-    - internal/alerts/
-    - cmd/worker/
-    - migrations/
+    - backend/internal/audit/
+    - backend/internal/jobs/
+    - backend/internal/alerts/
+    - backend/cmd/worker/
+    - backend/migrations/
 constraints:
   - DB-backed jobs only for MVP; no Redis queue hard dependency
   - audit_event must correlate gateway MCP and later agent calls via trace_id
@@ -34,6 +34,7 @@ common_failure_modes:
   - worker and API racing on job claims without locking
 short_test:
   - shell: |
+      cd backend
       go test ./internal/audit/... ./internal/jobs/... ./internal/alerts/...
 deliverables:
   - Audit Jobs Alerts packages with worker binary migrations and CSV export API

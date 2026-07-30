@@ -11,10 +11,10 @@ inputs:
   repo: .
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
-    - internal/auth/
-    - internal/rbac/
-    - internal/org/
-    - cmd/api/
+    - backend/internal/auth/
+    - backend/internal/rbac/
+    - backend/internal/org/
+    - backend/cmd/api/
 constraints:
   - borrow RuoYi-style role/menu/dept ideas only; do not port Java RuoYi wholesale
   - every data query must enforce tenant_id (or equivalent) isolation
@@ -35,6 +35,7 @@ common_failure_modes:
   - org tree cycles or orphan memberships
 short_test:
   - shell: |
+      cd backend
       go test ./internal/auth/... ./internal/rbac/... ./internal/org/...
 deliverables:
   - Auth + RBAC + org tree APIs with isolation tests

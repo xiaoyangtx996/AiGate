@@ -11,40 +11,42 @@ inputs:
   prd: .claude/prds/aigate-go-platform.prd.md
   legacy_ref: legacy-nuxt-aigate
   target_paths:
-    - go.mod
-    - cmd/
-    - internal/domain/
-    - internal/db/
-    - migrations/
-    - web/.gitkeep
+    - backend/go.mod
+    - backend/cmd/
+    - backend/internal/domain/
+    - backend/internal/db/
+    - backend/migrations/
+    - frontend/.gitkeep
     - README.md
 constraints:
-  - greenfield All-in Go backend; do not restore Nuxt app tree
+  - greenfield All-in Go backend under backend/; do not restore Nuxt app tree
   - do not use sub2api as product base
-  - frontend and backend are separated: Go API only in this milestone; web/ is SPA placeholder only
+  - frontend and backend are separated directories: backend/ = Go API; frontend/ = SPA placeholder only
   - domain must include Tenant, Organization(Department), Project as first-class entities
   - Project is asset container; org MVP depth is three levels
-  - reserve web/ for Vue3 SPA with its own package.json later; do not implement UI or SSR now
+  - reserve frontend/ for Vue3 SPA with its own package.json later; do not implement UI or SSR now
   - PostgreSQL migrations must be reproducible from empty DB
   - every table and column must have detailed COMMENT ON (Chinese allowed); indexes that encode business intent should be commented too
   - keep public docs minimal; no fake CI commands
 success_criteria:
-  - go.mod module path exists and go build ./... succeeds
+  - backend/go.mod exists and (cd backend; go build ./...) succeeds
   - migrations create tenant organization/department project tables with COMMENT ON TABLE/COLUMN
-  - README documents backend migrate/API stub and states frontend is separate Vue SPA under web/
-  - git status shows scaffold files under cmd/ internal/ migrations/ web/
-  - web/ contains README stating SPA-only and no coupling to Go templates
+  - README documents backend migrate/API stub and states frontend is separate Vue SPA under frontend/
+  - git status shows scaffold files under backend/ and frontend/
+  - frontend/ contains README stating SPA-only and no coupling to Go templates
 common_failure_modes:
   - mixing legacy Nuxt files back into tree
   - domain model collapses Project into Organization
   - migrations not runnable on empty Postgres
+  - putting Go module or Vue app at repo root instead of backend/ frontend/
 short_test:
   - shell: |
       go version
+      cd backend
       go build ./...
       go test ./internal/domain/...
 deliverables:
-  - Go module scaffold with domain packages and SQL migrations
+  - Go module scaffold under backend/ with domain packages and SQL migrations
   - README with local Postgres migrate + API stub run steps
 ```
 

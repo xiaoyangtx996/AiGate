@@ -17,11 +17,12 @@ inputs:
     - README.md
 constraints:
   - Postgres with pgvector for MVP
-  - services at minimum: postgres api worker gateway-or-newapi-sidecar web(static SPA) as separate containers
-  - frontend and backend deploy separately; web only talks to api over HTTP
+  - services at minimum: postgres api worker gateway-or-newapi-sidecar frontend(static SPA) as separate containers
+  - frontend and backend deploy separately; frontend only talks to api over HTTP
   - document env vars without committing secrets
   - health/readiness endpoints required for api
   - migrations runnable from clean volume
+  - Docker build contexts point at backend/ and frontend/ respectively
 success_criteria:
   - docker compose up brings postgres healthy and api ready on documented port
   - web service or static host is separate from api process
@@ -35,6 +36,8 @@ short_test:
   - shell: |
       if (Test-Path docker-compose.yml) { Get-Content docker-compose.yml | Select-String 'postgres|pgvector' } else { exit 1 }
       if (Test-Path README.md) { Get-Content README.md | Select-String 'compose|migrate' } else { exit 1 }
+      if (Test-Path backend) { 'backend ok' } else { exit 1 }
+      if (Test-Path frontend) { 'frontend ok' } else { exit 1 }
 deliverables:
   - Compose Dockerfile env example and deploy smoke section in README
 needs_auth:

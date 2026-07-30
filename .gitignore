@@ -14,3 +14,7 @@ dist/
 bin/
 coverage/
 tmp/
+frontend/dist/
+frontend/node_modules/
+backend/bin/
+backend/coverage/
