@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"github.com/xiaoyangtx996/AiGate/internal/alerts"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/db"
@@ -31,7 +32,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := &gateway.Handler{Keys: apikey.NewService(apikey.NewPostgres(store)), Quota: quota.NewService(quota.NewPostgres(store)), Channels: channel.NewService(channel.NewPostgres(store), cipher), Logs: gateway.NewPostgresLogger(store), Client: &http.Client{Timeout: 2 * time.Minute}, TrustedProxyCIDRs: split(os.Getenv("TRUSTED_PROXY_CIDRS"))}
+	alertService := alerts.NewService(alerts.NewPostgres(store), nil)
+	h := &gateway.Handler{Keys: apikey.NewService(apikey.NewPostgres(store)), Quota: quota.NewService(quota.NewPostgres(store), alertService), Channels: channel.NewService(channel.NewPostgres(store), cipher), Logs: gateway.NewPostgresLogger(store), Client: &http.Client{Timeout: 2 * time.Minute}, TrustedProxyCIDRs: split(os.Getenv("TRUSTED_PROXY_CIDRS"))}
 	addr := env("AIGATE_GATEWAY_ADDR", ":8081")
 	log.Printf("AiGate gateway listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, h))

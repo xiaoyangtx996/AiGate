@@ -8,7 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/xiaoyangtx996/AiGate/internal/alerts"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
+	"github.com/xiaoyangtx996/AiGate/internal/audit"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/db"
@@ -46,13 +48,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	alertService := alerts.NewService(alerts.NewPostgres(store), nil)
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
 		rbac: rbacService, org: org.NewService(store),
 		keys:     apikey.NewService(apikey.NewPostgres(store)),
-		quota:    quota.NewService(quota.NewPostgres(store)),
+		quota:    quota.NewService(quota.NewPostgres(store), alertService),
 		channels: channel.NewService(channel.NewPostgres(store), cipher),
 		logs:     gateway.NewPostgresLogger(store),
+		audit:    audit.NewService(audit.NewPostgres(store)),
+		alerts:   alertService,
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)

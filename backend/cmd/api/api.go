@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/xiaoyangtx996/AiGate/internal/alerts"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
+	"github.com/xiaoyangtx996/AiGate/internal/audit"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
@@ -25,6 +27,8 @@ type api struct {
 	quota    *quota.Service
 	channels *channel.Service
 	logs     *gateway.PostgresLogger
+	audit    *audit.Service
+	alerts   *alerts.Service
 }
 
 func (a *api) handler() http.Handler {
@@ -60,6 +64,11 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("PUT /v1/channels/{id}", a.admin(a.updateChannel))
 	protected.HandleFunc("PUT /v1/model-prices/{model}", a.admin(a.setModelPrice))
 	protected.HandleFunc("GET /v1/api-logs", a.admin(a.listAPILogs))
+	protected.HandleFunc("GET /v1/audit-events", a.admin(a.listAuditEvents))
+	protected.HandleFunc("GET /v1/audit-events.csv", a.admin(a.exportAuditEvents))
+	protected.HandleFunc("GET /v1/alert-policy", a.admin(a.getAlertPolicy))
+	protected.HandleFunc("PUT /v1/alert-policy", a.admin(a.setAlertPolicy))
+	protected.HandleFunc("GET /v1/alerts", a.admin(a.listAlerts))
 	root.Handle("/v1/", auth.Middleware(a.tokens, protected))
 	return root
 }
@@ -364,6 +373,90 @@ func (a *api) setModelPrice(w http.ResponseWriter, r *http.Request) {
 	}
 	identity, _ := auth.FromContext(r.Context())
 	respondEmpty(w, a.channels.SetPrice(r.Context(), identity.TenantID, r.PathValue("model"), input.UpstreamModel, input.InputMicros, input.OutputMicros))
+}
+
+func (a *api) auditFilter(w http.ResponseWriter, r *http.Request) (audit.Filter, bool) {
+	identity, _ := auth.FromContext(r.Context())
+	from, err := audit.ParseTime(r.URL.Query().Get("from"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid from time")
+		return audit.Filter{}, false
+	}
+	to, err := audit.ParseTime(r.URL.Query().Get("to"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid to time")
+		return audit.Filter{}, false
+	}
+	limit, err := audit.ParseLimit(r.URL.Query().Get("limit"))
+	if err != nil || limit < 1 || limit > 1000 || from != nil && to != nil && from.After(*to) {
+		writeError(w, http.StatusBadRequest, "invalid audit filter")
+		return audit.Filter{}, false
+	}
+	return audit.Filter{TenantID: identity.TenantID, TraceID: r.URL.Query().Get("trace_id"), EventType: r.URL.Query().Get("event_type"), From: from, To: to, Limit: limit}, true
+}
+
+func (a *api) listAuditEvents(w http.ResponseWriter, r *http.Request) {
+	filter, ok := a.auditFilter(w, r)
+	if !ok {
+		return
+	}
+	events, err := a.audit.List(r.Context(), filter)
+	respond(w, events, err, http.StatusOK)
+}
+
+func (a *api) exportAuditEvents(w http.ResponseWriter, r *http.Request) {
+	filter, ok := a.auditFilter(w, r)
+	if !ok {
+		return
+	}
+	data, err := a.audit.CSV(r.Context(), filter)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="audit-events.csv"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
+func (a *api) getAlertPolicy(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	policy, err := a.alerts.GetPolicy(r.Context(), identity.TenantID)
+	respond(w, policy, err, http.StatusOK)
+}
+
+func (a *api) setAlertPolicy(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Thresholds      []int16 `json:"thresholds"`
+		WebhookURL      string  `json:"webhook_url"`
+		CooldownSeconds int     `json:"cooldown_seconds"`
+		Enabled         *bool   `json:"enabled"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	enabled := true
+	if input.Enabled != nil {
+		enabled = *input.Enabled
+	}
+	identity, _ := auth.FromContext(r.Context())
+	respondEmpty(w, a.alerts.SetPolicy(r.Context(), alerts.Policy{TenantID: identity.TenantID, Thresholds: input.Thresholds, WebhookURL: input.WebhookURL, CooldownSeconds: input.CooldownSeconds, Enabled: enabled}))
+}
+
+func (a *api) listAlerts(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	limit := 100
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value < 1 || value > 1000 {
+			writeError(w, http.StatusBadRequest, "invalid limit")
+			return
+		}
+		limit = value
+	}
+	items, err := a.alerts.List(r.Context(), identity.TenantID, limit)
+	respond(w, items, err, http.StatusOK)
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {

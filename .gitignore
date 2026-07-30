@@ -18,3 +18,4 @@ frontend/dist/
 frontend/node_modules/
 backend/bin/
 backend/coverage/
+.aigate_enc_key

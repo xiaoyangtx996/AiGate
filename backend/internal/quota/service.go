@@ -38,9 +38,18 @@ type Repository interface {
 	Cancel(context.Context, Reservation) error
 }
 
-type Service struct{ repo Repository }
+type Evaluator interface {
+	Evaluate(context.Context, string) error
+}
 
-func NewService(repo Repository) *Service { return &Service{repo: repo} }
+type Service struct {
+	repo       Repository
+	evaluators []Evaluator
+}
+
+func NewService(repo Repository, evaluators ...Evaluator) *Service {
+	return &Service{repo: repo, evaluators: evaluators}
+}
 func (s *Service) SetLimit(ctx context.Context, account Account) error {
 	if account.LimitTokens < 0 || account.TenantID == "" || account.ScopeID == "" {
 		return ErrConservation
@@ -57,7 +66,15 @@ func (s *Service) Settle(ctx context.Context, reservation Reservation, actual in
 	if actual < 0 {
 		actual = 0
 	}
-	return s.repo.Settle(ctx, reservation, actual)
+	if err := s.repo.Settle(ctx, reservation, actual); err != nil {
+		return err
+	}
+	// Alert evaluation is best-effort after a successful settle; failures must not
+	// make the gateway treat the call as a settlement failure.
+	for _, evaluator := range s.evaluators {
+		_ = evaluator.Evaluate(ctx, reservation.TenantID)
+	}
+	return nil
 }
 func (s *Service) Cancel(ctx context.Context, reservation Reservation) error {
 	return s.repo.Cancel(ctx, reservation)

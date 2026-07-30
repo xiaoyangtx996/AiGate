@@ -11,6 +11,13 @@ type memoryRepo struct {
 	used   int64
 }
 
+type recordingEvaluator struct{ tenantID string }
+
+func (e *recordingEvaluator) Evaluate(_ context.Context, tenantID string) error {
+	e.tenantID = tenantID
+	return nil
+}
+
 func (m *memoryRepo) SetLimit(_ context.Context, a Account) error {
 	m.limits[string(a.Scope)+a.ScopeID] = a.LimitTokens
 	return nil
@@ -87,5 +94,39 @@ func TestSettleCapsOverEstimate(t *testing.T) {
 	}
 	if r.used > 30 {
 		t.Fatalf("used=%d exceeded limit", r.used)
+	}
+}
+
+func TestSettleEvaluatesTenantAlerts(t *testing.T) {
+	r := &memoryRepo{limits: map[string]int64{"tenantt": 30, "organizationo": 30, "useru": 30}}
+	evaluator := &recordingEvaluator{}
+	s := NewService(r, evaluator)
+	reservation, err := s.Reserve(context.Background(), "t", "o", "u", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Settle(context.Background(), reservation, 10); err != nil {
+		t.Fatal(err)
+	}
+	if evaluator.tenantID != "t" {
+		t.Fatalf("evaluated tenant=%q", evaluator.tenantID)
+	}
+}
+
+type failingEvaluator struct{}
+
+func (failingEvaluator) Evaluate(context.Context, string) error {
+	return errors.New("alert boom")
+}
+
+func TestSettleIgnoresEvaluatorFailure(t *testing.T) {
+	r := &memoryRepo{limits: map[string]int64{"tenantt": 30, "organizationo": 30, "useru": 30}}
+	s := NewService(r, failingEvaluator{})
+	reservation, err := s.Reserve(context.Background(), "t", "o", "u", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Settle(context.Background(), reservation, 10); err != nil {
+		t.Fatalf("settle should succeed despite evaluator error: %v", err)
 	}
 }

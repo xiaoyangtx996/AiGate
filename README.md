@@ -18,6 +18,7 @@ cd backend
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000001_tenant_organization_project.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000002_tenant_rbac.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000003_gateway_quota.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000004_audit_jobs_alerts.up.sql
 ```
 
 Bootstrap and login (JWT secret ≥ 32 bytes):
@@ -86,6 +87,33 @@ curl http://localhost:8081/v1/chat/completions \
 `AIGATE_GATEWAY_ADDR` defaults to `:8081`. `X-Forwarded-For` is used only when
 the direct peer belongs to `TRUSTED_PROXY_CIDRS`. The API and gateway processes
 must receive the same `AIGATE_CHANNEL_ENCRYPTION_KEY` value.
+
+## Audit, jobs and quota alerts
+
+Tenant administrators can query audit events as JSON or RFC 4180 CSV. Both
+audit endpoints accept `from`, `to`, `trace_id`, `event_type` and `limit`;
+timestamps use RFC3339.
+
+```text
+GET /v1/audit-events
+GET /v1/audit-events.csv
+GET /v1/alert-policy
+PUT /v1/alert-policy
+GET /v1/alerts
+```
+
+Quota alert thresholds default to `70, 90, 100`. Configure the tenant policy
+and optional webhook through `PUT /v1/alert-policy`, then run the PostgreSQL
+worker in a separate process:
+
+```bash
+cd backend
+export AIGATE_DATABASE_URL=postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable
+go run ./cmd/worker
+```
+
+The worker uses row locking and leases, retries failed webhook jobs with
+backoff, and moves exhausted jobs to `dead_letter`. Redis is not required.
 
 ## Frontend
 

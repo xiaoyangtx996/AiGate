@@ -7,6 +7,7 @@ go build ./...
 go test ./...
 go run ./cmd/api
 go run ./cmd/gateway
+go run ./cmd/worker
 ```
 
 Migrations live in `migrations/`. Schema comments (`COMMENT ON`) are mandatory for every business table and column.
@@ -14,3 +15,7 @@ Migrations live in `migrations/`. Schema comments (`COMMENT ON`) are mandatory f
 `cmd/gateway` fronts a NewAPI sidecar. Configure channels, model mappings,
 employee API keys and hierarchical quotas through the admin REST API documented
 in the repository root README.
+
+`cmd/worker` processes PostgreSQL-backed jobs. Plan 03b registers quota alert
+webhook delivery with retries and dead-letter status; no Redis service is
+required.
