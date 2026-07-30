@@ -14,13 +14,14 @@ inputs:
     - web/
     - cmd/api/
 constraints:
-  - extend thin console from 07a; do not rewrite auth shell
+  - keep frontend/backend separation; extend SPA only; do not rewrite auth shell
+  - extend thin console from 07a
   - required screens: project list membership switcher KB upload job status MCP private register public marketplace enable grant health Agent create chat usage dashboard channel providers Bot panel optional
   - role-gated nav for IT admin vs project lead vs finance/audit read-only
   - dashboards minimum: daily calls token/cost by org/project quota utilization percent
   - finance/audit can export cost rollup CSV by org/project/day
   - Chinese default UI copy
-  - reuse APIs; no duplicate business logic in frontend
+  - reuse backend APIs; no duplicate business logic in frontend
 success_criteria:
   - operator can complete path create project upload doc create agent chat with citation
   - IT admin can manage private MCP, enable a public marketplace entry, grant to project, and see health badge and channel providers

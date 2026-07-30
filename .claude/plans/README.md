@@ -7,12 +7,14 @@ Legacy Nuxt snapshot tag: `legacy-nuxt-aigate`
 ## Dependency graph (optimized)
 
 ```text
-01 → 02 → 03 ─┬→ 03b ─→ 07a          (Demo 0)
+01 → 02 → 03 ─┬→ 03b ─→ 07a          (Demo 0; 07a = Vue SPA)
               ├→ 04 ──┐
-              ├→ 05 ──┴→ 06 → 07b     (Demo 2 → 3)
-              └→ 09                   (deploy, parallel after 03)
+              ├→ 05 ──┴→ 06 → 07b     (Demo 2 → 3; backend APIs then SPA pages)
+              └→ 09                   (deploy api/worker/web separately after 03)
 06 / 07b → 08                         (Skill, post-MVP)
 ```
+
+Frontend/backend separation: Go owns APIs; `web/` is Vue SPA only (see PRD D4).
 
 ## Run order
 

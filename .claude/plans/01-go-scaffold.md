@@ -19,18 +19,20 @@ inputs:
     - web/.gitkeep
     - README.md
 constraints:
-  - greenfield All-in Go; do not restore Nuxt app tree
+  - greenfield All-in Go backend; do not restore Nuxt app tree
   - do not use sub2api as product base
+  - frontend and backend are separated: Go API only in this milestone; web/ is SPA placeholder only
   - domain must include Tenant, Organization(Department), Project as first-class entities
   - Project is asset container; org MVP depth is three levels
-  - reserve web/ directory for Vue3 console without implementing UI yet
+  - reserve web/ for Vue3 SPA with its own package.json later; do not implement UI or SSR now
   - PostgreSQL migrations must be reproducible from empty DB
   - keep public docs minimal; no fake CI commands
 success_criteria:
   - go.mod module path exists and go build ./... succeeds
   - migrations create tenant organization/department project tables
-  - README documents how to run migrate and start API stub
+  - README documents backend migrate/API stub and states frontend is separate Vue SPA under web/
   - git status shows scaffold files under cmd/ internal/ migrations/ web/
+  - web/ contains README stating SPA-only and no coupling to Go templates
 common_failure_modes:
   - mixing legacy Nuxt files back into tree
   - domain model collapses Project into Organization

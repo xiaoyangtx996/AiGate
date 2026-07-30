@@ -14,7 +14,10 @@ inputs:
     - web/
     - cmd/api/
 constraints:
-  - Vue3 web/ in same repo; Chinese default copy
+  - frontend/backend separation: Vue3 SPA in web/ with own Vite build; consumes Go REST/SSE APIs only
+  - no SSR fullstack; no Go-rendered admin HTML as primary UI
+  - configure API base URL via env; handle CORS on backend
+  - Chinese default copy
   - screens limited to login org stub users keys quota editor call logs alerts inbox channel provider credentials list
   - channel UI in thin console is list/edit credentials only; advanced routing later in 07b
   - no full KB MCP Agent UI in this milestone

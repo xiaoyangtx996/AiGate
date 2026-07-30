@@ -44,8 +44,9 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 - MCP 注册/授权/计量/健康检查（企业私有库必做；公共市场可精选启用）
 - 统一审计事件、后台 Job、配额预警
 - 项目 Agent + 管理 Bot 最小对话
+- **前后端分离**：Go 提供 HTTP API；Vue3 SPA 控制台仅消费 API（禁止再做成 Nuxt/SSR 全栈）
 - 瘦控制台（Demo 0）→ 完整管理台（Demo 3）
-- 基础 docker compose 部署
+- 基础 docker compose 部署（api / worker / web 分服务）
 
 **Out of scope（MVP）**
 
@@ -54,6 +55,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 - 部门级 Agent、跨知识库联合搜索、SSO（企微/钉钉/LDAP）
 - 模型微调 / AI 工作流编排
 - 将旧 Nuxt 代码迁移式重写（快照于 `legacy-nuxt-aigate`）
+- 前后端耦合的全栈渲染（Nuxt/SSR、Go 内嵌管理页作为主 UI）
 
 ## Delivery Milestones
 
@@ -85,7 +87,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 - [x] **D1 网关**：旁路部署 NewAPI；AiGate 负责 Key/配额预检、审计写入、配置下发。不选 sub2api。
 - [x] **D2 向量库**：MVP 用 **pgvector**（与业务库同 Postgres）。
 - [x] **D3 组织层级**：MVP **三级**（租户 → 部门 → 员工）；Project 为资产容器，不做第四组织级。
-- [x] **D4 管理端**：同仓 **Vue3 `web/`**，不先做 Go template 主控制台。
+- [x] **D4 前后端分离**：后端 Go（`cmd/` + `internal/`）只提供 REST/SSE API；前端同仓 **Vue3 SPA（`web/`）** 独立构建部署，仅通过 HTTP 调用后端。禁止 Go template 主控制台、禁止 Nuxt/SSR 全栈回潮。CORS 与 API 契约由后端暴露、前端消费。
 - [x] **D5 Job**：MVP **DB-backed jobs** + `cmd/worker`；不做 Redis 队列强依赖。
 - [x] **D6 对象存储**：MVP **本地目录可配**；MinIO 后置。
 

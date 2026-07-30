@@ -17,12 +17,14 @@ inputs:
     - README.md
 constraints:
   - Postgres with pgvector for MVP
-  - services at minimum: postgres api worker gateway-or-newapi-sidecar web optional
+  - services at minimum: postgres api worker gateway-or-newapi-sidecar web(static SPA) as separate containers
+  - frontend and backend deploy separately; web only talks to api over HTTP
   - document env vars without committing secrets
   - health/readiness endpoints required for api
   - migrations runnable from clean volume
 success_criteria:
   - docker compose up brings postgres healthy and api ready on documented port
+  - web service or static host is separate from api process
   - migrate from empty DB succeeds
   - README contains start stop migrate smoke commands for Windows and Linux notes
 common_failure_modes:
