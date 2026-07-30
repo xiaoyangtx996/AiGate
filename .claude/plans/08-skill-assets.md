@@ -2,7 +2,7 @@
 
 PRD: `.claude/prds/aigate-go-platform.prd.md` · Milestone 8  
 Outcome: Skill 可沉淀调用记忆并支持版本；预留计费事件  
-Depends: Plan 07
+Depends: Plan 07b（完整控制台后）
 
 ```yaml
 /goal
@@ -12,11 +12,14 @@ inputs:
   prd: .claude/prds/aigate-go-platform.prd.md
   target_paths:
     - internal/skill/
+    - web/
 constraints:
-  - do this only after MVP gateway tenant KB MCP agent console are usable
+  - do this only after Demo2/Demo3 MVP paths are usable
   - skill stores call-context memory and supports periodic optimization job hook
-  - emit billable usage events even if pricing UI is later
+  - emit billable usage events with skill_id even if pricing UI is later
   - skills are project or tenant assets with authorization like MCP
+  - wire into agent skill extension point from Plan 06
+  - add minimal Skill admin screens in web/
 success_criteria:
   - skill version create/update and attach to agent works
   - invocation appends memory records retrievable by skill id
@@ -31,7 +34,7 @@ short_test:
   - shell: |
       go test ./internal/skill/...
 deliverables:
-  - Skill memory versioning optimization-hook and usage-event APIs/tests
+  - Skill memory versioning optimization-hook usage-event APIs and thin admin UI
 ```
 
 # 补齐 inputs → 交执行 agent；稳后可定时/Webhook。外部权限开头声明。

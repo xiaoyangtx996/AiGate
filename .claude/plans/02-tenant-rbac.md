@@ -18,11 +18,14 @@ inputs:
 constraints:
   - borrow RuoYi-style role/menu/dept ideas only; do not port Java RuoYi wholesale
   - every data query must enforce tenant_id (or equivalent) isolation
+  - MVP org depth is tenant -> department -> employee; Project is asset container not org level
+  - support project membership ACL separate from department tree
   - primary roles must cover platform admin and project-capable member
   - no SSO in this milestone
 success_criteria:
   - login issues session or JWT usable by API
   - admin can CRUD users/roles and attach users to org tree
+  - project membership can grant deny project resource access in tests
   - cross-tenant read/write attempts return 403/404 in tests
   - go test ./internal/auth/... ./internal/rbac/... ./internal/org/... passes
 common_failure_modes:
