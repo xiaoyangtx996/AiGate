@@ -65,7 +65,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | 2 | 多租户 RBAC 与身份 | 用户/角色/组织树；请求带租户上下文 | complete | `.claude/plans/02-tenant-rbac.md` |
 | 3 | LLM 网关与密钥配额 | Key 走兼容入口；配额拦截；调用日志；真实成本字段 | complete | `.claude/plans/03-gateway-quota.md` |
 | 3b | 审计 / Job / 配额预警 | 统一 audit 事件；共享 worker；配额阈值告警 + webhook | complete | `.claude/plans/03b-audit-jobs-alerts.md` |
-| 4 | 项目知识库 RAG | 上传/向量化/检索；项目隔离；本地对象存储 | pending | `.claude/plans/04-project-knowledge.md` |
+| 4 | 项目知识库 RAG | 上传/向量化/检索；项目隔离；本地对象存储 | complete | `.claude/plans/04-project-knowledge.md` |
 | 5 | MCP 资产治理 | 私有注册 + 公共市场启用；授权/计量/健康；调用入审计 | pending | `.claude/plans/05-mcp-assets.md` |
 | 6 | 项目 Agent 与 AiGate Bot | Agent 绑 KB+MCP；Bot 查权限内用量；Skill 扩展点预留 | pending | `.claude/plans/06-agents.md` |
 | 7a | 瘦控制台（Demo 0） | 登录、组织、密钥、配额、调用日志/导出、渠道凭证 | complete | `.claude/plans/07a-console-thin.md` |

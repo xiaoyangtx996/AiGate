@@ -277,10 +277,12 @@ func (s *Store) HasProjectAccess(ctx context.Context, tenantID, projectID, userI
 	var allowed bool
 	err := s.pool.QueryRow(ctx, `
 		SELECT EXISTS (
-			SELECT 1 FROM project_memberships pm
-			JOIN projects p ON p.tenant_id = pm.tenant_id AND p.id = pm.project_id
-			JOIN users u ON u.tenant_id = pm.tenant_id AND u.id = pm.user_id
-			WHERE pm.tenant_id = $1 AND pm.project_id = $2 AND pm.user_id = $3
+			SELECT 1 FROM projects p
+			JOIN users u ON u.tenant_id = p.tenant_id AND u.id = $3
+			WHERE p.tenant_id = $1 AND p.id = $2 AND (
+				EXISTS (SELECT 1 FROM project_memberships pm WHERE pm.tenant_id=$1 AND pm.project_id=$2 AND pm.user_id=$3)
+				OR EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.tenant_id=ur.tenant_id AND r.id=ur.role_id WHERE ur.tenant_id=$1 AND ur.user_id=$3 AND r.code='platform_admin')
+			)
 		)`, tenantID, projectID, userID).Scan(&allowed)
 	return allowed, err
 }

@@ -20,6 +20,8 @@ psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v O
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000003_gateway_quota.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000004_audit_jobs_alerts.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000005_multitenant_session.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000006_tenant_active.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000007_project_knowledge.up.sql
 ```
 
 Bootstrap tenant administrator and login (JWT secret ≥ 32 bytes):

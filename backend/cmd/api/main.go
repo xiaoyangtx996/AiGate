@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/xiaoyangtx996/AiGate/internal/alerts"
@@ -17,9 +18,13 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/db"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/gateway"
+	"github.com/xiaoyangtx996/AiGate/internal/jobs"
+	"github.com/xiaoyangtx996/AiGate/internal/knowledge"
 	"github.com/xiaoyangtx996/AiGate/internal/org"
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
+	"github.com/xiaoyangtx996/AiGate/internal/rag"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
+	"github.com/xiaoyangtx996/AiGate/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -54,16 +59,21 @@ func main() {
 		log.Fatal(err)
 	}
 	alertService := alerts.NewService(alerts.NewPostgres(store), nil)
+	objects := storage.Local{Root: envOr("AIGATE_OBJECT_STORAGE_PATH", "./data/objects"), MaxBytes: envInt64("AIGATE_OBJECT_MAX_BYTES", 20<<20)}
+	embedder := rag.HashEmbedder{}
+	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), embedder)
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
 		rbac: rbacService, org: org.NewService(store),
-		keys:     apikey.NewService(apikey.NewPostgres(store)),
-		quota:    quota.NewService(quota.NewPostgres(store), alertService),
-		channels: channel.NewService(channel.NewPostgres(store), cipher),
-		logs:     gateway.NewPostgresLogger(store),
-		audit:    audit.NewService(audit.NewPostgres(store)),
-		alerts:   alertService,
-		sessions: store,
+		keys:      apikey.NewService(apikey.NewPostgres(store)),
+		quota:     quota.NewService(quota.NewPostgres(store), alertService),
+		channels:  channel.NewService(channel.NewPostgres(store), cipher),
+		logs:      gateway.NewPostgresLogger(store),
+		audit:     audit.NewService(audit.NewPostgres(store)),
+		alerts:    alertService,
+		sessions:  store,
+		knowledge: knowledgeService,
+		rag:       rag.NewService(store, rag.NewPostgres(store), embedder),
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)
@@ -146,4 +156,16 @@ func envOr(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func envInt64(name string, fallback int64) int64 {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || parsed <= 0 {
+		log.Fatalf("%s must be a positive integer", name)
+	}
+	return parsed
 }

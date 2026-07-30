@@ -17,23 +17,27 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/gateway"
+	"github.com/xiaoyangtx996/AiGate/internal/knowledge"
 	"github.com/xiaoyangtx996/AiGate/internal/org"
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
+	"github.com/xiaoyangtx996/AiGate/internal/rag"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
 )
 
 type api struct {
-	auth     *auth.Service
-	tokens   *auth.TokenManager
-	rbac     *rbac.Service
-	org      *org.Service
-	keys     *apikey.Service
-	quota    *quota.Service
-	channels *channel.Service
-	logs     logReader
-	audit    *audit.Service
-	alerts   *alerts.Service
-	sessions menuStore
+	auth      *auth.Service
+	tokens    *auth.TokenManager
+	rbac      *rbac.Service
+	org       *org.Service
+	keys      *apikey.Service
+	quota     *quota.Service
+	channels  *channel.Service
+	logs      logReader
+	audit     *audit.Service
+	alerts    *alerts.Service
+	sessions  menuStore
+	knowledge *knowledge.Service
+	rag       *rag.Service
 }
 
 type logReader interface {
@@ -73,6 +77,11 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("PUT /v1/projects/{projectID}/members/{userID}", a.admin(a.grantProject))
 	protected.HandleFunc("DELETE /v1/projects/{projectID}/members/{userID}", a.admin(a.revokeProject))
 	protected.HandleFunc("GET /v1/projects/{projectID}/access", a.projectAccess)
+	protected.HandleFunc("POST /v1/projects/{projectID}/knowledge-bases", a.createKnowledgeBase)
+	protected.HandleFunc("POST /v1/projects/{projectID}/knowledge-bases/{kbID}/documents", a.uploadKnowledgeDocument)
+	protected.HandleFunc("GET /v1/projects/{projectID}/documents/{documentID}", a.knowledgeDocumentStatus)
+	protected.HandleFunc("POST /v1/projects/{projectID}/documents/{documentID}/retry", a.retryKnowledgeDocument)
+	protected.HandleFunc("POST /v1/projects/{projectID}/knowledge-bases/{kbID}/search", a.searchKnowledgeBase)
 	protected.HandleFunc("GET /v1/api-keys", a.admin(a.listAPIKeys))
 	protected.HandleFunc("POST /v1/api-keys", a.admin(a.createAPIKey))
 	protected.HandleFunc("DELETE /v1/api-keys/{id}", a.admin(a.revokeAPIKey))
@@ -101,6 +110,54 @@ func (a *api) admin(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	}
+}
+
+func (a *api) createKnowledgeBase(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Name string `json:"name"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	kb, err := a.knowledge.Create(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID, input.Name)
+	respond(w, kb, err, http.StatusCreated)
+}
+
+func (a *api) uploadKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	filename := r.URL.Query().Get("filename")
+	if filename == "" {
+		writeError(w, http.StatusBadRequest, "filename is required")
+		return
+	}
+	doc, err := a.knowledge.Upload(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("kbID"), identity.UserID, filename, r.Header.Get("Content-Type"), r.Body)
+	respond(w, doc, err, http.StatusAccepted)
+}
+
+func (a *api) knowledgeDocumentStatus(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	doc, err := a.knowledge.Status(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("documentID"), identity.UserID)
+	respond(w, doc, err, http.StatusOK)
+}
+
+func (a *api) retryKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	err := a.knowledge.Retry(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("documentID"), identity.UserID)
+	respondEmpty(w, err)
+}
+
+func (a *api) searchKnowledgeBase(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Query string `json:"query"`
+		Limit int    `json:"limit"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	results, err := a.rag.Search(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("kbID"), identity.UserID, input.Query, input.Limit)
+	respond(w, map[string]any{"results": results}, err, http.StatusOK)
 }
 
 func (a *api) login(w http.ResponseWriter, r *http.Request) {
@@ -613,6 +670,14 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 }
 
 func respond(w http.ResponseWriter, value any, err error, status int) {
+	if errors.Is(err, knowledge.ErrForbidden) || errors.Is(err, rag.ErrForbidden) {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	if errors.Is(err, knowledge.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -622,6 +687,14 @@ func respond(w http.ResponseWriter, value any, err error, status int) {
 
 func respondEmpty(w http.ResponseWriter, err error) {
 	if err != nil {
+		if errors.Is(err, knowledge.ErrForbidden) || errors.Is(err, rag.ErrForbidden) {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		if errors.Is(err, knowledge.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not found")
+			return
+		}
 		writeServiceError(w, err)
 		return
 	}
