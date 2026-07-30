@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/xiaoyangtx996/AiGate/internal/alerts"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
@@ -26,9 +30,19 @@ type api struct {
 	keys     *apikey.Service
 	quota    *quota.Service
 	channels *channel.Service
-	logs     *gateway.PostgresLogger
+	logs     logReader
 	audit    *audit.Service
 	alerts   *alerts.Service
+	sessions menuStore
+}
+
+type logReader interface {
+	List(context.Context, gateway.LogFilter) ([]gateway.LogRecord, error)
+}
+
+type menuStore interface {
+	auth.MenuStore
+	SetMenuEnabled(context.Context, string, string, bool) error
 }
 
 func (a *api) handler() http.Handler {
@@ -39,6 +53,10 @@ func (a *api) handler() http.Handler {
 	root.HandleFunc("POST /v1/auth/login", a.login)
 
 	protected := http.NewServeMux()
+	protected.HandleFunc("GET /v1/session", a.getSession)
+	protected.HandleFunc("POST /v1/auth/switch-tenant", a.switchTenant)
+	protected.HandleFunc("GET /v1/menu-settings", a.admin(a.listMenuSettings))
+	protected.HandleFunc("PUT /v1/menu-settings/{code}", a.admin(a.setMenuSetting))
 	protected.HandleFunc("GET /v1/users", a.admin(a.listUsers))
 	protected.HandleFunc("POST /v1/users", a.admin(a.createUser))
 	protected.HandleFunc("PUT /v1/users/{id}", a.admin(a.updateUser))
@@ -64,6 +82,7 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("PUT /v1/channels/{id}", a.admin(a.updateChannel))
 	protected.HandleFunc("PUT /v1/model-prices/{model}", a.admin(a.setModelPrice))
 	protected.HandleFunc("GET /v1/api-logs", a.admin(a.listAPILogs))
+	protected.HandleFunc("GET /v1/api-logs.csv", a.admin(a.exportAPILogs))
 	protected.HandleFunc("GET /v1/audit-events", a.admin(a.listAuditEvents))
 	protected.HandleFunc("GET /v1/audit-events.csv", a.admin(a.exportAuditEvents))
 	protected.HandleFunc("GET /v1/alert-policy", a.admin(a.getAlertPolicy))
@@ -86,19 +105,87 @@ func (a *api) admin(next http.HandlerFunc) http.HandlerFunc {
 
 func (a *api) login(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		TenantID string `json:"tenant_id"`
+		TenantID string `json:"tenant_id,omitempty"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 	if !decodeJSON(w, r, &input) {
 		return
 	}
-	token, err := a.auth.Login(r.Context(), input.TenantID, input.Email, input.Password)
+	result, err := a.auth.Login(r.Context(), input.Email, input.Password, input.TenantID)
+	if errors.Is(err, auth.ErrTenantRequired) {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": "tenant_selection_required", "tenants": result.Tenants})
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"token": token, "token_type": "Bearer"})
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (a *api) getSession(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	session, err := auth.BuildSession(r.Context(), a.sessions, identity)
+	respond(w, session, err, http.StatusOK)
+}
+
+func (a *api) switchTenant(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		TenantID string `json:"tenant_id"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	token, err := a.auth.SwitchTenant(r.Context(), identity, input.TenantID)
+	if errors.Is(err, auth.ErrForbidden) {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	respond(w, map[string]string{"token": token, "token_type": "Bearer"}, err, http.StatusOK)
+}
+
+func (a *api) listMenuSettings(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	settings, err := a.sessions.EnabledMenuCodes(r.Context(), identity.TenantID)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	type item struct {
+		auth.Menu
+		Enabled bool `json:"enabled"`
+	}
+	items := make([]item, 0)
+	for _, menu := range auth.AdminMenuCatalog() {
+		enabled, configured := settings[menu.Code]
+		items = append(items, item{Menu: menu, Enabled: !configured || enabled})
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (a *api) setMenuSetting(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Enabled bool `json:"enabled"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	code := r.PathValue("code")
+	valid := false
+	for _, menu := range auth.AdminMenuCatalog() {
+		if menu.Code == code {
+			valid = true
+			break
+		}
+	}
+	if !valid || code == "organization" && !input.Enabled {
+		writeError(w, http.StatusBadRequest, "invalid menu setting")
+		return
+	}
+	identity, _ := auth.FromContext(r.Context())
+	respondEmpty(w, a.sessions.SetMenuEnabled(r.Context(), identity.TenantID, code, input.Enabled))
 }
 
 type userRequest struct {
@@ -340,26 +427,82 @@ func (a *api) updateChannel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listAPILogs(w http.ResponseWriter, r *http.Request) {
+	filter, ok := a.apiLogFilter(w, r, 200)
+	if !ok {
+		return
+	}
+	logs, err := a.logs.List(r.Context(), filter)
+	respond(w, logs, err, http.StatusOK)
+}
+
+func (a *api) apiLogFilter(w http.ResponseWriter, r *http.Request, defaultLimit int) (gateway.LogFilter, bool) {
 	identity, _ := auth.FromContext(r.Context())
 	filter := gateway.LogFilter{TenantID: identity.TenantID, UserID: r.URL.Query().Get("user_id")}
 	if raw := r.URL.Query().Get("blocked"); raw != "" {
 		value, err := strconv.ParseBool(raw)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid blocked query")
-			return
+			return gateway.LogFilter{}, false
 		}
 		filter.Blocked = &value
 	}
+	for value, target := range map[string]**time.Time{"from": &filter.From, "to": &filter.To} {
+		raw := r.URL.Query().Get(value)
+		if raw == "" {
+			continue
+		}
+		parsed, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid "+value+" query")
+			return gateway.LogFilter{}, false
+		}
+		*target = &parsed
+	}
+	if filter.From != nil && filter.To != nil && filter.From.After(*filter.To) {
+		writeError(w, http.StatusBadRequest, "from must not be after to")
+		return gateway.LogFilter{}, false
+	}
+	filter.Limit = defaultLimit
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		limit, err := strconv.Atoi(raw)
-		if err != nil || limit <= 0 {
+		if err != nil || limit <= 0 || limit > 1000 {
 			writeError(w, http.StatusBadRequest, "invalid limit query")
-			return
+			return gateway.LogFilter{}, false
 		}
 		filter.Limit = limit
 	}
+	return filter, true
+}
+
+func (a *api) exportAPILogs(w http.ResponseWriter, r *http.Request) {
+	filter, ok := a.apiLogFilter(w, r, 1000)
+	if !ok {
+		return
+	}
 	logs, err := a.logs.List(r.Context(), filter)
-	respond(w, logs, err, http.StatusOK)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	var output bytes.Buffer
+	writer := csv.NewWriter(&output)
+	_ = writer.Write([]string{"trace_id", "created_at", "user_id", "organization_id", "model", "input_tokens", "output_tokens", "total_tokens", "cost_micros", "estimated", "blocked", "status_code", "error_code"})
+	for _, item := range logs {
+		cost := ""
+		if item.CostMicros != nil {
+			cost = strconv.FormatInt(*item.CostMicros, 10)
+		}
+		_ = writer.Write([]string{item.TraceID, item.CreatedAt.UTC().Format(time.RFC3339Nano), item.UserID, item.OrganizationID, item.Model, strconv.FormatInt(item.InputTokens, 10), strconv.FormatInt(item.OutputTokens, 10), strconv.FormatInt(item.TotalTokens, 10), cost, strconv.FormatBool(item.Estimated), strconv.FormatBool(item.Blocked), strconv.Itoa(item.StatusCode), item.ErrorCode})
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="api-logs.csv"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output.Bytes())
 }
 
 func (a *api) setModelPrice(w http.ResponseWriter, r *http.Request) {
@@ -488,6 +631,10 @@ func respondEmpty(w http.ResponseWriter, err error) {
 func writeServiceError(w http.ResponseWriter, err error) {
 	if errors.Is(err, rbac.ErrNotFound) || errors.Is(err, channel.ErrNotFound) || errors.Is(err, apikey.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+	if errors.Is(err, quota.ErrConservation) {
+		writeError(w, http.StatusBadRequest, "配额守恒校验失败：子级配额之和不能超过上级，且限额不能低于已用量")
 		return
 	}
 	writeError(w, http.StatusBadRequest, err.Error())

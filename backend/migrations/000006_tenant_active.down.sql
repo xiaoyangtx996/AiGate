@@ -1,0 +1,4 @@
+BEGIN;
+DROP INDEX IF EXISTS tenants_active_name_idx;
+ALTER TABLE tenants DROP COLUMN IF EXISTS active;
+COMMIT;

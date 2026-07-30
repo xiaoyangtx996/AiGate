@@ -19,9 +19,10 @@ psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v O
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000002_tenant_rbac.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000003_gateway_quota.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000004_audit_jobs_alerts.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000005_multitenant_session.up.sql
 ```
 
-Bootstrap and login (JWT secret ≥ 32 bytes):
+Bootstrap tenant administrator and login (JWT secret ≥ 32 bytes):
 
 ```bash
 cd backend
@@ -37,8 +38,26 @@ go run ./cmd/api
 ```bash
 curl -X POST http://localhost:8080/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"tenant_id":"TENANT_UUID","email":"admin@example.com","password":"change-me"}'
+  -d '{"email":"admin@example.com","password":"change-me"}'
 ```
+
+Tenant is inferred from the account. If the same email belongs to more than one
+tenant, the API returns HTTP 409 with tenant names and the client asks the user
+to choose; tenant IDs are no longer part of the normal login form.
+
+To bootstrap a headquarters/platform operator that may switch tenants:
+
+```bash
+export AIGATE_PLATFORM_ADMIN_EMAIL=hq-admin@example.com
+export AIGATE_PLATFORM_ADMIN_PASSWORD=change-platform-password
+export AIGATE_PLATFORM_DEFAULT_TENANT_ID=TENANT_UUID
+```
+
+Platform operators are stored separately from tenant users. A tenant's
+`platform_admin` role means **tenant administrator** and never grants
+cross-tenant access. Only a signed platform operator session may call
+`POST /v1/auth/switch-tenant`; all business queries continue to use the current
+tenant in the newly issued JWT.
 
 Default DB URL: `postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable`  
 Override with `AIGATE_DATABASE_URL`. Listen address: `AIGATE_HTTP_ADDR` (default `:8080`).
@@ -115,9 +134,43 @@ go run ./cmd/worker
 The worker uses row locking and leases, retries failed webhook jobs with
 backoff, and moves exhausted jobs to `dead_letter`. Redis is not required.
 
+## Demo 0 thin console
+
+The Vue 3 console is a separate SPA under `frontend/`. Start the API, gateway
+and worker, then run Vite:
+
+```bash
+cd backend
+export AIGATE_CORS_ALLOWED_ORIGINS=http://localhost:5173
+go run ./cmd/api
+
+# Separate terminals, with the same database and encryption settings:
+go run ./cmd/gateway
+go run ./cmd/worker
+
+cd ../frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+`VITE_API_BASE_URL` defaults to `http://localhost:8080` and
+`VITE_GATEWAY_BASE_URL` defaults to `http://localhost:8081` in application
+code. Configure both explicitly for non-local environments.
+
+Demo 0 click path:
+
+1. Open `http://localhost:5173` and enter email/password. The tenant is detected automatically; a tenant-name picker appears only for an email shared by multiple tenants.
+2. In **组织与用户**, create/select a department and create an employee.
+3. In **密钥与配额**, set tenant → department → employee quotas in that order, then issue an employee key. Copy the secret from the one-time dialog.
+4. Use **网关验证** on the same page. Lower/exhaust the quota and call again to see HTTP 429 `quota_exhausted`.
+5. Open **调用日志**, select a date range, verify the blocked row and use **导出 CSV**.
+6. Open **告警收件箱** to view threshold records or configure the webhook policy.
+7. Open **渠道凭证**, edit the NewAPI credential, save, then reopen it: the plaintext field stays empty.
+
 ## Frontend
 
-See [`frontend/README.md`](frontend/README.md). SPA scaffold lands in Plan 07a; until then this directory is a reserved placeholder.
+See [`frontend/README.md`](frontend/README.md). The Demo 0 console is a standalone Vue 3 + Vite SPA and communicates with Go only over HTTP.
 
 ## API docs
 

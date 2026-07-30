@@ -13,10 +13,12 @@ import (
 var ErrInvalidToken = errors.New("invalid token")
 
 type Identity struct {
-	TenantID string   `json:"tenant_id"`
-	UserID   string   `json:"sub"`
-	Roles    []string `json:"roles"`
-	Expires  int64    `json:"exp"`
+	TenantID    string   `json:"tenant_id"`
+	UserID      string   `json:"sub"`
+	Roles       []string `json:"roles"`
+	Platform    bool     `json:"platform,omitempty"`
+	DisplayName string   `json:"display_name,omitempty"`
+	Expires     int64    `json:"exp"`
 }
 
 func (i Identity) HasRole(role string) bool {

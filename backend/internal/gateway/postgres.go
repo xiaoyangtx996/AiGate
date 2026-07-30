@@ -47,7 +47,7 @@ func (l *PostgresLogger) Write(ctx context.Context, e Log) error {
 
 func (l *PostgresLogger) List(ctx context.Context, filter LogFilter) ([]LogRecord, error) {
 	limit := filter.Limit
-	if limit <= 0 || limit > 200 {
+	if limit <= 0 || limit > 1000 {
 		limit = 50
 	}
 	var userFilter any
@@ -60,8 +60,10 @@ FROM api_logs
 WHERE tenant_id=$1
   AND ($2::uuid IS NULL OR user_id=$2)
   AND ($3::boolean IS NULL OR blocked=$3)
+  AND ($4::timestamptz IS NULL OR created_at >= $4)
+  AND ($5::timestamptz IS NULL OR created_at <= $5)
 ORDER BY created_at DESC
-LIMIT $4`, filter.TenantID, userFilter, filter.Blocked, limit)
+LIMIT $6`, filter.TenantID, userFilter, filter.Blocked, filter.From, filter.To, limit)
 	if err != nil {
 		return nil, err
 	}

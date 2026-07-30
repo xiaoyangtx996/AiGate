@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/org"
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const defaultDSN = "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable"
@@ -40,6 +42,9 @@ func main() {
 	if err := bootstrapAdmin(ctx, rbacService); err != nil {
 		log.Fatal(err)
 	}
+	if err := bootstrapPlatformOperator(ctx, store); err != nil {
+		log.Fatal(err)
+	}
 	encryptionKey, err := base64.StdEncoding.DecodeString(os.Getenv("AIGATE_CHANNEL_ENCRYPTION_KEY"))
 	if err != nil {
 		log.Fatal(err)
@@ -58,10 +63,40 @@ func main() {
 		logs:     gateway.NewPostgresLogger(store),
 		audit:    audit.NewService(audit.NewPostgres(store)),
 		alerts:   alertService,
+		sessions: store,
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, app.handler()))
+	origins := envOr("AIGATE_CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+	log.Fatal(http.ListenAndServe(addr, corsMiddleware(strings.Split(origins, ","), app.handler())))
+}
+
+type platformOperatorStore interface {
+	UpsertPlatformOperator(context.Context, auth.PlatformOperator) error
+}
+
+func bootstrapPlatformOperator(ctx context.Context, store platformOperatorStore) error {
+	password := os.Getenv("AIGATE_PLATFORM_ADMIN_PASSWORD")
+	if password == "" {
+		return nil
+	}
+	email := strings.ToLower(strings.TrimSpace(os.Getenv("AIGATE_PLATFORM_ADMIN_EMAIL")))
+	tenantID := os.Getenv("AIGATE_PLATFORM_DEFAULT_TENANT_ID")
+	if email == "" || tenantID == "" {
+		return errors.New("platform admin email and default tenant are required")
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	id := os.Getenv("AIGATE_PLATFORM_ADMIN_ID")
+	if id == "" {
+		id, err = domain.NewID()
+		if err != nil {
+			return err
+		}
+	}
+	return store.UpsertPlatformOperator(ctx, auth.PlatformOperator{ID: id, Email: email, DisplayName: "总公司管理员", PasswordHash: string(hash), DefaultTenantID: tenantID, Active: true})
 }
 
 func bootstrapAdmin(ctx context.Context, service *rbac.Service) error {

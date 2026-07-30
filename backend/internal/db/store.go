@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/xiaoyangtx996/AiGate/internal/auth"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
 )
@@ -28,23 +29,92 @@ func (s *Store) Close() { s.pool.Close() }
 
 func (s *Store) Pool() *pgxpool.Pool { return s.pool }
 
-func (s *Store) FindLoginUser(ctx context.Context, tenantID, email string) (domain.User, []domain.Role, error) {
-	user, err := scanUser(s.pool.QueryRow(ctx, `
-		SELECT id, tenant_id, organization_id, email, display_name, password_hash, active, created_at, updated_at
-		FROM users WHERE tenant_id = $1 AND email = $2`, tenantID, email))
+func (s *Store) FindLoginAccounts(ctx context.Context, email string) ([]auth.LoginAccount, error) {
+	rows, err := s.pool.Query(ctx, `SELECT u.id,u.tenant_id,u.organization_id,u.email,u.display_name,u.password_hash,u.active,u.created_at,u.updated_at,t.name FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.email=$1 ORDER BY t.name,u.tenant_id`, email)
 	if err != nil {
-		return domain.User{}, nil, mapError(err)
-	}
-	rows, err := s.pool.Query(ctx, `
-		SELECT r.id, r.tenant_id, r.code, r.name, r.description, r.created_at, r.updated_at
-		FROM roles r JOIN user_roles ur ON ur.tenant_id = r.tenant_id AND ur.role_id = r.id
-		WHERE ur.tenant_id = $1 AND ur.user_id = $2 ORDER BY r.code`, tenantID, user.ID)
-	if err != nil {
-		return domain.User{}, nil, err
+		return nil, err
 	}
 	defer rows.Close()
-	roles, err := collectRoles(rows)
-	return user, roles, err
+	accounts := make([]auth.LoginAccount, 0)
+	for rows.Next() {
+		var account auth.LoginAccount
+		if err := rows.Scan(&account.User.ID, &account.User.TenantID, &account.User.OrganizationID, &account.User.Email, &account.User.DisplayName, &account.User.PasswordHash, &account.User.Active, &account.User.CreatedAt, &account.User.UpdatedAt, &account.TenantName); err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, account)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	for i := range accounts {
+		roleRows, err := s.pool.Query(ctx, `SELECT r.id,r.tenant_id,r.code,r.name,r.description,r.created_at,r.updated_at FROM roles r JOIN user_roles ur ON ur.tenant_id=r.tenant_id AND ur.role_id=r.id WHERE ur.tenant_id=$1 AND ur.user_id=$2 ORDER BY r.code`, accounts[i].User.TenantID, accounts[i].User.ID)
+		if err != nil {
+			return nil, err
+		}
+		accounts[i].Roles, err = collectRoles(roleRows)
+		roleRows.Close()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return accounts, nil
+}
+
+func (s *Store) FindPlatformOperator(ctx context.Context, email string) (auth.PlatformOperator, error) {
+	var operator auth.PlatformOperator
+	err := s.pool.QueryRow(ctx, `SELECT id,email,display_name,password_hash,default_tenant_id,active FROM platform_operators WHERE email=$1`, email).Scan(&operator.ID, &operator.Email, &operator.DisplayName, &operator.PasswordHash, &operator.DefaultTenantID, &operator.Active)
+	return operator, err
+}
+
+func (s *Store) ListTenants(ctx context.Context) ([]auth.TenantOption, error) {
+	rows, err := s.pool.Query(ctx, `SELECT id,name FROM tenants WHERE active ORDER BY name,id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]auth.TenantOption, 0)
+	for rows.Next() {
+		var item auth.TenantOption
+		if err := rows.Scan(&item.ID, &item.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) TenantExists(ctx context.Context, tenantID string) (bool, error) {
+	var exists bool
+	err := s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM tenants WHERE id=$1 AND active)`, tenantID).Scan(&exists)
+	return exists, err
+}
+
+func (s *Store) UpsertPlatformOperator(ctx context.Context, operator auth.PlatformOperator) error {
+	_, err := s.pool.Exec(ctx, `INSERT INTO platform_operators(id,email,display_name,password_hash,default_tenant_id,active) VALUES($1,$2,$3,$4,$5,true) ON CONFLICT(email) DO UPDATE SET display_name=EXCLUDED.display_name,password_hash=EXCLUDED.password_hash,default_tenant_id=EXCLUDED.default_tenant_id,active=true,updated_at=now()`, operator.ID, operator.Email, operator.DisplayName, operator.PasswordHash, operator.DefaultTenantID)
+	return err
+}
+
+func (s *Store) EnabledMenuCodes(ctx context.Context, tenantID string) (map[string]bool, error) {
+	rows, err := s.pool.Query(ctx, `SELECT menu_code,enabled FROM tenant_menu_settings WHERE tenant_id=$1`, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	settings := map[string]bool{}
+	for rows.Next() {
+		var code string
+		var enabled bool
+		if err := rows.Scan(&code, &enabled); err != nil {
+			return nil, err
+		}
+		settings[code] = enabled
+	}
+	return settings, rows.Err()
+}
+
+func (s *Store) SetMenuEnabled(ctx context.Context, tenantID, code string, enabled bool) error {
+	_, err := s.pool.Exec(ctx, `INSERT INTO tenant_menu_settings(tenant_id,menu_code,enabled) VALUES($1,$2,$3) ON CONFLICT(tenant_id,menu_code) DO UPDATE SET enabled=EXCLUDED.enabled,updated_at=now()`, tenantID, code, enabled)
+	return err
 }
 
 func (s *Store) ListUsers(ctx context.Context, tenantID string) ([]domain.User, error) {

@@ -36,7 +36,8 @@ func main() {
 	h := &gateway.Handler{Keys: apikey.NewService(apikey.NewPostgres(store)), Quota: quota.NewService(quota.NewPostgres(store), alertService), Channels: channel.NewService(channel.NewPostgres(store), cipher), Logs: gateway.NewPostgresLogger(store), Client: &http.Client{Timeout: 2 * time.Minute}, TrustedProxyCIDRs: split(os.Getenv("TRUSTED_PROXY_CIDRS"))}
 	addr := env("AIGATE_GATEWAY_ADDR", ":8081")
 	log.Printf("AiGate gateway listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, h))
+	origins := env("AIGATE_CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+	log.Fatal(http.ListenAndServe(addr, corsMiddleware(strings.Split(origins, ","), h)))
 }
 func env(k, d string) string {
 	if v := os.Getenv(k); v != "" {

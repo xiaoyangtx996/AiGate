@@ -69,6 +69,8 @@ type LogFilter struct {
 	TenantID string
 	UserID   string
 	Blocked  *bool
+	From     *time.Time
+	To       *time.Time
 	Limit    int
 }
 
@@ -83,6 +85,10 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
+	case r.Method == http.MethodGet && (r.URL.Path == "/healthz" || r.URL.Path == "/readyz"):
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/chat/completions":
 		h.handleChatCompletions(w, r)
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/messages":
