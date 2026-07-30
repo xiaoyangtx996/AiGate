@@ -61,7 +61,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 1 | Go 仓库骨架与领域边界 | 可编译 Go workspace；Tenant/Org/Project 模型与迁移可跑 | pending | `.claude/plans/01-go-scaffold.md` |
+| 1 | Go 仓库骨架与领域边界 | 可编译 Go workspace；Tenant/Org/Project 模型与迁移可跑 | complete | `.claude/plans/01-go-scaffold.md` |
 | 2 | 多租户 RBAC 与身份 | 用户/角色/组织树；请求带租户上下文 | pending | `.claude/plans/02-tenant-rbac.md` |
 | 3 | LLM 网关与密钥配额 | Key 走兼容入口；配额拦截；调用日志；真实成本字段 | pending | `.claude/plans/03-gateway-quota.md` |
 | 3b | 审计 / Job / 配额预警 | 统一 audit 事件；共享 worker；配额阈值告警 + webhook | pending | `.claude/plans/03b-audit-jobs-alerts.md` |
@@ -91,6 +91,10 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 - [x] **D5 Job**：MVP **DB-backed jobs** + `cmd/worker`；不做 Redis 队列强依赖。
 - [x] **D6 对象存储**：MVP **本地目录可配**；MinIO 后置。
 
+## Engineering conventions
+
+- **Schema comments**：`migrations/` 中每张业务表、每个业务字段必须有详细的 `COMMENT ON TABLE` / `COMMENT ON COLUMN`（可用中文）；表达业务意图的索引也应注释。禁止提交无注释 DDL。
+
 ## Risks
 
 | Risk | Likelihood | Impact | Mitigation |
@@ -101,5 +105,5 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Skill 过早投入 | Medium | Medium | 08 后置；06 仅预留扩展点 |
 
 ---
-*Status: READY — decisions closed; plans rewired. Start with Plan 01 `/goal`.*
+*Status: READY — Milestone 1 complete; continue with Plan 02 `/goal`.*
 *Legacy snapshot tag: `legacy-nuxt-aigate`.*

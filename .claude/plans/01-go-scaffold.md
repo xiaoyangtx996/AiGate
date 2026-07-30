@@ -26,10 +26,11 @@ constraints:
   - Project is asset container; org MVP depth is three levels
   - reserve web/ for Vue3 SPA with its own package.json later; do not implement UI or SSR now
   - PostgreSQL migrations must be reproducible from empty DB
+  - every table and column must have detailed COMMENT ON (Chinese allowed); indexes that encode business intent should be commented too
   - keep public docs minimal; no fake CI commands
 success_criteria:
   - go.mod module path exists and go build ./... succeeds
-  - migrations create tenant organization/department project tables
+  - migrations create tenant organization/department project tables with COMMENT ON TABLE/COLUMN
   - README documents backend migrate/API stub and states frontend is separate Vue SPA under web/
   - git status shows scaffold files under cmd/ internal/ migrations/ web/
   - web/ contains README stating SPA-only and no coupling to Go templates

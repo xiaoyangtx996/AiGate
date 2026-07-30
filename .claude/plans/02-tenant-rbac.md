@@ -22,6 +22,7 @@ constraints:
   - support project membership ACL separate from department tree
   - primary roles must cover platform admin and project-capable member
   - no SSO in this milestone
+  - every new/changed table and column must have detailed COMMENT ON (Chinese OK)
 success_criteria:
   - login issues session or JWT usable by API
   - admin can CRUD users/roles and attach users to org tree
