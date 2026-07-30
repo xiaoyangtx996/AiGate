@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { RESPONSE_CODE } from '@/enums'
+import agentDeleteHandler from '../agent/[id].delete'
 import agentPutHandler from '../agent/[id].put'
 
 import agentListHandler from '../agent/index.get'
@@ -10,12 +11,20 @@ import { createMockEvent } from './nitro-test-utils'
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
+const mockDelete = vi.fn()
+const mockTransaction = vi.fn()
+const mockNormalizeAgentBindingInput = vi.fn()
+const mockValidateAgentBindings = vi.fn()
+const mockWriteAgentBindings = vi.fn()
+const mockAuditLog = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
     select: (...args: unknown[]) => mockSelect(...args),
     insert: (...args: unknown[]) => mockInsert(...args),
     update: (...args: unknown[]) => mockUpdate(...args),
+    delete: (...args: unknown[]) => mockDelete(...args),
+    transaction: (...args: unknown[]) => mockTransaction(...args),
   },
 }))
 
@@ -24,31 +33,28 @@ vi.mock('@/db/schema', () => ({
     id: 'id',
     name: 'name',
     organizationId: 'organizationId',
+    ownerId: 'ownerId',
+    builtin: 'builtin',
     createdAt: 'createdAt',
   },
   insertAgentSchema: z.object({
     name: z.string(),
     organizationId: z.string().optional(),
+    ownerId: z.string().optional(),
+    knowledgeBases: z.array(z.string()).optional(),
+    tools: z.array(z.string()).optional(),
   }),
 }))
 
-vi.mock('#server/utils/validation', () => {
-  class ValidationError extends Error {
-    constructor(public issues: unknown[]) {
-      super('Validation failed')
-      this.name = 'ValidationError'
-    }
-  }
+vi.mock('#server/utils/agent-bindings', () => ({
+  normalizeAgentBindingInput: (...args: unknown[]) => mockNormalizeAgentBindingInput(...args),
+  validateAgentBindings: (...args: unknown[]) => mockValidateAgentBindings(...args),
+  writeAgentBindings: (...args: unknown[]) => mockWriteAgentBindings(...args),
+}))
 
-  return {
-    ValidationError,
-    validateBody: (schema: z.ZodSchema) => async (event: { _body?: unknown }) => {
-      const result = schema.safeParse(event._body ?? {})
-      if (!result.success) throw new ValidationError(result.error.issues)
-      return result.data
-    },
-  }
-})
+vi.mock('#server/utils/audit-log', () => ({
+  auditLog: (...args: unknown[]) => mockAuditLog(...args),
+}))
 
 function parseAgentPagination(query: Record<string, string | undefined>) {
   const page = Math.max(1, Number(query.page) || 1)
@@ -97,9 +103,24 @@ function createUpdateChain(result: unknown[]) {
   }
 }
 
+function createDeleteChain(result: unknown[]) {
+  return {
+    where: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
 describe('aigate agent handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockNormalizeAgentBindingInput.mockImplementation(input => input)
+    mockValidateAgentBindings.mockResolvedValue({ knowledgeBaseIds: [], toolIds: [], skillIds: [] })
+    mockWriteAgentBindings.mockResolvedValue(undefined)
+    mockAuditLog.mockResolvedValue(undefined)
+    mockTransaction.mockImplementation(async (callback: (tx: { insert: typeof mockInsert, update: typeof mockUpdate }) => unknown) =>
+      callback({ insert: mockInsert, update: mockUpdate }),
+    )
   })
 
   describe('pure agent pagination helpers', () => {
@@ -130,7 +151,7 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.BAD_REQUEST)
-      expect(response.msg).toBe('Validation failed')
+      expect(response.msg).toContain('Invalid input')
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -148,6 +169,27 @@ describe('aigate agent handlers', () => {
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
       expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockWriteAgentBindings).toHaveBeenCalledTimes(1)
+    })
+
+    it('should write audit log after creating agent', async () => {
+      const created = { id: 'agent-audit', name: 'Audit Agent', organizationId: 'org-1' }
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        body: { name: 'Audit Agent' },
+      })
+      const response = await agentPostHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'agent.create',
+        { type: 'agent', id: 'agent-audit' },
+        null,
+        created,
+      )
     })
 
     it('should reject non-admin create without organization context', async () => {
@@ -159,7 +201,7 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
-      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(response.msg).toBe('Missing organization context')
       expect(mockInsert).not.toHaveBeenCalled()
     })
 
@@ -172,7 +214,7 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
-      expect(response.msg).toBe('无权向其他组织创建 Agent')
+      expect(response.msg).toBe('Cannot create agent in another organization')
       expect(mockInsert).not.toHaveBeenCalled()
     })
   })
@@ -190,7 +232,7 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.code).toBe(404)
-      expect(response.msg).toBe('资源不存在或无权操作')
+      expect(response.msg).toBe('Agent not found')
     })
 
     it('should update agent scoped to organization', async () => {
@@ -208,12 +250,33 @@ describe('aigate agent handlers', () => {
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(updated)
       expect(mockUpdate).toHaveBeenCalledTimes(1)
+      expect(mockWriteAgentBindings).toHaveBeenCalledTimes(1)
+    })
+
+    it('should write audit log with before and after when updating agent', async () => {
+      const before = { id: 'agent-audit', name: 'Before Agent', organizationId: 'org-1' }
+      const updated = { id: 'agent-audit', name: 'After Agent', organizationId: 'org-1' }
+      mockSelect.mockReturnValue(createCountSelectChain([before]))
+      mockUpdate.mockReturnValue(createUpdateChain([updated]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        params: { id: 'agent-audit' },
+        body: { name: 'After Agent' },
+      })
+      const response = await agentPutHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'agent.update',
+        { type: 'agent', id: 'agent-audit' },
+        before,
+        updated,
+      )
     })
 
     it('should reject non-admin update without organization context', async () => {
-      const updated = { id: 'agent-2', name: 'Global Bot' }
-      mockUpdate.mockReturnValue(createUpdateChain([updated]))
-
       const response = await agentPutHandler(
         createMockEvent({
           params: { id: 'agent-2' },
@@ -222,7 +285,7 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
-      expect(response.msg).toBe('当前账号缺少组织上下文')
+      expect(response.msg).toBe('Missing organization context')
       expect(mockUpdate).not.toHaveBeenCalled()
     })
 
@@ -236,7 +299,7 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
-      expect(response.msg).toBe('无权转移 Agent 到其他组织')
+      expect(response.msg).toBe('Cannot move agent to another organization')
       expect(mockUpdate).not.toHaveBeenCalled()
     })
 
@@ -294,6 +357,42 @@ describe('aigate agent handlers', () => {
       )
 
       expect(response.data).toEqual(items)
+    })
+  })
+
+  describe('agent [id].delete', () => {
+    it('should delete agent scoped to organization', async () => {
+      mockDelete.mockReturnValue(createDeleteChain([{ id: 'agent-1' }]))
+
+      const response = await agentDeleteHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          params: { id: 'agent-1' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toBeNull()
+    })
+
+    it('should write audit log when deleting agent', async () => {
+      const deleted = { id: 'agent-audit', name: 'Audit Agent', organizationId: 'org-1' }
+      mockDelete.mockReturnValue(createDeleteChain([deleted]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        params: { id: 'agent-audit' },
+      })
+      const response = await agentDeleteHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'agent.delete',
+        { type: 'agent', id: 'agent-audit' },
+        deleted,
+        null,
+      )
     })
   })
 })

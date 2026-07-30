@@ -13,7 +13,7 @@ describe('error-handler plugin', () => {
   })
 
   it('should map error response body code to HTTP status', () => {
-    const event = {}
+    const event = {} as never
 
     syncErrorResponseStatus(event, {
       body: {
@@ -28,7 +28,7 @@ describe('error-handler plugin', () => {
 
   it('should ignore success and non-standard response bodies', () => {
     syncErrorResponseStatus(
-      {},
+      {} as never,
       {
         body: {
           code: 200,
@@ -37,9 +37,9 @@ describe('error-handler plugin', () => {
         },
       },
     )
-    syncErrorResponseStatus({}, { body: { code: 404, msg: 'missing timestamp' } })
-    syncErrorResponseStatus({}, { body: null })
-    syncErrorResponseStatus({}, undefined)
+    syncErrorResponseStatus({} as never, { body: { code: 404, msg: 'missing timestamp' } })
+    syncErrorResponseStatus({} as never, { body: null })
+    syncErrorResponseStatus({} as never, undefined)
 
     expect(setResponseStatus).not.toHaveBeenCalled()
   })

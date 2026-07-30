@@ -1,6 +1,7 @@
 /**
  * AiGate page smoke test - checks HTTP status, redirects, and console errors
  */
+import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const BASE = process.env.BASE_URL || 'http://localhost:5173'
@@ -10,9 +11,6 @@ const TEST_NAME = 'Test Admin'
 
 const AUTH_PAGES = [
   '/auth/sign-in',
-  '/auth/sign-up',
-  '/auth/forgot-password',
-  '/auth/magic-link',
 ]
 
 const AIGATE_PAGES = [
@@ -38,14 +36,50 @@ const AIGATE_PAGES = [
   '/aigate/quota-requests',
   '/aigate/billing',
   '/aigate/gateway',
+  '/aigate/gateway/combos',
   '/aigate/gateway/routes',
+  '/aigate/skills',
   '/aigate/organizations',
   '/aigate/members',
+]
+
+const AIGATE_DETAIL_PAGES = [
+  '/aigate/agents/edit/smoke-missing',
+  '/aigate/agents/smoke-missing/logs',
+  '/aigate/channels/smoke-missing',
+  '/aigate/mcp-tools/smoke-missing',
+  '/aigate/mcp-tools/marketplace/smoke-missing',
+  '/aigate/knowledge-base/smoke-missing',
+  '/aigate/skills/smoke-missing',
+  '/aigate/billing/smoke-missing',
+]
+
+const SYSTEM_PAGES = [
+  '/system-settings/menu-manage',
+  '/system-settings/role-manage',
+  '/system-settings/user-manage',
+  '/system-settings/operation-log',
+  '/system-settings/internalization',
+  '/system-settings/settings',
+  '/system-settings/tenant-packages',
 ]
 
 const OTHER_PAGES = [
   '/docs/api',
 ]
+
+const BROWSER_CANDIDATES = [
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+].filter(Boolean)
+
+function getLaunchOptions() {
+  const executablePath = BROWSER_CANDIDATES.find(path => existsSync(path))
+  return executablePath ? { headless: true, executablePath } : { headless: true }
+}
 
 async function waitForServer(maxMs = 120000) {
   const start = Date.now()
@@ -154,6 +188,16 @@ async function testPage(page, path, expectAuth = false) {
   }
 }
 
+async function testPath(context, path, expectAuth = false) {
+  const page = await context.newPage()
+  try {
+    return await testPage(page, path, expectAuth)
+  }
+  finally {
+    await page.close().catch(() => {})
+  }
+}
+
 async function login(page, context) {
   const res = await context.request.post(`${BASE}/api/auth/sign-in/email`, {
     headers: { ...AUTH_HEADERS, Referer: `${BASE}/auth/sign-in` },
@@ -186,41 +230,56 @@ async function main() {
   const userResult = await ensureUser()
   console.log('User setup:', userResult)
 
-  const browser = await chromium.launch({ headless: true })
+  const browser = await chromium.launch(getLaunchOptions())
   const context = await browser.newContext()
-  const page = await context.newPage()
 
   const results = []
 
   console.log('\n=== Public auth pages ===')
   for (const path of AUTH_PAGES) {
-    const r = await testPage(page, path)
+    const r = await testPath(context, path)
     results.push(r)
     console.log(formatResult(r))
   }
 
   console.log('\n=== Login ===')
+  const page = await context.newPage()
   const loggedIn = await login(page, context)
+  await page.close().catch(() => {})
   console.log(loggedIn ? 'Login OK' : 'Login FAILED')
 
   if (loggedIn) {
     console.log('\n=== AiGate pages (authenticated) ===')
     for (const path of AIGATE_PAGES) {
-      const r = await testPage(page, path, true)
+      const r = await testPath(context, path, true)
+      results.push(r)
+      console.log(formatResult(r))
+    }
+
+    console.log('\n=== AiGate detail pages (authenticated) ===')
+    for (const path of AIGATE_DETAIL_PAGES) {
+      const r = await testPath(context, path, true)
+      results.push(r)
+      console.log(formatResult(r))
+    }
+
+    console.log('\n=== System settings pages (authenticated) ===')
+    for (const path of SYSTEM_PAGES) {
+      const r = await testPath(context, path, true)
       results.push(r)
       console.log(formatResult(r))
     }
 
     console.log('\n=== Other pages (authenticated) ===')
     for (const path of OTHER_PAGES) {
-      const r = await testPage(page, path, true)
+      const r = await testPath(context, path, true)
       results.push(r)
       console.log(formatResult(r))
     }
   }
   else {
     console.log('\nSkipping authenticated pages due to login failure')
-    for (const path of [...AIGATE_PAGES, ...OTHER_PAGES]) {
+    for (const path of [...AIGATE_PAGES, ...AIGATE_DETAIL_PAGES, ...SYSTEM_PAGES, ...OTHER_PAGES]) {
       results.push({
         path,
         status: 'error',

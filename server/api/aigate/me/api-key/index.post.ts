@@ -1,4 +1,4 @@
-import { checkApiKeyLimit, generateApiKey } from '#server/utils/api-key'
+import { applyApiKeyDefaults, checkApiKeyLimit, generateApiKey } from '#server/utils/api-key'
 import { myApiKeyCreateSchema } from '#server/utils/my-api-key'
 import { db } from '@/db/drizzle'
 import { apiKey } from '@/db/schema'
@@ -16,10 +16,11 @@ export default defineEventHandler(async event => {
     }
 
     const body = myApiKeyCreateSchema.parse(await readBody(event))
+    const values = await applyApiKeyDefaults(body, principal.organizationId)
     const [res] = await db
       .insert(apiKey)
       .values({
-        ...body,
+        ...values,
         key: generateApiKey(body.env),
         userId: principal.userId,
         organizationId: principal.organizationId ?? null,

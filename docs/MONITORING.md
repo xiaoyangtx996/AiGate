@@ -32,3 +32,15 @@ AiGate 使用官方 Sentry SDK（`@sentry/node` 服务端、`@sentry/vue` 客户
 - 未配置 `SENTRY_DSN` 时不初始化、不上报。
 - 生产环境可在 `Sentry.init` 中配置 `tracesSampleRate`（如 `0.1`）控制性能采样。
 - DSN 写入 GitHub Actions / 部署平台 Secrets，勿提交到仓库。
+
+## 健康检查
+
+AiGate 提供 `/api/health` 作为 liveness endpoint，只要进程仍可响应就返回：
+
+```json
+{ "status": "ok", "timestamp": "2026-06-18T00:00:00.000Z" }
+```
+
+`/api/health?mode=ready` 是 readiness endpoint，会额外检查数据库连接和 `pgvector` 扩展；任一检查失败会返回 HTTP 503，负载均衡器或 K8s readiness probe 应使用该地址。
+
+K8s 示例见 `docs/deploy/k8s/deployment.yaml`。

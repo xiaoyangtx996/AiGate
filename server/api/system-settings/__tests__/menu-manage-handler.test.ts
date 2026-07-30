@@ -4,6 +4,8 @@ import { createMockEvent } from '../../aigate/__tests__/nitro-test-utils'
 import menuListHandler from '../menu-manage/index.get'
 
 const mockSelect = vi.fn()
+const mockGetTenantContext = vi.fn()
+const mockGetTenantPackageMenuCodes = vi.fn()
 
 vi.stubGlobal('convertFlatDataToTree', convertFlatDataToTree)
 vi.stubGlobal('MenuQuerySchema', {
@@ -22,6 +24,7 @@ vi.mock('@/db/drizzle', () => ({
 vi.mock('@/db/schema', () => ({
   menu: {
     id: 'id',
+    code: 'code',
     label: 'label',
     to: 'to',
     parentId: 'parentId',
@@ -38,6 +41,11 @@ vi.mock('@/db/schema', () => ({
     userId: 'userId',
     roleId: 'roleId',
   },
+}))
+
+vi.mock('#server/utils/tenant', () => ({
+  getTenantContext: (...args: unknown[]) => mockGetTenantContext(...args),
+  getTenantPackageMenuCodes: (...args: unknown[]) => mockGetTenantPackageMenuCodes(...args),
 }))
 
 function createSelectOrderChain(result: unknown[]) {
@@ -59,9 +67,10 @@ function createSelectWhereChain(result: unknown[]) {
 }
 
 const menus = [
-  { id: 'root', label: 'Root', to: null, parentId: null, permissions: 0, createdAt: new Date(), sort: 0 },
+  { id: 'root', code: 'root', label: 'Root', to: null, parentId: null, permissions: 0, createdAt: new Date(), sort: 0 },
   {
     id: 'agents',
+    code: 'agents',
     label: 'Agents',
     to: '/aigate/agents',
     parentId: 'root',
@@ -71,6 +80,7 @@ const menus = [
   },
   {
     id: 'channels',
+    code: 'channels',
     label: 'Channels',
     to: '/aigate/channels',
     parentId: 'root',
@@ -83,6 +93,8 @@ const menus = [
 describe('system settings menu-manage index.get handler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetTenantContext.mockResolvedValue(null)
+    mockGetTenantPackageMenuCodes.mockReturnValue(null)
   })
 
   it('returns all enabled menus for admin principals', async () => {
@@ -115,8 +127,8 @@ describe('system settings menu-manage index.get handler', () => {
 
     expect(response.data).toEqual(
       convertFlatDataToTree([
-        { ...menus[0], permissions: 0 },
-        { ...menus[1], permissions: 6 },
+        { ...menus[0]!, permissions: 0 },
+        { ...menus[1]!, permissions: 6 },
       ]),
     )
   })
@@ -132,5 +144,31 @@ describe('system settings menu-manage index.get handler', () => {
     )
 
     expect(response.data).toEqual([])
+  })
+
+  it('intersects role-authorized menus with tenant package menu codes', async () => {
+    mockGetTenantContext.mockResolvedValue({ tenant: { id: 'org-1' }, package: { menuCodes: ['channels'] } })
+    mockGetTenantPackageMenuCodes.mockReturnValue(['channels'])
+    mockSelect.mockReturnValueOnce(createSelectOrderChain(menus)).mockReturnValueOnce(
+      createSelectWhereChain([
+        { menuId: 'agents', permissions: 2 },
+        { menuId: 'channels', permissions: 2 },
+      ]),
+    )
+
+    const response = await menuListHandler(
+      createMockEvent({
+        context: { principal: { userId: 'user-1', isAdmin: false, roleIds: ['role-a'], organizationId: 'org-1' } },
+        query: { enabled: 'true' },
+      }),
+    )
+
+    expect(response.data).toEqual(
+      convertFlatDataToTree([
+        { ...menus[0]!, permissions: 0 },
+        { ...menus[2]!, permissions: 2 },
+      ]),
+    )
+    expect(mockGetTenantContext).toHaveBeenCalledWith('org-1')
   })
 })

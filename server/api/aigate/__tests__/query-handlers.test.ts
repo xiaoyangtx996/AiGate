@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MCP_MARKETPLACE_PRESETS } from '#server/utils/mcp-marketplace'
 import { RESPONSE_CODE } from '@/enums'
 import apiLogListHandler from '../api-log/index.get'
 
@@ -25,7 +24,7 @@ vi.mock('@/db/schema', () => ({
     status: 'status',
     createdAt: 'createdAt',
   },
-  mcpTool: { id: 'id' },
+  mcpTool: { id: 'id', sourceSlug: 'sourceSlug', organizationId: 'organizationId' },
   insertMcpToolSchema: {
     parse: (value: unknown) => value,
   },
@@ -92,9 +91,11 @@ describe('aigate query handlers', () => {
       const response = await marketplaceHandler(createMockEvent())
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual(MCP_MARKETPLACE_PRESETS)
       expect(Array.isArray(response.data)).toBe(true)
       expect((response.data as unknown[]).length).toBeGreaterThan(0)
+      expect(response.data[0]).toHaveProperty('slug')
+      expect(response.data[0]).toHaveProperty('envSchema')
+      expect(response.data[0]).toHaveProperty('installCount')
     })
   })
 
@@ -117,6 +118,7 @@ describe('aigate query handlers', () => {
         total: 2,
         page: 2,
         pageSize: 10,
+        nextCursor: null,
       })
       expect(mockSelect).toHaveBeenCalledTimes(2)
     })
@@ -137,6 +139,7 @@ describe('aigate query handlers', () => {
         total: 0,
         page: 1,
         pageSize: 20,
+        nextCursor: null,
       })
     })
 
@@ -159,6 +162,7 @@ describe('aigate query handlers', () => {
         total: 1,
         page: 1,
         pageSize: 20,
+        nextCursor: null,
       })
     })
 
@@ -194,7 +198,7 @@ describe('aigate query handlers', () => {
 
       const event = createMockEvent({
         context: { principal: { organizationId: 'org-1' } },
-        body: { presetId: 'preset-github' },
+        body: { presetId: 'preset-github', env: { GITHUB_TOKEN: 'ghp_test_token' } },
       })
       const response = await mcpInstallHandler(event)
 

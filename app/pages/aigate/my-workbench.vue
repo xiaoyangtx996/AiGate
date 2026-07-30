@@ -100,8 +100,8 @@ function formatTokens(value?: number | null) {
   return String(n)
 }
 
-function formatCost(cents?: number | null) {
-  return `¥${((cents ?? 0) / 100).toFixed(2)}`
+function formatCost(cost?: number | null) {
+  return `¥${Number(cost ?? 0).toFixed(8)}`
 }
 
 function formatDate(value?: string | null) {
@@ -223,7 +223,7 @@ async function submitQuotaRequest() {
           >
             <div class="min-w-0">
               <p class="truncate font-medium">
-                {{ formatTokens(request.currentTokenLimit) }} → {{ formatTokens(request.requestedTokenLimit) }}
+                {{ formatTokens(request.currentTokenLimit) }} -> {{ formatTokens(request.requestedTokenLimit) }}
               </p>
               <p class="truncate text-xs text-muted">
                 {{ request.reason || p('noReason') }}

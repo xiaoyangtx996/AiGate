@@ -1,6 +1,9 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  devServer: {
+    host: '127.0.0.1',
+  },
   runtimeConfig: {
     env: process.env.NODE_ENV,
     githubToken: process.env.GITHUB_TOKEN,
@@ -103,7 +106,16 @@ export default defineNuxtConfig({
   },
   nitro: {
     ignore: ['**/__tests__/**', '**/*.test.ts'],
+    routeRules: {
+      '/api/v1/aigate': { proxy: '/api/aigate' },
+      '/api/v1/aigate/**': { proxy: '/api/aigate/**' },
+    },
+    scheduledTasks: {
+      '*/5 * * * *': ['alerts:realtime'],
+      '0 1 * * *': ['alerts:daily'],
+    },
     experimental: {
+      asyncContext: true,
       bundleRuntimeDependencies: false,
     },
     externals: {

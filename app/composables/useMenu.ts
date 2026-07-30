@@ -1,22 +1,25 @@
+import type { NavigationMenuItem } from '@nuxt/ui'
+
 export function useMenu() {
   const menuStore = useMenuStore()
   const { t } = useI18n()
 
-  /**
-   * @description: 处理 label
-   */
-  function tMenu(items: MenuTree[]): MenuTree[] {
-    return items.map(item => ({
-      ...item,
-      label: item.label ? t(item.label) : item.label,
-      children: item.children ? tMenu(item.children) : [],
-    }))
+  function toNavItems(items: MenuTree[]): NavigationMenuItem[] {
+    return items.map((item) => {
+      const children = item.children?.length ? toNavItems(item.children) : undefined
+
+      return {
+        label: item.label ? t(item.label) : item.label,
+        to: item.to ?? undefined,
+        icon: item.icon ?? undefined,
+        defaultOpen: item.defaultOpen ?? undefined,
+        ...(children ? { children } : {}),
+      }
+    })
   }
 
-  const menuItems = computed(() => {
-    const list = menuStore.menuTree ?? []
-    return tMenu(list)
-  })
+  const menuItems = computed(() => toNavItems(menuStore.menuTree ?? []))
+
   return {
     menuItems,
   }

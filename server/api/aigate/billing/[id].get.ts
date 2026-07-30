@@ -37,7 +37,7 @@ export default defineEventHandler(async event => {
         model: apiLog.model,
         requests: sql<number>`count(*)::int`,
         tokens: sql<number>`coalesce(sum(${apiLog.totalTokens}), 0)::int`,
-        cost: sql<number>`coalesce(sum(${apiLog.cost}), 0)::int`,
+        cost: sql<number>`coalesce(sum(${apiLog.cost}), 0)`,
       })
       .from(apiLog)
       .where(and(...logConditions))
@@ -49,7 +49,7 @@ export default defineEventHandler(async event => {
         date: sql<string>`to_char(${apiLog.createdAt}, 'YYYY-MM-DD')`,
         requests: sql<number>`count(*)::int`,
         tokens: sql<number>`coalesce(sum(${apiLog.totalTokens}), 0)::int`,
-        cost: sql<number>`coalesce(sum(${apiLog.cost}), 0)::int`,
+        cost: sql<number>`coalesce(sum(${apiLog.cost}), 0)`,
       })
       .from(apiLog)
       .where(and(...logConditions))

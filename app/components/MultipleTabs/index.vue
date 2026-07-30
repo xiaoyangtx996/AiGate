@@ -84,11 +84,9 @@ function getItems(tag: MenuTree | null): ContextMenuItem[][] {
         <motion.div
           v-for="tag in tabStore.tags"
           :key="tag.id"
-          layout
-          :initial="{ opacity: 0, scale: 0.9, filter: 'blur(8px)' }"
-          :animate="{ opacity: 1, scale: 1, filter: 'blur(0px)' }"
-          :exit="{ opacity: 0, scale: 0.9, filter: 'blur(8px)' }"
-          :transition="{ type: 'spring', stiffness: 500, damping: 30, duration: 0.75 }"
+          :initial="{ opacity: 0, scale: 0.9 }"
+          :animate="{ opacity: 1, scale: 1 }"
+          :transition="{ type: 'spring', stiffness: 500, damping: 30 }"
         >
           <UContextMenu :items="getItems(tag)">
             <UButton

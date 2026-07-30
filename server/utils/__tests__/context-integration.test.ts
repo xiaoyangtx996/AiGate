@@ -21,12 +21,19 @@ vi.mock('@/db/drizzle', () => ({
 
 vi.mock('@/db/schema', () => ({
   userRole: { userId: 'userId', roleId: 'roleId' },
+  role: { id: 'id', code: 'code' },
   member: { userId: 'userId', organizationId: 'organizationId' },
+  organization: { id: 'id' },
 }))
+
+vi.stubGlobal('getCookie', (event: { _cookies?: Record<string, string> }, name: string) => event._cookies?.[name])
 
 function createRoleSelectChain(result: unknown[]) {
   return {
     from: vi.fn().mockReturnValue({
+      leftJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(result),
+      }),
       where: vi.fn().mockResolvedValue(result),
     }),
   }
@@ -36,11 +43,13 @@ function createMockEvent(
   options: {
     headers?: Headers
     context?: Record<string, unknown>
+    cookies?: Record<string, string>
   } = {},
 ) {
   return {
     headers: options.headers ?? new Headers(),
     context: options.context ?? {},
+    _cookies: options.cookies ?? {},
   }
 }
 
@@ -59,12 +68,12 @@ describe('context integration', () => {
       })
     })
 
-    it('should build principal with preferred role and organization', async () => {
+    it('should build admin principal with global view when active org cookie is missing', async () => {
       mockGetSession.mockResolvedValue({
         user: { id: 'user-1', email: 'a@example.com', role: 'admin' },
       })
       mockSelect
-        .mockReturnValueOnce(createRoleSelectChain([{ roleId: 'editor' }]))
+        .mockReturnValueOnce(createRoleSelectChain([{ roleId: 'role-editor', code: 'editor' }]))
         .mockReturnValueOnce(createRoleSelectChain([{ organizationId: 'org-1' }]))
 
       const principal = await getRequestPrincipal(createMockEvent() as never)
@@ -73,9 +82,66 @@ describe('context integration', () => {
         userId: 'user-1',
         email: 'a@example.com',
         role: 'admin',
-        roleIds: ['editor'],
-        organizationId: 'org-1',
+        roleIds: ['role-editor'],
+        roleCodes: ['editor'],
+        memberships: ['org-1'],
+        organizationId: null,
         isAdmin: true,
+      })
+    })
+
+    it('should allow admin active organization cookie when the organization exists', async () => {
+      mockGetSession.mockResolvedValue({
+        user: { id: 'admin-1', email: 'admin@example.com', role: 'admin' },
+      })
+      mockSelect
+        .mockReturnValueOnce(createRoleSelectChain([]))
+        .mockReturnValueOnce(createRoleSelectChain([{ organizationId: 'org-1' }]))
+        .mockReturnValueOnce(createRoleSelectChain([{ id: 'org-2' }]))
+
+      const principal = await getRequestPrincipal(createMockEvent({ cookies: { aigate_active_org: 'org-2' } }) as never)
+
+      expect(principal).toMatchObject({
+        userId: 'admin-1',
+        role: 'admin',
+        organizationId: 'org-2',
+        isAdmin: true,
+      })
+    })
+
+    it('should use non-admin active organization cookie only when it is in memberships', async () => {
+      mockGetSession.mockResolvedValue({
+        user: { id: 'user-3', email: 'c@example.com', role: null },
+      })
+      mockSelect
+        .mockReturnValueOnce(createRoleSelectChain([]))
+        .mockReturnValueOnce(createRoleSelectChain([{ organizationId: 'org-1' }, { organizationId: 'org-2' }]))
+
+      const principal = await getRequestPrincipal(createMockEvent({ cookies: { aigate_active_org: 'org-2' } }) as never)
+
+      expect(principal).toMatchObject({
+        userId: 'user-3',
+        memberships: ['org-1', 'org-2'],
+        organizationId: 'org-2',
+        isAdmin: false,
+      })
+    })
+
+    it('should ignore non-admin active organization cookie outside memberships', async () => {
+      mockGetSession.mockResolvedValue({
+        user: { id: 'user-4', email: 'd@example.com', role: null },
+      })
+      mockSelect
+        .mockReturnValueOnce(createRoleSelectChain([]))
+        .mockReturnValueOnce(createRoleSelectChain([{ organizationId: 'org-1' }, { organizationId: 'org-2' }]))
+
+      const principal = await getRequestPrincipal(createMockEvent({ cookies: { aigate_active_org: 'org-other' } }) as never)
+
+      expect(principal).toMatchObject({
+        userId: 'user-4',
+        memberships: ['org-1', 'org-2'],
+        organizationId: 'org-1',
+        isAdmin: false,
       })
     })
 
@@ -91,6 +157,26 @@ describe('context integration', () => {
       expect(principal.roleIds).toEqual([])
       expect(principal.organizationId).toBeNull()
       expect(principal.isAdmin).toBe(false)
+    })
+
+    it('should treat db super_admin role as admin without session admin role', async () => {
+      mockGetSession.mockResolvedValue({
+        user: { id: 'super-1', email: 'super@example.com', role: null },
+      })
+      mockSelect
+        .mockReturnValueOnce(createRoleSelectChain([{ roleId: 'role-super', code: 'super_admin' }]))
+        .mockReturnValueOnce(createRoleSelectChain([{ organizationId: 'org-1' }]))
+
+      const principal = await getRequestPrincipal(createMockEvent() as never)
+
+      expect(principal).toMatchObject({
+        userId: 'super-1',
+        role: 'super_admin',
+        roleIds: ['role-super'],
+        roleCodes: ['super_admin'],
+        organizationId: null,
+        isAdmin: true,
+      })
     })
   })
 

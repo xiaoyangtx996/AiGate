@@ -1,33 +1,45 @@
-import { validateBody, ValidationError } from '#server/utils/validation'
+import {
+  normalizeAgentBindingInput,
+  validateAgentBindings,
+  writeAgentBindings,
+} from '#server/utils/agent-bindings'
+import { auditLog } from '#server/utils/audit-log'
 import { db } from '@/db/drizzle'
 import { agent, insertAgentSchema } from '@/db/schema'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { isAdmin?: boolean; organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean, userId?: string, organizationId?: string | null } | undefined
+    const rawBody = await readBody(event)
 
-    // 使用 validateBody 验证请求体
-    const body = await validateBody(insertAgentSchema)(event)
-    if (!principal?.isAdmin && !principal?.organizationId) {
-      return responseError(null, '当前账号缺少组织上下文', { statusCode: 403 })
-    }
-    if (!principal?.isAdmin && body.organizationId && body.organizationId !== principal.organizationId) {
-      return responseError(null, '无权向其他组织创建 Agent', { statusCode: 403 })
-    }
+    if (!principal?.isAdmin && !principal?.organizationId)
+      return responseError(null, 'Missing organization context', { statusCode: 403 })
+    if (!principal?.isAdmin && rawBody?.organizationId && rawBody.organizationId !== principal.organizationId)
+      return responseError(null, 'Cannot create agent in another organization', { statusCode: 403 })
+    if (!principal?.isAdmin && rawBody?.ownerId && rawBody.ownerId !== principal?.userId)
+      return responseError(null, 'Cannot assign agent to another owner', { statusCode: 403 })
 
-    const [res] = await db
-      .insert(agent)
-      .values({
-        ...body,
-        ...(principal?.organizationId && !body.organizationId ? { organizationId: principal.organizationId } : {}),
-      })
-      .returning()
+    const bindings = await validateAgentBindings(normalizeAgentBindingInput(rawBody || {}), principal)
+    const body = insertAgentSchema.parse({
+      ...rawBody,
+      ...(principal?.organizationId && !rawBody?.organizationId ? { organizationId: principal.organizationId } : {}),
+      ...(principal?.userId && !rawBody?.ownerId ? { ownerId: principal.userId } : {}),
+      knowledgeBases: bindings.knowledgeBaseIds,
+      tools: bindings.toolIds,
+    })
+
+    const res = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(agent).values(body).returning()
+      if (!created)
+        throw createError({ statusCode: 500, statusMessage: 'Agent creation failed' })
+      await writeAgentBindings(tx, created.id, bindings)
+      return created
+    })
+
+    await auditLog(event, 'agent.create', { type: 'agent', id: res.id }, null, res)
     return responseSuccess(res)
-  } catch (err) {
-    // 验证失败时返回详细的错误信息
-    if (err instanceof ValidationError) {
-      return responseError(err.issues, 'Validation failed')
-    }
+  }
+  catch (err) {
     return responseError(err)
   }
 })

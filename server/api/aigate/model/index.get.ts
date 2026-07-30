@@ -1,6 +1,6 @@
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
-import { aiModel } from '@/db/schema'
+import { aiModel, channel } from '@/db/schema'
 
 export default defineEventHandler(async event => {
   try {
@@ -18,7 +18,29 @@ export default defineEventHandler(async event => {
       .select({ total: sql<number>`count(*)::int` })
       .from(aiModel)
       .where(where)
-    const data = await db.select().from(aiModel).where(where).orderBy(asc(aiModel.name)).limit(pageSize).offset(offset)
+    const data = await db
+      .select({
+        id: aiModel.id,
+        name: aiModel.name,
+        provider: aiModel.provider,
+        type: aiModel.type,
+        contextWindow: aiModel.contextWindow,
+        inputPrice: aiModel.inputPrice,
+        outputPrice: aiModel.outputPrice,
+        features: aiModel.features,
+        status: aiModel.status,
+        enabled: aiModel.enabled,
+        sourceChannelId: aiModel.sourceChannelId,
+        sourceChannelName: channel.name,
+        updatedAt: aiModel.updatedAt,
+        createdAt: aiModel.createdAt,
+      })
+      .from(aiModel)
+      .leftJoin(channel, eq(aiModel.sourceChannelId, channel.id))
+      .where(where)
+      .orderBy(asc(aiModel.name))
+      .limit(pageSize)
+      .offset(offset)
     return responseSuccess(query.page ? { items: data, total: countRow?.total || 0, page, pageSize } : data)
   } catch (err) {
     return responseError(err)

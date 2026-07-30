@@ -26,6 +26,7 @@ const {
 const overview = computed(() => data.value?.overview || {})
 const trend = computed<TrendPoint[]>(() => (data.value?.trend?.daily as TrendPoint[]) || [])
 const modelBreakdown = computed<ModelPoint[]>(() => (data.value?.modelBreakdown as ModelPoint[]) || [])
+const topConsumers = computed<ConsumerPoint[]>(() => (data.value?.topConsumers as ConsumerPoint[]) || [])
 const quotaStatus = computed(() => data.value?.quotaStatus || [])
 
 interface TrendPoint {
@@ -35,7 +36,16 @@ interface TrendPoint {
 interface ModelPoint {
   model: string
   tokens: number
+  cost?: number
 }
+interface ConsumerPoint {
+  principal: string
+  tokens: number
+}
+
+const stackedTrend = computed(() => data.value?.trend?.dailyByModel as { models?: string[], rows?: Record<string, unknown>[] } | undefined)
+const stackedModels = computed(() => stackedTrend.value?.models ?? [])
+const stackedTrendRows = computed(() => stackedTrend.value?.rows ?? [])
 
 const trendData = computed(() => ({
   labels: trend.value.map((d: TrendPoint) => d.date),
@@ -51,29 +61,33 @@ const trendData = computed(() => ({
 }))
 
 const modelData = computed(() => ({
-  labels: modelBreakdown.value.map((m: ModelPoint) => m.model),
+  labels: modelBreakdown.value.slice(0, 5).map((m: ModelPoint) => m.model),
   datasets: [
     {
       label: p('tokenUsageLabel'),
-      data: modelBreakdown.value.map((m: ModelPoint) => m.tokens),
-      backgroundColor: [
-        'rgb(59, 130, 246)',
-        'rgb(16, 185, 129)',
-        'rgb(245, 158, 11)',
-        'rgb(239, 68, 68)',
-        'rgb(139, 92, 246)',
-        'rgb(236, 72, 153)',
-        'rgb(20, 184, 166)',
-        'rgb(249, 115, 22)',
-        'rgb(99, 102, 241)',
-        'rgb(168, 85, 247)',
-      ],
+      data: modelBreakdown.value.slice(0, 5).map((m: ModelPoint) => m.tokens),
+    },
+    {
+      label: 'Cost',
+      data: modelBreakdown.value.slice(0, 5).map((m: ModelPoint) => m.cost ?? 0),
+    },
+  ],
+}))
+
+const consumerData = computed(() => ({
+  labels: topConsumers.value.map((item: ConsumerPoint) => item.principal),
+  datasets: [
+    {
+      label: 'Token usage',
+      data: topConsumers.value.map((item: ConsumerPoint) => item.tokens),
+      backgroundColor: ['rgb(245, 158, 11)', 'rgb(16, 185, 129)', 'rgb(59, 130, 246)', 'rgb(239, 68, 68)', 'rgb(20, 184, 166)'],
     },
   ],
 }))
 
 function formatTokens(n: number) {
-  if (!n) return '0'
+  if (!n)
+    return '0'
   return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : String(n)
 }
 
@@ -129,7 +143,9 @@ const DashboardCharts = defineAsyncComponent(() => import('@/components/aigate/D
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-2xl font-bold">{{ overview.activeChannels || 0 }}/{{ overview.totalChannels || 0 }}</p>
+          <p class="text-2xl font-bold">
+            {{ overview.activeChannels || 0 }}/{{ overview.totalChannels || 0 }}
+          </p>
           <p class="text-sm text-muted">
             {{ p('activeChannels') }}
           </p>
@@ -141,13 +157,19 @@ const DashboardCharts = defineAsyncComponent(() => import('@/components/aigate/D
       <Suspense>
         <DashboardCharts
           :trend-data="trendData"
+          :stacked-trend-rows="stackedTrendRows"
+          :stacked-models="stackedModels"
           :model-data="modelData"
+          :consumer-data="consumerData"
           :trend-title="p('tokenTrend')"
           :model-title="p('modelDist')"
+          consumer-title="Top Consumers"
           :no-trend="p('noTrend')"
           :no-model="p('noModel')"
+          no-consumer="No consumer data"
           :has-trend="trend.length > 0"
           :has-model="modelBreakdown.length > 0"
+          :has-consumer="topConsumers.length > 0"
         />
         <template #fallback>
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -172,7 +194,9 @@ const DashboardCharts = defineAsyncComponent(() => import('@/components/aigate/D
           <div class="flex-1">
             <UProgress :model-value="org.usedPercentage" :color="getQuotaColor(org.usedPercentage)" />
           </div>
-          <div class="w-16 text-right text-sm font-mono">{{ org.usedPercentage }}%</div>
+          <div class="w-16 text-right text-sm font-mono">
+            {{ org.usedPercentage }}%
+          </div>
           <UBadge v-if="org.isWarning" color="warning" variant="subtle" size="xs">
             {{ p('quotaWarning') }}
           </UBadge>

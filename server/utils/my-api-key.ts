@@ -16,5 +16,5 @@ export const myApiKeyCreateSchema = z.object({
 })
 
 export const myApiKeyUpdateSchema = myApiKeyCreateSchema.partial().extend({
-  status: z.enum(['active', 'revoked']).optional(),
+  status: z.enum(['active', 'revoked', 'disabled']).optional(),
 })

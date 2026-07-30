@@ -43,7 +43,7 @@ const {
 )
 
 const { data: orgs } = await useAsyncData('aigate-orgs-for-member', async () => {
-  const res = await getOrgList()
+  const res = await getOrgList({ flat: 1 })
   return (res.data?.items ?? []) as OrgOption[]
 })
 
@@ -71,14 +71,16 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.userId || !form.organizationId) return
+  if (!form.userId || !form.organizationId)
+    return
   saveLoading.value = true
   try {
     await insertMember(form)
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }

@@ -4,22 +4,29 @@ import gatewayProxyHandler from '../[...path]'
 
 const mockValidateApiKey = vi.fn()
 const mockCheckIpWhitelist = vi.fn()
+const mockGetClientIpFromGatewayEvent = vi.fn()
 const mockCheckApiKeyScopes = vi.fn()
 const mockCheckDailyLimit = vi.fn()
 const mockSelectChannel = vi.fn()
 const mockProxyToChannel = vi.fn()
+const mockProxyToChannelStream = vi.fn()
 const mockRateCheck = vi.fn()
 const mockConsumeQuota = vi.fn()
+const mockGetSetting = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
+const mockSelect = vi.fn()
+const insertedValues: unknown[] = []
 
 vi.mock('#server/utils/gateway', () => ({
   validateApiKeyFromHeader: (...args: unknown[]) => mockValidateApiKey(...args),
+  getClientIpFromGatewayEvent: (...args: unknown[]) => mockGetClientIpFromGatewayEvent(...args),
   checkIpWhitelist: (...args: unknown[]) => mockCheckIpWhitelist(...args),
   checkApiKeyScopes: (...args: unknown[]) => mockCheckApiKeyScopes(...args),
   checkDailyLimit: (...args: unknown[]) => mockCheckDailyLimit(...args),
   selectChannel: (...args: unknown[]) => mockSelectChannel(...args),
   proxyToChannel: (...args: unknown[]) => mockProxyToChannel(...args),
+  proxyToChannelStream: (...args: unknown[]) => mockProxyToChannelStream(...args),
 }))
 
 vi.mock('#server/utils/rate-limit', () => ({
@@ -32,14 +39,27 @@ vi.mock('#server/utils/quota', () => ({
   consumeQuota: (...args: unknown[]) => mockConsumeQuota(...args),
 }))
 
+vi.mock('#server/utils/system-settings', () => ({
+  getSetting: (...args: unknown[]) => mockGetSetting(...args),
+}))
+
 vi.mock('@/db/drizzle', () => ({
   db: {
     insert: (...args: unknown[]) => mockInsert(...args),
     update: (...args: unknown[]) => mockUpdate(...args),
+    select: (...args: unknown[]) => mockSelect(...args),
   },
 }))
 
 vi.mock('@/db/schema', () => ({
+  aiModel: {
+    name: 'name',
+    enabled: 'enabled',
+    status: 'status',
+    sourceChannelId: 'sourceChannelId',
+    inputPrice: 'inputPrice',
+    outputPrice: 'outputPrice',
+  },
   apiKey: { id: 'id', calls: 'calls', cost: 'cost', lastUsed: 'lastUsed' },
   apiLog: {
     userId: 'userId',
@@ -51,6 +71,7 @@ vi.mock('@/db/schema', () => ({
     inputTokens: 'inputTokens',
     outputTokens: 'outputTokens',
     totalTokens: 'totalTokens',
+    tokensEstimated: 'tokensEstimated',
     cost: 'cost',
     latency: 'latency',
     statusCode: 'statusCode',
@@ -58,6 +79,7 @@ vi.mock('@/db/schema', () => ({
     prompt: 'prompt',
     response: 'response',
     errorMessage: 'errorMessage',
+    traceId: 'traceId',
   },
 }))
 
@@ -92,11 +114,15 @@ vi.stubGlobal('getRouterParam', (event: { _params: Record<string, string> }, nam
 vi.stubGlobal('setResponseStatus', vi.fn())
 vi.stubGlobal('setResponseHeader', vi.fn())
 vi.stubGlobal('setResponseHeaders', vi.fn())
+vi.stubGlobal('readBody', async (event: { _body?: unknown }) => event._body ?? {})
 
 function createInsertChain() {
   return {
     values: vi.fn().mockReturnValue({
       execute: vi.fn().mockResolvedValue(undefined),
+    }).mockImplementation((value: unknown) => {
+      insertedValues.push(value)
+      return { execute: vi.fn().mockResolvedValue(undefined) }
     }),
   }
 }
@@ -106,6 +132,16 @@ function createUpdateChain() {
     set: vi.fn().mockReturnValue({
       where: vi.fn().mockReturnValue({
         execute: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
+  }
+}
+
+function createModelPriceSelectChain(result = [{ inputPrice: 0.01, outputPrice: 0.02 }]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue(result),
       }),
     }),
   }
@@ -124,11 +160,14 @@ describe('gateway proxy handler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    insertedValues.length = 0
     mockValidateApiKey.mockResolvedValue(validKey)
+    mockGetClientIpFromGatewayEvent.mockImplementation(event => event.node.req.socket.remoteAddress || '127.0.0.1')
     mockCheckIpWhitelist.mockReturnValue(true)
     mockCheckApiKeyScopes.mockReturnValue(true)
     mockCheckDailyLimit.mockResolvedValue({ allowed: true, used: 1, limit: 1000 })
     mockRateCheck.mockReturnValue({ allowed: true, remaining: 99, resetIn: 30000 })
+    mockGetSetting.mockResolvedValue(false)
     mockSelectChannel.mockResolvedValue({ id: 'ch-1', vendor: 'openai', endpoint: 'https://api.example.com/v1' })
     mockProxyToChannel.mockResolvedValue({
       status: 200,
@@ -137,6 +176,7 @@ describe('gateway proxy handler', () => {
     })
     mockInsert.mockReturnValue(createInsertChain())
     mockUpdate.mockReturnValue(createUpdateChain())
+    mockSelect.mockReturnValue(createModelPriceSelectChain())
     mockConsumeQuota.mockResolvedValue(undefined)
   })
 
@@ -160,12 +200,30 @@ describe('gateway proxy handler', () => {
     })
   })
 
+  it('should validate whitelist with the forwarded client IP', async () => {
+    mockGetClientIpFromGatewayEvent.mockReturnValue('203.0.113.10')
+    await gatewayProxyHandler(createEvent({ authHeader: 'Bearer valid', ip: '203.0.113.10' }) as never)
+
+    expect(mockCheckIpWhitelist).toHaveBeenCalledWith(validKey, '203.0.113.10')
+  })
+
   it('should reject when daily limit exceeded', async () => {
     mockCheckDailyLimit.mockResolvedValue({ allowed: false, used: 1000, limit: 1000 })
 
     await expect(gatewayProxyHandler(createEvent({ authHeader: 'Bearer valid' }) as never)).rejects.toMatchObject({
       statusCode: 429,
     })
+  })
+
+  it('should reject the sixth request when dailyLimit is 5', async () => {
+    mockValidateApiKey.mockResolvedValue({ ...validKey, dailyLimit: 5 })
+    mockCheckDailyLimit.mockResolvedValue({ allowed: false, used: 5, limit: 5 })
+
+    await expect(gatewayProxyHandler(createEvent({ authHeader: 'Bearer valid' }) as never)).rejects.toMatchObject({
+      statusCode: 429,
+      message: 'Daily limit exceeded (5/5)',
+    })
+    expect(mockCheckDailyLimit).toHaveBeenCalledWith('key-1', 5)
   })
 
   it('should reject when rate limit exceeded', async () => {
@@ -211,6 +269,70 @@ describe('gateway proxy handler', () => {
     })
   })
 
+  it('should persist parsed input/output tokens for non-stream responses', async () => {
+    mockProxyToChannel.mockResolvedValue({
+      status: 200,
+      body: JSON.stringify({ usage: { prompt_tokens: 11, completion_tokens: 22, total_tokens: 33 } }),
+      headers: { 'content-type': 'application/json' },
+    })
+
+    await gatewayProxyHandler(createEvent({
+      authHeader: 'Bearer valid',
+      body: { model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }] },
+    }) as never)
+
+    expect(insertedValues[0]).toMatchObject({
+      inputTokens: 11,
+      outputTokens: 22,
+      totalTokens: 33,
+      tokensEstimated: false,
+      cost: 0.00055,
+    })
+    expect(mockConsumeQuota).toHaveBeenCalledWith('org-1', 33, 0.00055)
+  })
+
+  it('should proxy stream request and persist usage from final SSE chunk', async () => {
+    const encoder = new TextEncoder()
+    const streamBody = [
+      'data: {"choices":[{"delta":{"content":"hi"}}]}\n\n',
+      'data: {"usage":{"prompt_tokens":4,"completion_tokens":6,"total_tokens":10}}\n\n',
+      'data: [DONE]\n\n',
+    ].join('')
+    mockProxyToChannelStream.mockResolvedValue({
+      status: 200,
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(streamBody))
+          controller.close()
+        },
+      }),
+    })
+
+    const response = await gatewayProxyHandler(createEvent({
+      authHeader: 'Bearer valid',
+      body: { model: 'gpt-4o', stream: true, messages: [{ role: 'user', content: 'hi' }] },
+    }) as never)
+
+    expect(response).toBeInstanceOf(ReadableStream)
+    const reader = (response as ReadableStream<Uint8Array>).getReader()
+    while (true) {
+      const { done } = await reader.read()
+      if (done)
+        break
+    }
+
+    expect(mockProxyToChannelStream).toHaveBeenCalledTimes(1)
+    expect(mockProxyToChannel).not.toHaveBeenCalled()
+    expect(insertedValues[0]).toMatchObject({
+      inputTokens: 4,
+      outputTokens: 6,
+      totalTokens: 10,
+      tokensEstimated: false,
+      cost: 0.00016,
+    })
+    expect(mockConsumeQuota).toHaveBeenCalledWith('org-1', 10, 0.00016)
+  })
+
   it('should proxy request and return upstream body', async () => {
     const body = { model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }] }
     const result = await gatewayProxyHandler(
@@ -222,9 +344,46 @@ describe('gateway proxy handler', () => {
 
     expect(result).toContain('"total_tokens":10')
     expect(mockProxyToChannel).toHaveBeenCalledTimes(1)
-    expect(mockConsumeQuota).toHaveBeenCalledWith('org-1', 10)
+    expect(mockConsumeQuota).toHaveBeenCalledWith('org-1', 10, 0.0002)
     expect(mockInsert).toHaveBeenCalled()
     expect(mockUpdate).toHaveBeenCalled()
+  })
+
+  it('should not store request or response bodies when gateway debug is disabled', async () => {
+    await gatewayProxyHandler(
+      createEvent({
+        authHeader: 'Bearer valid',
+        body: { model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }] },
+      }) as never,
+    )
+
+    expect(insertedValues[0]).toEqual(expect.objectContaining({
+      prompt: undefined,
+      response: undefined,
+      traceId: expect.any(String),
+    }))
+  })
+
+  it('should store redacted debug payloads when gateway debug is enabled', async () => {
+    mockGetSetting.mockResolvedValue(true)
+    mockProxyToChannel.mockResolvedValue({
+      status: 200,
+      body: JSON.stringify({ data: { Authorization: 'Bearer upstream', content: 'ok' } }),
+      headers: { 'content-type': 'application/json' },
+    })
+
+    await gatewayProxyHandler(
+      createEvent({
+        authHeader: 'Bearer valid',
+        body: { model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }], apiKey: 'sk-user' },
+      }) as never,
+    )
+
+    const logRow = insertedValues[0] as { prompt?: string, response?: string }
+    expect(logRow.prompt).toContain('***REDACTED***')
+    expect(logRow.prompt).not.toContain('sk-user')
+    expect(logRow.response).toContain('***REDACTED***')
+    expect(logRow.response).not.toContain('Bearer upstream')
   })
 
   it('should return 502 when upstream proxy fails', async () => {

@@ -1,11 +1,9 @@
 import type { BadgeProps, TableColumn } from '@nuxt/ui'
-import { AutoFormDeleteButton, UBadge, UUser } from '#components'
+import { UBadge, UButton, UUser } from '#components'
 import { METHODS } from '@/enums'
 
-export function useLogColumns(options: { deleteId: Ref<string | null>; onDelete: (id: string) => void }) {
-  const { getHeader, createCreatedAtColumn, createExpandColumn, createCheckboxColumn } = useTableColumns()
-
-  const { deleteId, onDelete } = options
+export function useLogColumns(options?: { onDetail?: (row: Log) => void }) {
+  const { createCreatedAtColumn, createExpandColumn } = useTableColumns()
 
   const { i18nCommon, i18nLog } = useMessage()
 
@@ -13,7 +11,6 @@ export function useLogColumns(options: { deleteId: Ref<string | null>; onDelete:
 
   const columns = computed<TableColumn<Log>[]>(() => [
     createExpandColumn(),
-    createCheckboxColumn(),
     {
       accessorKey: 'user',
       header: i18nLog('user'),
@@ -33,6 +30,21 @@ export function useLogColumns(options: { deleteId: Ref<string | null>; onDelete:
           },
         })
       },
+    },
+    {
+      accessorKey: 'action',
+      header: i18nCommon('action'),
+      cell: ({ row }) => h('span', { class: 'font-mono text-xs' }, row.original.action),
+    },
+    {
+      accessorKey: 'targetType',
+      header: 'Target',
+      cell: ({ row }) => h(UBadge, { variant: 'soft', color: 'neutral' }, () => row.original.targetType || '-'),
+    },
+    {
+      accessorKey: 'targetId',
+      header: 'Target ID',
+      cell: ({ row }) => h('span', { class: 'font-mono text-xs text-muted' }, row.original.targetId || '-'),
     },
     {
       accessorKey: 'method',
@@ -55,15 +67,15 @@ export function useLogColumns(options: { deleteId: Ref<string | null>; onDelete:
     })),
     createCreatedAtColumn(),
     {
-      accessorKey: 'action',
-      header: ({ column }) => getHeader(column, i18nCommon('action'), 'right'),
-      cell: ({ row }) => {
-        return h(AutoFormDeleteButton, {
-          disabled: deleteId.value !== null && row.original.id !== deleteId.value,
-          loading: deleteId.value !== null && row.original.id === deleteId.value,
-          onDelete: () => onDelete(row.original.id),
-        })
-      },
+      accessorKey: 'detail',
+      header: 'Detail',
+      cell: ({ row }) =>
+        h(UButton, {
+          size: 'xs',
+          variant: 'ghost',
+          icon: 'lucide:panel-right-open',
+          onClick: () => options?.onDetail?.(row.original),
+        }),
     },
   ])
 

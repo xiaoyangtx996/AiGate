@@ -5,7 +5,7 @@ interface MyApiKeyRow {
   key: string
   env?: string | null
   scopes?: string[] | null
-  status: 'active' | 'revoked' | 'expired'
+  status: 'active' | 'revoked' | 'expired' | 'disabled'
   calls?: number | null
   cost?: number | null
   dailyLimit?: number | null
@@ -60,6 +60,7 @@ const total = computed(() => data.value?.total ?? 0)
 const statusItems = computed(() => [
   { label: p('statusAll'), value: '' },
   { label: p('statusActive'), value: 'active' },
+  { label: 'Disabled', value: 'disabled' },
   { label: p('statusRevoked'), value: 'revoked' },
   { label: p('statusExpired'), value: 'expired' },
 ])
@@ -72,10 +73,11 @@ const scopeItems = computed(() => [
   { label: p('scopeRead'), value: 'read' },
   { label: p('scopeWrite'), value: 'write' },
 ])
-const statusColor: Record<string, 'success' | 'error' | 'neutral'> = {
+const statusColor: Record<string, 'success' | 'error' | 'neutral' | 'warning'> = {
   active: 'success',
   revoked: 'error',
   expired: 'neutral',
+  disabled: 'warning',
 }
 
 function search() {
@@ -160,8 +162,8 @@ function formatDate(value?: string | null) {
   return value ? new Date(value).toLocaleString() : '-'
 }
 
-function formatCost(cents?: number | null) {
-  return `¥${((cents ?? 0) / 100).toFixed(2)}`
+function formatCost(cost?: number | null) {
+  return `¥${Number(cost ?? 0).toFixed(8)}`
 }
 
 function maskedKey(value: string) {

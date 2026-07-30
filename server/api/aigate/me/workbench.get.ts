@@ -89,7 +89,7 @@ export default defineEventHandler(async event => {
         .select({
           totalTokens: sql<number>`SUM(COALESCE(${apiLog.totalTokens}, 0))::int`.as('total_tokens'),
           totalRequests: sql<number>`COUNT(*)::int`.as('total_requests'),
-          totalCost: sql<number>`SUM(COALESCE(${apiLog.cost}, 0))::int`.as('total_cost'),
+          totalCost: sql<number>`SUM(COALESCE(${apiLog.cost}, 0))`.as('total_cost'),
         })
         .from(apiLog)
         .where(eq(apiLog.userId, principal.userId)),

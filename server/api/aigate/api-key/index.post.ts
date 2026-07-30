@@ -1,11 +1,12 @@
-import { checkApiKeyLimit, generateApiKey } from '#server/utils/api-key'
+import { applyApiKeyDefaults, checkApiKeyLimit, generateApiKey } from '#server/utils/api-key'
+import { auditLog } from '#server/utils/audit-log'
 import { db } from '@/db/drizzle'
 import { apiKey, insertApiKeySchema } from '@/db/schema'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as
-      | { isAdmin?: boolean; userId?: string; organizationId?: string | null }
+      | { isAdmin?: boolean, userId?: string, organizationId?: string | null }
       | undefined
     if (!principal?.userId) {
       return responseError(null, '未登录', { statusCode: 401 })
@@ -19,18 +20,21 @@ export default defineEventHandler(async event => {
     }
     const body = await readBody(event)
     const parsed = insertApiKeySchema.omit({ key: true, userId: true }).parse(body)
+    const values = await applyApiKeyDefaults(parsed, principal.organizationId)
     const keyValue = generateApiKey(parsed.env ?? 'dev')
     const [res] = await db
       .insert(apiKey)
       .values({
-        ...parsed,
+        ...values,
         key: keyValue,
         userId: principal.userId,
-        ...(principal?.organizationId && !parsed.organizationId ? { organizationId: principal.organizationId } : {}),
+        ...(principal?.organizationId && !values.organizationId ? { organizationId: principal.organizationId } : {}),
       })
       .returning()
+    await auditLog(event, 'api_key.create', { type: 'api_key', id: res?.id }, null, res)
     return responseSuccess(res)
-  } catch (err) {
+  }
+  catch (err) {
     return responseError(err)
   }
 })

@@ -1,9 +1,10 @@
+import { auditLog } from '#server/utils/audit-log'
 import { db } from '@/db/drizzle'
 import { insertPromptSchema, prompt } from '@/db/schema'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { isAdmin?: boolean; organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean, organizationId?: string | null } | undefined
     const body = await readBody(event)
     const parsed = insertPromptSchema.parse(body)
     if (!principal?.isAdmin && !principal?.organizationId) {
@@ -20,8 +21,10 @@ export default defineEventHandler(async event => {
         ...(principal?.organizationId && !parsed.organizationId ? { organizationId: principal.organizationId } : {}),
       })
       .returning()
+    await auditLog(event, 'prompt.create', { type: 'prompt', id: res?.id }, null, res)
     return responseSuccess(res)
-  } catch (err) {
+  }
+  catch (err) {
     return responseError(err)
   }
 })

@@ -4,7 +4,7 @@ import dashboardHandler from '../dashboard/index.get'
 
 import { asResponse, createMockEvent } from './nitro-test-utils'
 
-const CACHE_TTL_MS = 5 * 60 * 1000
+const CACHE_TTL_MS = 60 * 1000
 
 const mockSelect = vi.fn()
 
@@ -20,6 +20,7 @@ vi.mock('@/db/schema', () => ({
   channel: { status: 'status', health: 'health' },
   apiLog: {
     organizationId: 'organizationId',
+    userId: 'userId',
     totalTokens: 'totalTokens',
     createdAt: 'createdAt',
     model: 'model',
@@ -29,8 +30,10 @@ vi.mock('@/db/schema', () => ({
 }))
 
 function parseRangeDays(range?: string): number {
-  if (range === '30d') return 30
-  if (range === '90d') return 90
+  if (range === '30d')
+    return 30
+  if (range === '90d')
+    return 90
   return 7
 }
 
@@ -40,15 +43,16 @@ function getCacheKey(orgId: string | null | undefined, rangeDays: number): strin
 
 function computeOverview(
   logs: Array<{ totalTokens: number | null }>,
-  keys: Array<{ status: string; expiresAt?: Date | string | null }>,
-  channels: Array<{ status: string; health: string }>,
+  keys: Array<{ status: string, expiresAt?: Date | string | null }>,
+  channels: Array<{ status: string, health: string }>,
   orgCount: number,
   now = Date.now(),
 ) {
   const totalTokens = logs.reduce((sum, log) => sum + (log.totalTokens || 0), 0)
   const activeKeys = keys.filter(key => key.status === 'active').length
-  const expiringSoon = keys.filter(key => {
-    if (!key.expiresAt) return false
+  const expiringSoon = keys.filter((key) => {
+    if (!key.expiresAt)
+      return false
     return new Date(key.expiresAt).getTime() - now < 7 * 86400000
   }).length
 
@@ -63,7 +67,7 @@ function computeOverview(
   }
 }
 
-function buildStatusDistribution(statusRows: Array<{ status: string; count: number }>) {
+function buildStatusDistribution(statusRows: Array<{ status: string, count: number }>) {
   const statusCounts: Record<string, number> = {}
   for (const row of statusRows) {
     statusCounts[row.status] = row.count
@@ -71,7 +75,7 @@ function buildStatusDistribution(statusRows: Array<{ status: string; count: numb
   return statusCounts
 }
 
-function computeQuotaStatus(orgs: Array<{ id: string; name: string; tokenLimit: number; tokenUsed: number }>) {
+function computeQuotaStatus(orgs: Array<{ id: string, name: string, tokenLimit: number, tokenUsed: number }>) {
   return orgs
     .filter(org => org.tokenLimit > 0)
     .map(org => ({
@@ -142,13 +146,15 @@ function setupDashboardDbMocks(options: {
   channels?: unknown[]
   logs?: unknown[]
   dailyUsage?: unknown[]
+  dailyModelUsage?: unknown[]
   modelUsage?: unknown[]
   statusRows?: unknown[]
+  topConsumers?: unknown[]
   scoped?: boolean
 }) {
   const scoped = options.scoped ?? false
   mockSelect
-    .mockReturnValueOnce(createSimpleSelectChain(options.orgs ?? []))
+    .mockReturnValueOnce(scoped ? createWhereSelectChain(options.orgs ?? []) : createSimpleSelectChain(options.orgs ?? []))
     .mockReturnValueOnce(
       scoped ? createWhereSelectChain(options.keys ?? []) : createSimpleSelectChain(options.keys ?? []),
     )
@@ -157,8 +163,10 @@ function setupDashboardDbMocks(options: {
       scoped ? createLogLimitChain(options.logs ?? [], true) : createLogLimitChain(options.logs ?? [], false),
     )
     .mockReturnValueOnce(createGroupByOrderChain(options.dailyUsage ?? []))
+    .mockReturnValueOnce(createGroupByOrderChain(options.dailyModelUsage ?? []))
     .mockReturnValueOnce(createGroupByOrderChain(options.modelUsage ?? [], true))
     .mockReturnValueOnce(createGroupByChain(options.statusRows ?? []))
+    .mockReturnValueOnce(createGroupByOrderChain(options.topConsumers ?? [], true))
 }
 
 describe('aigate dashboard pure logic', () => {
@@ -265,7 +273,7 @@ describe('aigate dashboard pure logic', () => {
   describe('dashboard cache ttl', () => {
     it('should expire cached entries after TTL', () => {
       vi.useFakeTimers()
-      const cache = new Map<string, { data: unknown; expiresAt: number }>()
+      const cache = new Map<string, { data: unknown, expiresAt: number }>()
       const key = getCacheKey('org-1', 7)
 
       cache.set(key, { data: { ok: true }, expiresAt: Date.now() + CACHE_TTL_MS })
@@ -295,7 +303,6 @@ describe('aigate dashboard index.get', () => {
       scoped: true,
       orgs: [
         { id: 'org-1', name: 'Alpha', tokenLimit: 1000, tokenUsed: 950 },
-        { id: 'org-2', name: 'Beta', tokenLimit: 0, tokenUsed: 0 },
       ],
       keys: [
         { status: 'active', expiresAt: new Date(now + 2 * 86400000) },
@@ -307,11 +314,13 @@ describe('aigate dashboard index.get', () => {
       ],
       logs: [{ totalTokens: 100 }, { totalTokens: 50 }],
       dailyUsage: [{ date: '2026-06-04', tokens: 150, requests: 10, cost: 5 }],
+      dailyModelUsage: [{ date: '2026-06-04', model: 'gpt-4', tokens: 120 }],
       modelUsage: [{ model: 'gpt-4', tokens: 120, requests: 8, cost: 4 }],
       statusRows: [
         { status: 'success', count: 9 },
         { status: 'error', count: 1 },
       ],
+      topConsumers: [{ principal: 'org-1', tokens: 150, requests: 10, cost: 5 }],
     })
 
     const response = await dashboardHandler(
@@ -331,12 +340,17 @@ describe('aigate dashboard index.get', () => {
         totalChannels: 2,
         activeChannels: 1,
         healthyChannels: 1,
-        totalOrganizations: 2,
+        totalOrganizations: 1,
       },
       trend: {
         daily: [{ date: '2026-06-04', tokens: 150, requests: 10, cost: 5 }],
+        dailyByModel: {
+          models: ['gpt-4'],
+          rows: [{ date: '2026-06-04', 'gpt-4': 120 }],
+        },
       },
       modelBreakdown: [{ model: 'gpt-4', tokens: 120, requests: 8, cost: 4 }],
+      topConsumers: [{ principal: 'org-1', tokens: 150, requests: 10, cost: 5 }],
       statusDistribution: { success: 9, error: 1 },
       quotaStatus: [
         {
@@ -347,7 +361,7 @@ describe('aigate dashboard index.get', () => {
         },
       ],
     })
-    expect(mockSelect).toHaveBeenCalledTimes(7)
+    expect(mockSelect).toHaveBeenCalledTimes(9)
   })
 
   it('should return cached dashboard payload on repeated requests', async () => {
@@ -367,7 +381,7 @@ describe('aigate dashboard index.get', () => {
 
     expect(first.code).toBe(RESPONSE_CODE.SUCCESS)
     expect(second.data).toEqual(first.data)
-    expect(mockSelect).toHaveBeenCalledTimes(7)
+    expect(mockSelect).toHaveBeenCalledTimes(9)
   })
 
   it('should use separate cache keys per range', async () => {
@@ -393,7 +407,7 @@ describe('aigate dashboard index.get', () => {
     await dashboardHandler(createMockEvent({ query: { range: '7d' } }))
     await dashboardHandler(createMockEvent({ query: { range: '90d' } }))
 
-    expect(mockSelect).toHaveBeenCalledTimes(14)
+    expect(mockSelect).toHaveBeenCalledTimes(18)
   })
 
   it('should return 90d range label in response', async () => {

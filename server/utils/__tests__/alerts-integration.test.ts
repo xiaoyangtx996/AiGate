@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  generateChannelDownAlerts,
+  generateErrorSpikeAlerts,
+  generateExpiredKeyAlerts,
   generateKeyExpiryAlerts,
+  generateKnowledgeStorageAlerts,
+  generateMcpUnavailableAlerts,
   generateQuotaAlerts,
   generateRuleBasedAlerts,
   runAlertChecks,
+  runDailyAlertChecks,
+  runRealtimeAlertChecks,
 } from '#server/utils/alerts'
 
 const { mockInsert, mockNotify, mockSelect } = vi.hoisted(() => ({
@@ -21,7 +28,36 @@ vi.mock('@/db/drizzle', () => ({
 
 vi.mock('@/db/schema', () => ({
   organization: { id: 'id', name: 'name', enabled: 'enabled', tokenLimit: 'tokenLimit', tokenUsed: 'tokenUsed' },
-  alert: { type: 'type', organizationId: 'organizationId', read: 'read', resourceId: 'resourceId' },
+  alert: { type: 'type', organizationId: 'organizationId', read: 'read', status: 'status', resourceId: 'resourceId' },
+  channel: { id: 'id', name: 'name', status: 'status', health: 'health' },
+  channelCredential: { id: 'id', name: 'name', status: 'status' },
+  mcpTool: {
+    id: 'id',
+    name: 'name',
+    organizationId: 'organizationId',
+    connectionStatus: 'connectionStatus',
+    healthStatus: 'healthStatus',
+    lastError: 'lastError',
+  },
+  storageInstance: { id: 'id', status: 'status', config: 'config' },
+  knowledgeBase: {
+    id: 'id',
+    name: 'name',
+    enabled: 'enabled',
+    size: 'size',
+    storageInstanceId: 'storageInstanceId',
+    organizationId: 'organizationId',
+  },
+  apiLog: {
+    status: 'status',
+    statusCode: 'statusCode',
+    createdAt: 'createdAt',
+    organizationId: 'organizationId',
+    type: 'type',
+    agentId: 'agentId',
+    cost: 'cost',
+  },
+  agent: { id: 'id', name: 'name', organizationId: 'organizationId' },
   apiKey: {
     status: 'status',
     expiresAt: 'expiresAt',
@@ -140,6 +176,79 @@ describe('alerts integration', () => {
     })
   })
 
+  describe('additional alert generators', () => {
+    it('should create critical alert for expired API keys', async () => {
+      const key = {
+        id: 'key-expired',
+        name: 'Expired Key',
+        status: 'expired',
+        expiresAt: new Date(Date.now() - 86400000),
+        organizationId: 'org-1',
+        userId: 'user-1',
+      }
+      mockSelect.mockReturnValueOnce(createSelectChain([key])).mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-expired' }]))
+
+      await generateExpiredKeyAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-expired', ['email'])
+    })
+
+    it('should create alert for unhealthy enabled channels', async () => {
+      mockSelect
+        .mockReturnValueOnce(createSelectChain([{ id: 'ch-1', name: 'OpenAI', status: 'enabled', health: 'down' }]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-channel' }]))
+
+      await generateChannelDownAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-channel', ['email'])
+    })
+
+    it('should create alert for unavailable MCP tools', async () => {
+      mockSelect
+        .mockReturnValueOnce(createSelectChain([
+          { id: 'mcp-1', name: 'GitHub MCP', organizationId: 'org-1', connectionStatus: 'failed', healthStatus: 'down', lastError: 'timeout' },
+        ]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-mcp' }]))
+
+      await generateMcpUnavailableAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-mcp', ['email'])
+    })
+
+    it('should create alert when knowledge base storage exceeds configured capacity threshold', async () => {
+      mockSelect
+        .mockReturnValueOnce(createSelectChain([{ id: 'storage-1', status: 'active', config: { capacityBytes: 1000 } }]))
+        .mockReturnValueOnce(createSelectChain([
+          { id: 'kb-1', name: 'KB', enabled: true, size: 850, storageInstanceId: 'storage-1', organizationId: 'org-1' },
+        ]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-kb' }]))
+
+      await generateKnowledgeStorageAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-kb', ['email'])
+    })
+
+    it('should create alert when recent API errors exceed threshold', async () => {
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(Array.from({ length: 10 }).fill({ organizationId: 'org-1', status: 'error', statusCode: 500 })))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-errors' }]))
+
+      await generateErrorSpikeAlerts(10)
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-errors', ['email'])
+    })
+  })
+
   describe('generateRuleBasedAlerts', () => {
     it('should create quota alert when rule threshold is met', async () => {
       const rules = [
@@ -199,6 +308,86 @@ describe('alerts integration', () => {
       expect(mockNotify).toHaveBeenCalledWith('alert-rule-2', ['email'])
     })
 
+    it('should create MCP unavailable alert from rule channels', async () => {
+      const rules = [
+        {
+          id: 'r-mcp',
+          name: 'MCP Rule',
+          type: 'mcp_unavailable',
+          enabled: true,
+          organizationId: 'org-1',
+          condition: { threshold: 1 },
+          notifyChannels: ['in_app'],
+        },
+      ]
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([
+          { id: 'mcp-1', name: 'GitHub MCP', organizationId: 'org-1', connectionStatus: 'failed', healthStatus: 'down', lastError: 'timeout' },
+        ]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-rule-mcp' }]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-mcp', ['in_app'])
+    })
+
+    it('should create error spike alert when rule threshold is met', async () => {
+      const rules = [
+        {
+          id: 'r-error',
+          name: 'Error Rule',
+          type: 'error_spike',
+          enabled: true,
+          organizationId: 'org-1',
+          condition: { threshold: 2 },
+          notifyChannels: ['email'],
+        },
+      ]
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([
+          { organizationId: 'org-1', status: 'error', statusCode: 500 },
+          { organizationId: 'org-1', status: 'error', statusCode: 500 },
+        ]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-rule-error' }]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-error', ['email'])
+    })
+
+    it('should create knowledge storage alert from configured capacity rule', async () => {
+      const rules = [
+        {
+          id: 'r-kb',
+          name: 'KB Rule',
+          type: 'knowledge_storage',
+          enabled: true,
+          organizationId: 'org-1',
+          condition: { threshold: 80 },
+          notifyChannels: ['email'],
+        },
+      ]
+      mockSelect
+        .mockReturnValueOnce(createSelectChain(rules))
+        .mockReturnValueOnce(createSelectChain([{ id: 'storage-1', status: 'active', config: { capacityBytes: 1000 } }]))
+        .mockReturnValueOnce(createSelectChain([
+          { id: 'kb-1', name: 'KB', enabled: true, size: 900, storageInstanceId: 'storage-1', organizationId: 'org-1' },
+        ]))
+        .mockReturnValueOnce(createSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([{ id: 'alert-rule-kb' }]))
+
+      await generateRuleBasedAlerts()
+
+      expect(mockInsert).toHaveBeenCalledTimes(1)
+      expect(mockNotify).toHaveBeenCalledWith('alert-rule-kb', ['email'])
+    })
+
     it('should skip when organization filter does not match', async () => {
       const rules = [
         {
@@ -250,6 +439,17 @@ describe('alerts integration', () => {
       mockSelect.mockReturnValue(createSelectChain([]))
 
       await runAlertChecks()
+
+      expect(mockSelect).toHaveBeenCalled()
+    })
+  })
+
+  describe('alert check tiers', () => {
+    it('should run realtime and daily tiers separately', async () => {
+      mockSelect.mockReturnValue(createSelectChain([]))
+
+      await runRealtimeAlertChecks()
+      await runDailyAlertChecks()
 
       expect(mockSelect).toHaveBeenCalled()
     })

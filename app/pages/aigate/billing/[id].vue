@@ -16,8 +16,8 @@ const { data, pending: loading } = await useAsyncData(
   { watch: [id] },
 )
 
-function formatCost(cents: number) {
-  return `¥${((cents || 0) / 100).toFixed(2)}`
+function formatCost(cost: number) {
+  return `¥${Number(cost || 0).toFixed(8)}`
 }
 
 function formatTokens(n: number) {
@@ -27,7 +27,7 @@ function formatTokens(n: number) {
 function exportCsv() {
   if (!data.value) return
   const rows = [
-    [p('model'), p('requests'), p('tokens'), p('costCents')],
+    [p('model'), p('requests'), p('tokens'), b('cost')],
     ...(data.value.modelBreakdown || []).map((m: { model: string; requests: number; tokens: number; cost: number }) => [
       m.model,
       m.requests,
@@ -114,7 +114,7 @@ function exportCsv() {
             { accessorKey: 'model', header: p('model') },
             { accessorKey: 'requests', header: p('requests') },
             { accessorKey: 'tokens', header: p('tokens') },
-            { accessorKey: 'cost', header: p('costCents') },
+            { accessorKey: 'cost', header: b('cost') },
           ]"
         >
           <template #tokens-cell="{ row }">
@@ -138,7 +138,7 @@ function exportCsv() {
             { accessorKey: 'date', header: p('date') },
             { accessorKey: 'requests', header: p('requests') },
             { accessorKey: 'tokens', header: p('tokens') },
-            { accessorKey: 'cost', header: p('costCents') },
+            { accessorKey: 'cost', header: b('cost') },
           ]"
         >
           <template #tokens-cell="{ row }">

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import ChannelCreateDrawer from './components/ChannelCreateDrawer.vue'
 import HeaderContent from './components/HeaderContent.vue'
 
-const { getChannelList, insertChannel, updateChannel, delChannel, checkChannelHealth } = useAigateApi()
+const { getChannelList, updateChannel, delChannel, checkChannelHealth, getChannelPresets } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
 const { exportToCSV } = useExport()
@@ -27,40 +28,57 @@ const {
   },
 )
 
+const { data: presetsData } = await useAsyncData('aigate-channel-presets', async () => {
+  const res = await getChannelPresets()
+  return res.data ?? []
+})
+
 const list = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
+const presets = computed(() => presetsData.value ?? [])
 
-const open = ref(false)
+const createOpen = ref(false)
+const editOpen = ref(false)
 const editData = ref<any>(null)
 const saveLoading = ref(false)
 const healthChecking = ref(false)
+const togglingId = ref<string | null>(null)
 
 const form = reactive({
   name: '',
   vendor: '',
+  vendorTag: '',
   endpoint: '',
-  apiKey: '',
+  icon: '',
   status: 'enabled',
 })
 
 function handleAdd() {
-  editData.value = null
-  form.name = ''
-  form.vendor = ''
-  form.endpoint = ''
-  form.apiKey = ''
-  form.status = 'enabled'
-  open.value = true
+  createOpen.value = true
 }
 
 function handleEdit(row: any) {
   editData.value = row
   form.name = row.name || ''
   form.vendor = row.vendor || ''
+  form.vendorTag = row.vendorTag || ''
   form.endpoint = row.endpoint || ''
-  form.apiKey = ''
+  form.icon = row.icon || ''
   form.status = row.status || 'enabled'
-  open.value = true
+  editOpen.value = true
+}
+
+async function handleToggleStatus(item: { id: string, status: string }) {
+  togglingId.value = item.id
+  try {
+    const next = item.status === 'enabled' ? 'disabled' : 'enabled'
+    await updateChannel({ id: item.id, status: next })
+    successToast()
+    refresh()
+  }
+  finally {
+    togglingId.value = null
+  }
 }
 
 async function handleDelete(id: string) {
@@ -70,19 +88,17 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.name || !form.endpoint) return
+  if (!editData.value?.id || !form.name || !form.vendorTag || !form.endpoint)
+    return
   saveLoading.value = true
   try {
     const data = { ...form }
-    if (editData.value?.id) {
-      await updateChannel({ ...data, id: editData.value.id })
-    } else {
-      await insertChannel(data)
-    }
+    await updateChannel({ ...data, id: editData.value.id })
     successToast()
-    open.value = false
+    editOpen.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -92,7 +108,7 @@ const showHealthDetail = ref(false)
 
 function hasHealthResults(
   data: unknown,
-): data is { results: any[]; total?: number; healthy?: number; unhealthy?: number } {
+): data is { results: any[], total?: number, healthy?: number, unhealthy?: number } {
   return typeof data === 'object' && data !== null && Array.isArray((data as { results?: unknown }).results)
 }
 
@@ -105,7 +121,8 @@ async function handleHealthCheck(channelId?: string) {
       successToast(p('healthCheckDone', { healthy, total: res.data.results.length }))
       healthCheckResult.value = res.data
       showHealthDetail.value = true
-    } else if (res.data) {
+    }
+    else if (res.data) {
       successToast(
         res.data.healthy
           ? p('healthSingleOk', { name: res.data.name })
@@ -115,7 +132,8 @@ async function handleHealthCheck(channelId?: string) {
       showHealthDetail.value = true
     }
     refresh()
-  } finally {
+  }
+  finally {
     healthChecking.value = false
   }
 }
@@ -169,57 +187,99 @@ function handleExport() {
         </UButton>
       </template>
     </EmptyState>
-    <UTable
-      v-else
-      :data="list"
-      :columns="[
-        { accessorKey: 'name', header: p('name') },
-        { accessorKey: 'vendor', header: p('vendor') },
-        { accessorKey: 'endpoint', header: p('endpoint') },
-        { accessorKey: 'status', header: p('status') },
-        { accessorKey: 'health', header: p('health') },
-        { accessorKey: 'qps', header: p('qps') },
-        { accessorKey: 'actions', header: $t('common.action') },
-      ]"
-    >
-      <template #status-cell="{ row }">
-        <UBadge :color="getStatusColor(row.original.status)" variant="subtle" size="sm">
-          {{ row.original.status }}
-        </UBadge>
-      </template>
-      <template #health-cell="{ row }">
-        <UBadge :color="getHealthColor(row.original.health)" variant="subtle" size="sm">
-          {{ row.original.health }}
-        </UBadge>
-      </template>
-      <template #actions-cell="{ row }">
-        <div class="flex gap-1">
-          <UButton size="xs" variant="ghost" icon="lucide:eye" :to="`/aigate/channels/${row.original.id}`" />
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <UCard v-for="item in list" :key="item.id" class="hover:border-primary transition-colors">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <UIcon :name="item.icon || 'lucide:radio-tower'" class="size-5 text-primary" />
+              <h3 class="font-bold truncate">
+                {{ item.name }}
+              </h3>
+            </div>
+            <p class="mt-1 text-sm text-muted truncate">
+              {{ item.vendor }} · {{ item.vendorTag }}
+            </p>
+          </div>
+          <div class="flex gap-1">
+            <UBadge :color="getStatusColor(item.status)" variant="subtle" size="sm">
+              {{ item.status }}
+            </UBadge>
+            <UBadge :color="getHealthColor(item.health)" variant="subtle" size="sm">
+              {{ item.health }}
+            </UBadge>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+          <div class="rounded-md bg-muted p-2">
+            <p class="text-xs text-muted">
+              凭证
+            </p>
+            <p class="font-mono">
+              {{ item.activeCredentialCount || 0 }}/{{ item.credentialCount || 0 }}
+            </p>
+          </div>
+          <div class="rounded-md bg-muted p-2">
+            <p class="text-xs text-muted">
+              7 天调用
+            </p>
+            <p class="font-mono">
+              {{ (item.calls7d || 0).toLocaleString() }}
+            </p>
+          </div>
+          <div class="rounded-md bg-muted p-2">
+            <p class="text-xs text-muted">
+              {{ p('qps') }}
+            </p>
+            <p class="font-mono">
+              {{ item.qps }}
+            </p>
+          </div>
+          <div class="rounded-md bg-muted p-2">
+            <p class="text-xs text-muted">
+              {{ p('priority') }}
+            </p>
+            <p class="font-mono">
+              {{ item.priority }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between text-sm">
+          <span class="text-muted">{{ p('status') }}</span>
+          <USwitch
+            :model-value="item.status === 'enabled'"
+            :loading="togglingId === item.id"
+            @update:model-value="() => handleToggleStatus(item)"
+          />
+        </div>
+
+        <p class="mt-4 truncate text-xs text-muted">
+          {{ item.endpoint }}
+        </p>
+
+        <div class="mt-4 flex justify-end gap-1">
+          <UButton size="xs" variant="ghost" icon="lucide:eye" :to="`/aigate/channels/${item.id}`" />
           <UButton
             size="xs"
             variant="ghost"
             icon="lucide:heart-pulse"
             :loading="healthChecking"
-            @click="handleHealthCheck(row.original.id)"
+            @click="handleHealthCheck(item.id)"
           />
-          <UButton
-            v-permission="'EDIT'"
-            size="xs"
-            variant="ghost"
-            icon="lucide:edit"
-            @click="handleEdit(row.original)"
-          />
+          <UButton v-permission="'EDIT'" size="xs" variant="ghost" icon="lucide:edit" @click="handleEdit(item)" />
           <UButton
             v-permission="'DELETE'"
             size="xs"
             variant="ghost"
             color="error"
             icon="lucide:trash-2"
-            @click="handleDelete(row.original.id)"
+            @click="handleDelete(item.id)"
           />
         </div>
-      </template>
-    </UTable>
+      </UCard>
+    </div>
 
     <div v-if="total > 0" class="flex justify-end">
       <UPagination v-model:page="page" :items-per-page="pageSize" :total="total" />
@@ -287,10 +347,12 @@ function handleExport() {
       </template>
     </UModal>
 
-    <UModal v-model:open="open">
+    <ChannelCreateDrawer v-model:open="createOpen" :presets="presets" @success="refresh" />
+
+    <UModal v-model:open="editOpen">
       <template #header>
         <h3 class="text-lg font-bold">
-          {{ editData ? $t('common.save') : p('add') }}
+          {{ $t('common.save') }}
         </h3>
       </template>
       <template #body>
@@ -310,11 +372,14 @@ function handleExport() {
               :placeholder="p('vendorPlaceholder')"
             />
           </UFormField>
+          <UFormField label="Vendor Tag" required>
+            <UInput v-model="form.vendorTag" placeholder="openai-compatible" />
+          </UFormField>
+          <UFormField label="Icon">
+            <UInput v-model="form.icon" placeholder="lucide:radio-tower" />
+          </UFormField>
           <UFormField :label="p('endpoint')" required>
             <UInput v-model="form.endpoint" :placeholder="p('endpointPlaceholder')" />
-          </UFormField>
-          <UFormField :label="p('apiKey')">
-            <UInput v-model="form.apiKey" type="password" :placeholder="p('apiKeyPlaceholder')" />
           </UFormField>
           <UFormField :label="p('status')">
             <USelect
@@ -329,10 +394,10 @@ function handleExport() {
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">
+          <UButton variant="ghost" @click="editOpen = false">
             {{ $t('common.cancel') }}
           </UButton>
-          <UButton :loading="saveLoading" :disabled="!form.name || !form.endpoint" @click="handleSubmit">
+          <UButton :loading="saveLoading" :disabled="!form.name || !form.vendorTag || !form.endpoint" @click="handleSubmit">
             {{ $t('common.save') }}
           </UButton>
         </div>

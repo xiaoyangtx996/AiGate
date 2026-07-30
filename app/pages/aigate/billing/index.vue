@@ -42,8 +42,8 @@ const statusColor: Record<string, 'warning' | 'success' | 'error'> = {
   paid: 'success',
   overdue: 'error',
 }
-function formatCost(cents: number) {
-  return `¥${(cents / 100).toFixed(2)}`
+function formatCost(cost: number) {
+  return `¥${Number(cost || 0).toFixed(8)}`
 }
 
 function formatTokens(n: number) {

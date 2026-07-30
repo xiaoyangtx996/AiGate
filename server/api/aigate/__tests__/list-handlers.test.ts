@@ -30,9 +30,17 @@ vi.mock('@/db/schema', () => ({
     createdAt: 'createdAt',
   },
   mcpTool: {
+    id: 'id',
     organizationId: 'organizationId',
     name: 'name',
     status: 'status',
+    config: 'config',
+    env: 'env',
+    authConfig: 'authConfig',
+    createdAt: 'createdAt',
+  },
+  mcpToolVersion: {
+    toolId: 'toolId',
     createdAt: 'createdAt',
   },
   member: {
@@ -42,11 +50,24 @@ vi.mock('@/db/schema', () => ({
     createdAt: 'createdAt',
   },
   channel: {
+    id: 'id',
     organizationId: 'organizationId',
     name: 'name',
     vendor: 'vendor',
     status: 'status',
     priority: 'priority',
+  },
+  channelCredential: {
+    channelId: 'channelId',
+    status: 'status',
+  },
+  aiModel: {
+    sourceChannelId: 'sourceChannelId',
+    name: 'name',
+  },
+  apiLog: {
+    model: 'model',
+    createdAt: 'createdAt',
   },
   user: {
     id: 'id',
@@ -111,9 +132,37 @@ function createMemberListSelectChain(result: unknown[]) {
   }
 }
 
+function createVersionSelectChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockResolvedValue(result),
+      }),
+    }),
+  }
+}
+
+function createCredentialStatsChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        groupBy: vi.fn().mockResolvedValue(result),
+      }),
+    }),
+  }
+}
+
+function createChannelModelsChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
 describe('aigate list handlers', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('pure list pagination helpers', () => {
@@ -151,6 +200,7 @@ describe('aigate list handlers', () => {
       mockSelect
         .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
         .mockReturnValueOnce(createListSelectChain(items))
+        .mockReturnValueOnce(createVersionSelectChain([]))
 
       const response = await apiKeyListHandler(
         createMockEvent({
@@ -225,7 +275,7 @@ describe('aigate list handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual({
-        items,
+        items: items.map(item => ({ ...item, versions: [] })),
         total: 1,
         page: 3,
         pageSize: 5,
@@ -250,6 +300,8 @@ describe('aigate list handlers', () => {
       mockSelect
         .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
         .mockReturnValueOnce(createListSelectChain(items))
+        .mockReturnValueOnce(createCredentialStatsChain([{ channelId: 'ch-1', total: 2, active: 1 }]))
+        .mockReturnValueOnce(createChannelModelsChain([]))
 
       const response = await channelListHandler(
         createMockEvent({
@@ -260,12 +312,18 @@ describe('aigate list handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual({
-        items,
+        items: items.map(item => ({
+          ...item,
+          apiKey: undefined,
+          credentialCount: 2,
+          activeCredentialCount: 1,
+          calls7d: 0,
+        })),
         total: 1,
         page: 2,
         pageSize: 10,
       })
-      expect(mockSelect).toHaveBeenCalledTimes(2)
+      expect(mockSelect).toHaveBeenCalledTimes(4)
     })
 
     it('should return raw array when page query is missing', async () => {
@@ -273,6 +331,8 @@ describe('aigate list handlers', () => {
       mockSelect
         .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
         .mockReturnValueOnce(createListSelectChain(items))
+        .mockReturnValueOnce(createCredentialStatsChain([{ channelId: 'ch-1', total: 1, active: 1 }]))
+        .mockReturnValueOnce(createChannelModelsChain([]))
 
       const response = await channelListHandler(
         createMockEvent({
@@ -280,7 +340,13 @@ describe('aigate list handlers', () => {
         }),
       )
 
-      expect(response.data).toEqual(items)
+      expect(response.data).toEqual(items.map(item => ({
+        ...item,
+        apiKey: undefined,
+        credentialCount: 1,
+        activeCredentialCount: 1,
+        calls7d: 0,
+      })))
     })
 
     it('should clamp page size and default pagination values', async () => {

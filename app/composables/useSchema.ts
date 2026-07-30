@@ -64,6 +64,19 @@ export function useSchema() {
       },
     })
 
+  const zUsername = z
+    .string()
+    .min(3, i18nCommon('required'))
+    .meta({
+      title: '用户名',
+      required: true,
+      input: {
+        props: {
+          placeholder: '请输入用户名',
+        },
+      },
+    })
+
   // 用户密码
   const zPassword = z
     .string(t('auth.password.placeholder'))
@@ -81,7 +94,7 @@ export function useSchema() {
 
   // 用户登录
   const signInFormSchema = z.object({
-    email: zEmail,
+    username: zUsername,
     password: zPassword,
     rememberMe: z
       .boolean()
@@ -107,12 +120,7 @@ export function useSchema() {
     password: zPassword,
   })
 
-  // 邮箱一键登录/忘记密码
-  const emailFormSchema = z.object({
-    email: zEmail,
-  })
-
-  // 重置密码
+  // 重置密码（管理端）
   const forgotPasswordFormSchema = z.object({
     newPassword: z
       .string(t('auth.newPassword.placeholder'))
@@ -130,7 +138,21 @@ export function useSchema() {
   })
 
   // 用户管理 - 新增/编辑
-  const userFormSchema = signUpFormSchema.extend({
+  const userFormSchema = z.object({
+    name: z
+      .string()
+      .nonempty({ error: t('auth.name.placeholder') })
+      .meta({
+        title: i18nAuth('name.label', true),
+        required: true,
+        input: {
+          props: {
+            placeholder: i18nAuth('name.placeholder'),
+          },
+        },
+      }),
+    username: zUsername,
+    password: zPassword,
     displayUsername: z
       .string()
       .optional()
@@ -236,7 +258,6 @@ export function useSchema() {
     menuFormSchema,
     signInFormSchema,
     signUpFormSchema,
-    emailFormSchema,
     forgotPasswordFormSchema,
     userFormSchema,
     banUserFormSchema,
@@ -247,7 +268,6 @@ export function useSchema() {
 // 导出类型
 export type SignInFormSchema = z.infer<ReturnType<typeof useSchema>['signInFormSchema']>
 export type SignUpFormSchema = z.infer<ReturnType<typeof useSchema>['signUpFormSchema']>
-export type EmailFormSchema = z.infer<ReturnType<typeof useSchema>['emailFormSchema']>
 export type ForgotPasswordFormSchema = z.infer<ReturnType<typeof useSchema>['forgotPasswordFormSchema']>
 export type UserFormSchema = z.infer<ReturnType<typeof useSchema>['userFormSchema']>
 export type BanUserFormSchema = z.infer<ReturnType<typeof useSchema>['banUserFormSchema']>

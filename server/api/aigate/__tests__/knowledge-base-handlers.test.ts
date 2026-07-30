@@ -15,12 +15,23 @@ const mockSelect = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
 const mockDelete = vi.fn()
+const mockSaveUploadedDocument = vi.fn()
+const mockAuditLog = vi.fn()
+const mockSetResponseStatus = vi.fn()
 
 const knowledgeBaseBodySchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   organizationId: z.string().optional(),
+  ownerId: z.string().optional(),
   embeddingModel: z.string().optional(),
+  storageInstanceId: z.string().optional(),
+  embeddingModelId: z.string().optional(),
+  embeddingDim: z.number().optional(),
+  chunkSize: z.number().optional(),
+  chunkOverlap: z.number().optional(),
+  topK: z.number().optional(),
+  dedupStrategy: z.string().optional(),
   documentCount: z.number().optional(),
   size: z.number().optional(),
   status: z.string().optional(),
@@ -41,10 +52,27 @@ vi.mock('@/db/schema', () => ({
     id: 'id',
     name: 'name',
     organizationId: 'organizationId',
+    ownerId: 'ownerId',
     createdAt: 'createdAt',
     documentCount: 'documentCount',
     size: 'size',
     status: 'status',
+    storageInstanceId: 'storageInstanceId',
+    embeddingModelId: 'embeddingModelId',
+    embeddingDim: 'embeddingDim',
+    chunkSize: 'chunkSize',
+    chunkOverlap: 'chunkOverlap',
+    topK: 'topK',
+    dedupStrategy: 'dedupStrategy',
+    enabled: 'enabled',
+  },
+  storageInstance: {
+    id: 'id',
+    isDefault: 'isDefault',
+  },
+  aiModel: {
+    id: 'id',
+    name: 'name',
   },
   document: {
     id: 'id',
@@ -54,19 +82,51 @@ vi.mock('@/db/schema', () => ({
     size: 'size',
     status: 'status',
     chunks: 'chunks',
+    chunkCount: 'chunkCount',
+    tokenCount: 'tokenCount',
+    contentHash: 'contentHash',
     metadata: 'metadata',
+    createdAt: 'createdAt',
   },
   insertKnowledgeBaseSchema: {
     parse: (body: unknown) => knowledgeBaseBodySchema.parse(body),
   },
+  updateKnowledgeBaseSchema: {
+    parse: (body: unknown) => knowledgeBaseBodySchema.partial().parse(body),
+  },
+}))
+
+vi.mock('#server/utils/knowledge-rag', () => ({
+  saveUploadedDocument: (...args: unknown[]) => mockSaveUploadedDocument(...args),
+}))
+
+const mockProbeEmbeddingDim = vi.fn()
+
+vi.mock('#server/utils/knowledge-embedding', () => ({
+  probeEmbeddingDim: (...args: unknown[]) => mockProbeEmbeddingDim(...args),
+}))
+
+vi.mock('#server/utils/audit-log', () => ({
+  auditLog: (...args: unknown[]) => mockAuditLog(...args),
 }))
 
 vi.stubGlobal('readMultipartFormData', async (event: { _formData?: unknown }) => event._formData)
+vi.stubGlobal('setResponseStatus', (...args: unknown[]) => mockSetResponseStatus(...args))
 
 function createSelectChain(result: unknown[]) {
   return {
     from: vi.fn().mockReturnValue({
       where: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
+function createLimitedSelectChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue(result),
+      }),
     }),
   }
 }
@@ -77,6 +137,14 @@ function createListSelectChain(result: unknown[]) {
       where: vi.fn().mockReturnValue({
         orderBy: vi.fn().mockResolvedValue(result),
       }),
+    }),
+  }
+}
+
+function createCountSelectChain(total: number) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue([{ total }]),
     }),
   }
 }
@@ -95,14 +163,6 @@ function createUpdateChain(result: unknown[]) {
       where: vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue(result),
       }),
-    }),
-  }
-}
-
-function createUpdateChainNoReturn() {
-  return {
-    set: vi.fn().mockReturnValue({
-      where: vi.fn().mockResolvedValue(undefined),
     }),
   }
 }
@@ -137,7 +197,10 @@ function createFileFormData(
 
 describe('aigate knowledge-base handlers', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    mockAuditLog.mockResolvedValue(undefined)
+    mockProbeEmbeddingDim.mockResolvedValue(1536)
+    mockSetResponseStatus.mockReset()
   })
 
   describe('knowledge-base index.post', () => {
@@ -155,6 +218,7 @@ describe('aigate knowledge-base handlers', () => {
 
     it('should create knowledge base with organization from principal', async () => {
       const created = { id: 'kb-1', name: 'Product Docs', organizationId: 'org-1' }
+      mockSelect.mockReturnValue(createLimitedSelectChain([]))
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await kbPostHandler(
@@ -183,6 +247,7 @@ describe('aigate knowledge-base handlers', () => {
 
     it('should allow admin to create knowledge base with explicit organizationId', async () => {
       const created = { id: 'kb-2', name: 'Shared KB', organizationId: 'org-explicit' }
+      mockSelect.mockReturnValue(createLimitedSelectChain([]))
       mockInsert.mockReturnValue(createInsertChain([created]))
 
       const response = await kbPostHandler(
@@ -194,6 +259,45 @@ describe('aigate knowledge-base handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
+    })
+
+    it('should write audit log after creating knowledge base', async () => {
+      const created = { id: 'kb-audit', name: 'Audit KB', organizationId: 'org-1' }
+      mockSelect.mockReturnValue(createLimitedSelectChain([]))
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        body: { name: 'Audit KB' },
+      })
+      const response = await kbPostHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'knowledge_base.create',
+        { type: 'knowledge_base', id: 'kb-audit' },
+        null,
+        created,
+      )
+    })
+
+    it('should probe embedding dimension when embeddingModelId is provided', async () => {
+      const created = { id: 'kb-embed', name: 'Embed KB', organizationId: 'org-1', embeddingDim: 1536 }
+      mockSelect
+        .mockReturnValueOnce(createLimitedSelectChain([]))
+        .mockReturnValueOnce(createLimitedSelectChain([{ id: 'model-1', name: 'text-embedding-3-small' }]))
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const response = await kbPostHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          body: { name: 'Embed KB', embeddingModelId: 'model-1' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockProbeEmbeddingDim).toHaveBeenCalledWith('org-1', 'text-embedding-3-small')
     })
 
     it('should reject non-admin principals without organization context', async () => {
@@ -212,7 +316,7 @@ describe('aigate knowledge-base handlers', () => {
   describe('knowledge-base index.get', () => {
     it('should scope list to principal organization', async () => {
       const items = [{ id: 'kb-1', name: 'Org KB', organizationId: 'org-1' }]
-      mockSelect.mockReturnValue(createListSelectChain(items))
+      mockSelect.mockReturnValueOnce(createCountSelectChain(items.length)).mockReturnValueOnce(createListSelectChain(items))
 
       const response = await kbListHandler(
         createMockEvent({
@@ -221,12 +325,12 @@ describe('aigate knowledge-base handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual(items)
+      expect(response.data).toEqual({ items, total: items.length })
     })
 
     it('should filter by keyword query', async () => {
       const items = [{ id: 'kb-2', name: 'API Reference' }]
-      mockSelect.mockReturnValue(createListSelectChain(items))
+      mockSelect.mockReturnValueOnce(createCountSelectChain(items.length)).mockReturnValueOnce(createListSelectChain(items))
 
       const response = await kbListHandler(
         createMockEvent({
@@ -236,7 +340,7 @@ describe('aigate knowledge-base handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual(items)
+      expect(response.data).toEqual({ items, total: items.length })
     })
 
     it('should reject non-admin principals without organization context', async () => {
@@ -252,7 +356,7 @@ describe('aigate knowledge-base handlers', () => {
 
     it('should allow admin to list all knowledge bases without organization context', async () => {
       const items = [{ id: 'kb-3', name: 'Global KB' }]
-      mockSelect.mockReturnValue(createListSelectChain(items))
+      mockSelect.mockReturnValueOnce(createCountSelectChain(items.length)).mockReturnValueOnce(createListSelectChain(items))
 
       const response = await kbListHandler(
         createMockEvent({
@@ -261,7 +365,7 @@ describe('aigate knowledge-base handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual(items)
+      expect(response.data).toEqual({ items, total: items.length })
     })
   })
 
@@ -310,6 +414,55 @@ describe('aigate knowledge-base handlers', () => {
       expect(response.data).toEqual(updated)
       expect(mockUpdate).toHaveBeenCalledTimes(1)
     })
+
+    it('should not update embedding fields after knowledge base creation', async () => {
+      const updated = { id: 'kb-1', name: 'Renamed KB', organizationId: 'org-1', embeddingModelId: 'embed-old', embeddingDim: 1536 }
+      const set = vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([updated]),
+        }),
+      })
+      mockUpdate.mockReturnValue({ set })
+
+      const response = await kbPutHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          params: { id: 'kb-1' },
+          body: {
+            name: 'Renamed KB',
+            embeddingModel: 'text-embedding-3-large',
+            embeddingModelId: 'embed-new',
+            embeddingDim: 3072,
+          },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(set).toHaveBeenCalledWith({ name: 'Renamed KB' })
+    })
+
+    it('should write audit log with before and after when updating knowledge base', async () => {
+      const before = { id: 'kb-audit', name: 'Before KB', organizationId: 'org-1' }
+      const updated = { id: 'kb-audit', name: 'After KB', organizationId: 'org-1' }
+      mockSelect.mockReturnValue(createSelectChain([before]))
+      mockUpdate.mockReturnValue(createUpdateChain([updated]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        params: { id: 'kb-audit' },
+        body: { name: 'After KB' },
+      })
+      const response = await kbPutHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'knowledge_base.update',
+        { type: 'knowledge_base', id: 'kb-audit' },
+        before,
+        updated,
+      )
+    })
   })
 
   describe('knowledge-base [id].delete', () => {
@@ -352,6 +505,26 @@ describe('aigate knowledge-base handlers', () => {
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(mockDelete).toHaveBeenCalledTimes(1)
     })
+
+    it('should write audit log when deleting knowledge base', async () => {
+      const deleted = { id: 'kb-audit', name: 'Audit KB', organizationId: 'org-1' }
+      mockDelete.mockReturnValue(createDeleteChain([deleted]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'user-1', organizationId: 'org-1' } },
+        params: { id: 'kb-audit' },
+      })
+      const response = await kbDeleteHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'knowledge_base.delete',
+        { type: 'knowledge_base', id: 'kb-audit' },
+        deleted,
+        null,
+      )
+    })
   })
 
   describe('knowledge-base [id]/documents index.get', () => {
@@ -387,12 +560,12 @@ describe('aigate knowledge-base handlers', () => {
         name: 'Docs KB',
         organizationId: 'org-1',
         status: 'ready',
-        documents: [
-          { id: 'doc-1', name: 'guide.pdf' },
-          { id: 'doc-2', name: 'faq.md' },
-        ],
       }
-      mockSelect.mockReturnValue(createSelectChain([kb]))
+      const documents = [
+        { id: 'doc-1', name: 'guide.pdf' },
+        { id: 'doc-2', name: 'faq.md' },
+      ]
+      mockSelect.mockReturnValueOnce(createSelectChain([kb])).mockReturnValueOnce(createListSelectChain(documents))
 
       const response = await kbDocumentsGetHandler(
         createMockEvent({
@@ -402,11 +575,7 @@ describe('aigate knowledge-base handlers', () => {
       )
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
-      expect(response.data).toEqual({
-        knowledgeBase: { id: 'kb-1', name: 'Docs KB', status: 'ready' },
-        documents: kb.documents,
-        total: 2,
-      })
+      expect(response.data).toEqual(documents)
     })
 
     it('should reject documents list outside principal organization', async () => {
@@ -501,8 +670,9 @@ describe('aigate knowledge-base handlers', () => {
         }),
       )
 
-      expect(response.msg).toBe('不支持的文件类型')
-      expect(mockInsert).not.toHaveBeenCalled()
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({ name: 'notes.txt', success: false, error: '不支持的文件类型' })
+      expect(mockSaveUploadedDocument).not.toHaveBeenCalled()
     })
 
     it('should upload valid file and update knowledge base stats', async () => {
@@ -512,7 +682,7 @@ describe('aigate knowledge-base handlers', () => {
         name: 'notes.txt',
         type: 'text/plain',
         size: fileData.byteLength,
-        status: 'processing',
+        status: 'ready',
       }
       mockSelect.mockReturnValue(
         createSelectChain([
@@ -522,8 +692,7 @@ describe('aigate knowledge-base handlers', () => {
           },
         ]),
       )
-      mockInsert.mockReturnValue(createInsertChain([insertedDoc]))
-      mockUpdate.mockReturnValue(createUpdateChainNoReturn())
+      mockSaveUploadedDocument.mockResolvedValue(insertedDoc)
 
       const response = await kbDocumentPostHandler(
         createMockEvent({
@@ -535,14 +704,11 @@ describe('aigate knowledge-base handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual({
-        id: 'doc-1',
-        name: 'notes.txt',
-        size: fileData.byteLength,
-        type: 'text/plain',
-        status: 'processing',
+        success: true,
+        document: insertedDoc,
       })
-      expect(mockInsert).toHaveBeenCalledTimes(1)
-      expect(mockUpdate).toHaveBeenCalledTimes(1)
+      expect(mockSaveUploadedDocument).toHaveBeenCalledTimes(1)
+      expect(mockSetResponseStatus).toHaveBeenCalledWith(expect.anything(), 202)
     })
   })
 

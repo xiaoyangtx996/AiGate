@@ -14,7 +14,7 @@ export default defineEventHandler(async event => {
     if (!res) {
       return responseError(null, '资源不存在或无权操作', { statusCode: 404 })
     }
-    return responseSuccess(res)
+    return responseSuccess({ ...res, apiKey: undefined })
   } catch (err) {
     return responseError(err)
   }

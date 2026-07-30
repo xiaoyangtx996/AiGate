@@ -11,14 +11,27 @@ interface ApiKeyRow {
   cost?: number | null
   lastUsed?: string | null
   roleIds?: string[] | null
+  dailyLimit?: number | null
+  ipWhitelist?: string[] | null
+  expiresAt?: string | null
+  createdAt?: string | null
+  updatedAt?: string | null
 }
 
-const { getApiKeyList, insertApiKey, updateApiKey, delApiKey } = useAigateApi()
+interface ApiKeyDetail extends ApiKeyRow {
+  usage30d?: Array<{ date: string, calls: number, tokens: number, cost: number }>
+  topModels?: Array<{ model: string, calls: number, tokens: number, cost: number }>
+  lifecycle?: Array<{ action: string, userId?: string | null, createdAt?: string | null }>
+}
+
+const { getApiKeyList, getApiKeyDetail, insertApiKey, updateApiKey, delApiKey } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
 const { i18nCommon } = useMessage()
 const { exportToCSV } = useExport()
 const confirm = useConfirmDialog()
+
+const whitespacePattern = /\s+/
 
 const keyword = ref('')
 const page = ref(1)
@@ -54,7 +67,7 @@ const {
   isSomeSelected,
   batchDelete,
 } = useBatchOperations<ApiKeyRow>({
-  onDelete: async items => {
+  onDelete: async (items) => {
     await Promise.all(items.map(item => delApiKey(item.id)))
     refresh()
   },
@@ -70,22 +83,28 @@ const stats = computed(() => {
   }
 })
 const open = ref(false)
+const detailOpen = ref(false)
 const editData = ref<ApiKeyRow | null>(null)
+const selectedKey = ref<ApiKeyDetail | null>(null)
 const saveLoading = ref(false)
+const detailLoading = ref(false)
 
-const roles = ref<Array<{ id: string; name: string }>>([])
+const roles = ref<Array<{ id: string, name: string }>>([])
 const form = reactive({
   name: '',
   env: 'production',
   status: 'active',
   roleIds: [] as string[],
+  dailyLimit: null as number | null,
+  ipWhitelistText: '',
 })
 
 onMounted(async () => {
   try {
-    const res = await $fetch<{ data?: Array<{ id: string; name: string }> }>('/api/aigate/role')
+    const res = await $fetch<{ data?: Array<{ id: string, name: string }> }>('/api/aigate/role')
     roles.value = res.data || []
-  } catch {
+  }
+  catch {
     roles.value = []
   }
 })
@@ -96,6 +115,8 @@ function handleAdd() {
   form.env = 'production'
   form.status = 'active'
   form.roleIds = []
+  form.dailyLimit = null
+  form.ipWhitelistText = ''
   open.value = true
 }
 
@@ -105,7 +126,22 @@ function handleEdit(row: ApiKeyRow) {
   form.env = row.env || 'production'
   form.status = row.status || 'active'
   form.roleIds = row.roleIds || []
+  form.dailyLimit = row.dailyLimit ?? null
+  form.ipWhitelistText = (row.ipWhitelist || []).join('\n')
   open.value = true
+}
+
+async function handleShowDetail(row: ApiKeyRow) {
+  selectedKey.value = row
+  detailOpen.value = true
+  detailLoading.value = true
+  try {
+    const res = await getApiKeyDetail(row.id)
+    selectedKey.value = (res.data as ApiKeyDetail) || row
+  }
+  finally {
+    detailLoading.value = false
+  }
 }
 
 async function handleDelete(id: string) {
@@ -126,20 +162,57 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.name) return
+  if (!form.name)
+    return
   saveLoading.value = true
   try {
     if (editData.value?.id) {
-      await updateApiKey({ ...form, id: editData.value.id })
-    } else {
-      await insertApiKey(form)
+      await updateApiKey({
+        ...form,
+        id: editData.value.id,
+        ipWhitelist: form.ipWhitelistText.split(whitespacePattern).map(item => item.trim()).filter(Boolean),
+      })
+    }
+    else {
+      await insertApiKey({
+        ...form,
+        ipWhitelist: form.ipWhitelistText.split(whitespacePattern).map(item => item.trim()).filter(Boolean),
+      })
     }
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
+}
+
+async function runLifecycleAction(row: ApiKeyRow, action: 'renew' | 'disable' | 'activate' | 'revoke') {
+  if (action === 'revoke') {
+    const confirmed = await confirm({
+      title: 'Revoke API key?',
+      description: 'The key will stop working immediately. This action should be used only when the key is compromised or retired.',
+      confirmLabel: 'Revoke',
+      loadingLabel: 'Revoking...',
+      onConfirm: async () => {
+        await updateApiKey({ id: row.id, action: 'revoke' })
+        return true
+      },
+    })
+    if (!confirmed)
+      return
+  }
+  else {
+    await updateApiKey({
+      id: row.id,
+      action,
+      ...(action === 'renew' ? { extendDays: 30 } : {}),
+    })
+  }
+  successToast()
+  await refresh()
+  await handleShowDetail({ ...row, status: action === 'disable' ? 'disabled' : row.status })
 }
 
 function handleExport() {
@@ -152,28 +225,56 @@ function handleExport() {
       calls: item.calls,
       cost: item.cost,
       lastUsed: item.lastUsed,
+      dailyLimit: item.dailyLimit,
+      ipWhitelist: (item.ipWhitelist || []).join(' '),
     })),
     'api-keys-export',
   )
 }
 
+function daysLeft(value?: string | null) {
+  if (!value)
+    return null
+  return Math.ceil((new Date(value).getTime() - Date.now()) / 86400000)
+}
+
+function expiryBadgeColor(value?: string | null): 'error' | 'warning' | 'neutral' | null {
+  const left = daysLeft(value)
+  if (left === null)
+    return null
+  if (left <= 1)
+    return 'error'
+  if (left <= 7)
+    return 'warning'
+  return null
+}
+
+const usageChartRows = computed(() =>
+  (selectedKey.value?.usage30d || []).map(item => ({
+    date: item.date,
+    calls: item.calls,
+  })),
+)
+
 function maskKey(key: string) {
-  if (!key) return '-'
+  if (!key)
+    return '-'
   return key.length > 16 ? `${key.substring(0, 12)}...${key.substring(key.length - 4)}` : key
 }
 
-function formatCost(cents?: number | null) {
-  return `¥${((cents || 0) / 100).toFixed(2)}`
+function formatCost(cost?: number | null) {
+  return `¥${Number(cost || 0).toFixed(8)}`
 }
 
 function formatLastUsed(value?: string | null) {
   return value ? new Date(value).toLocaleString() : '-'
 }
 
-const statusColor: Record<string, 'success' | 'error' | 'neutral'> = {
+const statusColor: Record<string, 'success' | 'error' | 'neutral' | 'warning'> = {
   active: 'success',
   revoked: 'error',
   expired: 'neutral',
+  disabled: 'warning',
 }
 
 function toggleRole(roleId: string, checked: boolean) {
@@ -279,9 +380,19 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         <code class="text-xs font-mono">{{ maskKey(row.original.key) }}</code>
       </template>
       <template #status-cell="{ row }">
-        <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">
-          {{ row.original.status }}
-        </UBadge>
+        <div class="flex flex-wrap items-center gap-1">
+          <UBadge :color="statusColor[row.original.status] || 'neutral'" variant="subtle" size="sm">
+            {{ row.original.status }}
+          </UBadge>
+          <UBadge
+            v-if="expiryBadgeColor(row.original.expiresAt)"
+            :color="expiryBadgeColor(row.original.expiresAt)!"
+            variant="subtle"
+            size="xs"
+          >
+            {{ daysLeft(row.original.expiresAt) }}d left
+          </UBadge>
+        </div>
       </template>
       <template #calls-cell="{ row }">
         <span class="font-mono">{{ (row.original.calls || 0).toLocaleString() }}</span>
@@ -294,6 +405,7 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
       </template>
       <template #actions-cell="{ row }">
         <div class="flex gap-1">
+          <UButton size="xs" variant="ghost" icon="lucide:panel-right-open" @click="handleShowDetail(row.original)" />
           <UButton
             v-permission="'EDIT'"
             size="xs"
@@ -369,10 +481,17 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
               v-model="form.status"
               :items="[
                 { label: p('statusActive'), value: 'active' },
+                { label: 'Disabled', value: 'disabled' },
                 { label: p('statusRevoked'), value: 'revoked' },
                 { label: p('statusExpired'), value: 'expired' },
               ]"
             />
+          </UFormField>
+          <UFormField label="Daily limit">
+            <UInput v-model.number="form.dailyLimit" type="number" min="0" placeholder="Unlimited" />
+          </UFormField>
+          <UFormField label="IP whitelist" hint="One IP or CIDR per line">
+            <UTextarea v-model="form.ipWhitelistText" :rows="3" placeholder="192.168.1.10&#10;10.0.0.0/24" />
           </UFormField>
           <UFormField :label="p('bindRoles')" :hint="p('bindRolesHint')">
             <div class="flex flex-wrap gap-2">
@@ -403,5 +522,200 @@ const p = (key: string) => t(`pages.aigate.apiKeys.${key}`)
         </div>
       </template>
     </UModal>
+
+    <USlideover v-model:open="detailOpen">
+      <template #header>
+        <div>
+          <h3 class="font-bold">
+            {{ selectedKey?.name || p('key') }}
+          </h3>
+          <p class="font-mono text-xs text-muted">
+            {{ selectedKey ? maskKey(selectedKey.key) : '-' }}
+          </p>
+        </div>
+      </template>
+      <template #body>
+        <div v-if="detailLoading" class="space-y-4">
+          <USkeleton class="h-24 w-full" />
+          <USkeleton class="h-32 w-full" />
+          <USkeleton class="h-32 w-full" />
+        </div>
+        <div v-else-if="selectedKey" class="space-y-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="rounded-md border p-3">
+              <p class="text-xs text-muted">
+                Status
+              </p>
+              <UBadge :color="statusColor[selectedKey.status] || 'neutral'" variant="subtle">
+                {{ selectedKey.status }}
+              </UBadge>
+            </div>
+            <div class="rounded-md border p-3">
+              <p class="text-xs text-muted">
+                Expires in
+              </p>
+              <p class="font-medium">
+                {{ daysLeft(selectedKey.expiresAt) ?? '-' }} days
+              </p>
+            </div>
+            <div class="rounded-md border p-3">
+              <p class="text-xs text-muted">
+                Calls
+              </p>
+              <p class="font-medium">
+                {{ (selectedKey.calls || 0).toLocaleString() }}
+              </p>
+            </div>
+            <div class="rounded-md border p-3">
+              <p class="text-xs text-muted">
+                Cost
+              </p>
+              <p class="font-medium">
+                {{ formatCost(selectedKey.cost) }}
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-md border p-3">
+            <p class="mb-2 text-sm font-medium">
+              Lifecycle
+            </p>
+            <div class="space-y-2 text-sm">
+              <div
+                v-for="item in selectedKey.lifecycle || []"
+                :key="`${item.action}-${item.createdAt}`"
+                class="flex justify-between gap-3"
+              >
+                <span class="text-muted">{{ item.action }}</span>
+                <span class="text-right">{{ formatLastUsed(item.createdAt) }}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-muted">Last used</span>
+                <span class="text-right">{{ formatLastUsed(selectedKey.lastUsed) }}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-muted">Updated</span>
+                <span class="text-right">{{ formatLastUsed(selectedKey.updatedAt) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-md border p-3">
+            <p class="mb-2 text-sm font-medium">
+              Guardrails
+            </p>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-muted">Daily limit</span>
+                <span>{{ selectedKey.dailyLimit || 'Unlimited' }}</span>
+              </div>
+              <div>
+                <p class="text-muted">
+                  IP whitelist
+                </p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <UBadge v-for="ip in selectedKey.ipWhitelist || []" :key="ip" variant="soft">
+                    {{ ip }}
+                  </UBadge>
+                  <span v-if="!selectedKey.ipWhitelist?.length" class="text-muted">Any IP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-md border p-3">
+            <p class="mb-2 text-sm font-medium">
+              Last 30 days
+            </p>
+            <div v-if="usageChartRows.length" class="mb-3 h-40">
+              <LineChart
+                :data="usageChartRows"
+                :height="160"
+                :categories="{ calls: { name: 'Calls', color: '#3b82f6' } }"
+                x-axis="date"
+                :y-axis="['calls']"
+                :y-grid-line="true"
+              />
+            </div>
+            <div class="grid gap-2 text-sm sm:grid-cols-3">
+              <div>
+                <span class="text-muted">Calls</span>
+                <p class="font-mono">
+                  {{ (selectedKey.usage30d || []).reduce((sum, item) => sum + item.calls, 0).toLocaleString() }}
+                </p>
+              </div>
+              <div>
+                <span class="text-muted">Tokens</span>
+                <p class="font-mono">
+                  {{ (selectedKey.usage30d || []).reduce((sum, item) => sum + item.tokens, 0).toLocaleString() }}
+                </p>
+              </div>
+              <div>
+                <span class="text-muted">Cost</span>
+                <p class="font-mono">
+                  {{ formatCost((selectedKey.usage30d || []).reduce((sum, item) => sum + item.cost, 0)) }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-md border p-3">
+            <p class="mb-2 text-sm font-medium">
+              Top models
+            </p>
+            <div v-if="selectedKey.topModels?.length" class="space-y-2 text-sm">
+              <div
+                v-for="model in selectedKey.topModels"
+                :key="model.model"
+                class="flex items-center justify-between gap-3"
+              >
+                <span class="truncate">{{ model.model }}</span>
+                <span class="font-mono text-xs text-muted">
+                  {{ model.calls.toLocaleString() }} calls / {{ model.tokens.toLocaleString() }} tokens
+                </span>
+              </div>
+            </div>
+            <p v-else class="text-sm text-muted">
+              No usage in the last 30 days
+            </p>
+          </div>
+
+          <div class="flex gap-2">
+            <UButton icon="lucide:edit" variant="outline" @click="handleEdit(selectedKey)">
+              {{ $t('common.save') }}
+            </UButton>
+            <UButton icon="lucide:calendar-plus" variant="soft" @click="runLifecycleAction(selectedKey, 'renew')">
+              Renew 30d
+            </UButton>
+            <UButton
+              v-if="selectedKey.status === 'disabled'"
+              icon="lucide:circle-play"
+              variant="soft"
+              @click="runLifecycleAction(selectedKey, 'activate')"
+            >
+              Activate
+            </UButton>
+            <UButton
+              v-else-if="selectedKey.status === 'active'"
+              color="warning"
+              variant="soft"
+              icon="lucide:pause-circle"
+              @click="runLifecycleAction(selectedKey, 'disable')"
+            >
+              Disable
+            </UButton>
+            <UButton
+              v-if="selectedKey.status !== 'revoked'"
+              color="error"
+              variant="soft"
+              icon="lucide:ban"
+              @click="runLifecycleAction(selectedKey, 'revoke')"
+            >
+              Revoke
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </USlideover>
   </div>
 </template>

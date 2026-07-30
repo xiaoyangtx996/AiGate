@@ -51,9 +51,14 @@ export const InternalizationQuerySchema = z.object({
  */
 export const LogQuerySchema = z.object({
   userId: z.string().optional(),
+  action: z.string().optional(),
+  targetType: z.string().optional(),
+  startTime: z.coerce.number().optional(),
+  endTime: z.coerce.number().optional(),
   method: z.preprocess(v => (v === '' ? undefined : v), z.enum(['GET', 'POST', 'PUT', 'DELETE']).optional()),
   page: z.coerce.number().default(1),
   pageSize: z.coerce.number().default(10),
+  cursor: z.string().optional(),
 })
 
 /**

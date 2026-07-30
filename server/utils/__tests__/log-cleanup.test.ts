@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { cleanupOldApiLogs } from '../log-cleanup'
+import { cleanupOldApiLogs, cleanupOldOperationLogs } from '../log-cleanup'
 
 const mockDelete = vi.fn()
+const mockGetSetting = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
@@ -12,6 +13,11 @@ vi.mock('@/db/drizzle', () => ({
 
 vi.mock('@/db/schema', () => ({
   apiLog: { createdAt: 'createdAt' },
+  logs: { createdAt: 'createdAt' },
+}))
+
+vi.mock('#server/utils/system-settings', () => ({
+  getSetting: (...args: unknown[]) => mockGetSetting(...args),
 }))
 
 const RETENTION_DAYS = 180
@@ -23,6 +29,11 @@ function getLogCleanupCutoff(now: Date) {
 describe('log-cleanup utils', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetSetting.mockImplementation((key: string) => {
+      if (key === 'retention.operationLogDays')
+        return Promise.resolve(365)
+      return Promise.resolve(180)
+    })
   })
 
   afterEach(() => {
@@ -73,6 +84,29 @@ describe('log-cleanup utils', () => {
       expect(result).toEqual({
         deleted: 0,
         cutoffDate: '2025-07-05T00:00:00.000Z',
+      })
+    })
+  })
+
+  describe('cleanupOldOperationLogs', () => {
+    it('should delete operation logs older than configured retention window', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-06-05T12:00:00.000Z'))
+
+      const deletedRows = [{ id: 'op-log-1' }]
+      mockDelete.mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue(deletedRows),
+        }),
+      })
+
+      const result = await cleanupOldOperationLogs()
+
+      expect(mockGetSetting).toHaveBeenCalledWith('retention.operationLogDays')
+      expect(mockDelete).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({
+        deleted: 1,
+        cutoffDate: '2025-06-05T12:00:00.000Z',
       })
     })
   })

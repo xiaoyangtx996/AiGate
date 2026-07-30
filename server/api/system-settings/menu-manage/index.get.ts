@@ -8,13 +8,15 @@
 import type { InferSelectModel } from 'drizzle-orm'
 import { and, asc, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 import { requireRequestPrincipal } from '#server/utils/context'
+import { getTenantContext, getTenantPackageMenuCodes } from '#server/utils/tenant'
 import { db } from '@/db/drizzle'
 import { menu, roleMenu, userRole } from '@/db/schema'
 
 type MenuRow = InferSelectModel<typeof menu>
 
 function matchesKeyword(row: MenuRow, keyword?: string) {
-  if (!keyword) return true
+  if (!keyword)
+    return true
 
   const value = keyword.toLowerCase()
   return row.label.toLowerCase().includes(value) || (row.to?.toLowerCase().includes(value) ?? false)
@@ -34,7 +36,7 @@ function getMenuWithAncestors(menuById: Map<string, MenuRow>, menuId: string) {
 
 function scopeMenusByRolePermissions(
   menus: MenuRow[],
-  permissions: Array<{ menuId: string; permissions: number }>,
+  permissions: Array<{ menuId: string, permissions: number }>,
   keyword?: string,
 ) {
   const menuById = new Map(menus.map(item => [item.id, item]))
@@ -47,7 +49,8 @@ function scopeMenusByRolePermissions(
   const visibleIds = new Set<string>()
   for (const menuId of grantedPermissions.keys()) {
     const row = menuById.get(menuId)
-    if (!row || !matchesKeyword(row, keyword)) continue
+    if (!row || !matchesKeyword(row, keyword))
+      continue
 
     for (const id of getMenuWithAncestors(menuById, menuId)) visibleIds.add(id)
   }
@@ -60,7 +63,26 @@ function scopeMenusByRolePermissions(
     }))
 }
 
-export default defineEventHandler(async event => {
+function scopeMenusByPackage(menus: MenuRow[], menuCodes: string[] | null) {
+  if (!menuCodes)
+    return menus
+
+  const allowedCodes = new Set(menuCodes)
+  const menuById = new Map(menus.map(item => [item.id, item]))
+  const visibleIds = new Set<string>()
+
+  for (const row of menus) {
+    const rowCode = row.code || row.label
+    if (!allowedCodes.has(rowCode) && !allowedCodes.has(row.label))
+      continue
+    for (const id of getMenuWithAncestors(menuById, row.id))
+      visibleIds.add(id)
+  }
+
+  return menus.filter(item => visibleIds.has(item.id))
+}
+
+export default defineEventHandler(async (event) => {
   try {
     const { keyword, enabled } = MenuQuerySchema.parse(getQuery(event))
     const principal = await requireRequestPrincipal(event)
@@ -108,8 +130,12 @@ export default defineEventHandler(async event => {
       .from(roleMenu)
       .where(inArray(roleMenu.roleId, roleIds))
 
-    return responseSuccess(convertFlatDataToTree(scopeMenusByRolePermissions(data, rolePermissions, keyword)))
-  } catch (err) {
+    const roleScopedMenus = scopeMenusByRolePermissions(data, rolePermissions, keyword)
+    const tenantContext = await getTenantContext(principal.organizationId)
+    const packageScopedMenus = scopeMenusByPackage(roleScopedMenus, getTenantPackageMenuCodes(tenantContext))
+    return responseSuccess(convertFlatDataToTree(packageScopedMenus))
+  }
+  catch (err) {
     return responseError(err)
   }
 })

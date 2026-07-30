@@ -2,12 +2,26 @@ import { defineNuxtPlugin, navigateTo, useCookie, useRuntimeConfig } from '#app'
 import {
   getRequestErrorMessage,
   getResponseErrorMessage,
+  getTenantBlockCode,
   isRequestErrorResponse,
   isUnauthorizedResponse,
   shouldRedirectUnauthorized,
 } from '@/utils/request-error'
 
-export default defineNuxtPlugin(nuxtApp => {
+function createResponseError(response: unknown) {
+  const error = new Error(getResponseErrorMessage(response, 'Operation failed'))
+  if (typeof response === 'object' && response !== null) {
+    Object.assign(error, {
+      code: (response as { code?: unknown }).code,
+      response,
+    })
+  }
+  return error
+}
+
+const SESSION_COOKIE = 'better-auth.session_token'
+
+export default defineNuxtPlugin((nuxtApp) => {
   const { start, finish } = useLoadingIndicator()
   const config = useRuntimeConfig()
   const toast = useToast()
@@ -18,7 +32,15 @@ export default defineNuxtPlugin(nuxtApp => {
     async onRequest({ options }) {
       start({ force: true })
 
-      const token = useCookie('better-auth.session-token').value
+      if (import.meta.server) {
+        const event = useRequestEvent()
+        const cookie = event?.headers.get('cookie')
+        if (cookie && !options.headers.has('cookie')) {
+          options.headers.set('cookie', cookie)
+        }
+      }
+
+      const token = useCookie(SESSION_COOKIE).value
       if (token) {
         options.headers.set('Authorization', `Bearer ${token}`)
       }
@@ -29,11 +51,17 @@ export default defineNuxtPlugin(nuxtApp => {
 
       const res = response._data as unknown
       if (isRequestErrorResponse(res)) {
+        const tenantBlockCode = getTenantBlockCode(res)
+        if (tenantBlockCode) {
+          await nuxtApp.runWithContext(() => navigateTo(`/tenant-blocked?code=${tenantBlockCode}`))
+          throw createResponseError(res)
+        }
         toast.add({
           title: getResponseErrorMessage(res, '操作失败'),
           color: 'error',
           icon: 'lucide:x',
         })
+        throw createResponseError(res)
       }
     },
 
@@ -41,8 +69,13 @@ export default defineNuxtPlugin(nuxtApp => {
       finish()
 
       const res = response?._data as unknown
+      const tenantBlockCode = getTenantBlockCode(res)
+      if (tenantBlockCode) {
+        await nuxtApp.runWithContext(() => navigateTo(`/tenant-blocked?code=${tenantBlockCode}`))
+        return
+      }
       if (isUnauthorizedResponse(res)) {
-        const token = useCookie('better-auth.session-token').value
+        const token = useCookie(SESSION_COOKIE).value
         const path = import.meta.client ? window.location.pathname : ''
 
         if (shouldRedirectUnauthorized(res, Boolean(token), path)) {
@@ -56,7 +89,7 @@ export default defineNuxtPlugin(nuxtApp => {
       }
 
       toast.add({
-        title: getRequestErrorMessage(error, catchError(error)),
+        title: getRequestErrorMessage(error, getResponseErrorMessage(res, 'Operation failed')),
         color: 'error',
       })
     },

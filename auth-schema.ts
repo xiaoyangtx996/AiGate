@@ -16,6 +16,7 @@ export const user = pgTable('user', {
   displayUsername: text('display_username'),
   lastLoginMethod: text('last_login_method'),
   role: text('role'),
+  mustChangePassword: boolean('must_change_password').default(false).notNull(),
   banned: boolean('banned').default(false),
   banReason: text('ban_reason'),
   banExpires: timestamp('ban_expires'),

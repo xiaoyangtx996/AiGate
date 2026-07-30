@@ -1,3 +1,5 @@
+import { redisIncrWithExpire } from '#server/utils/redis'
+
 interface RateLimitEntry {
   count: number
   resetTime: number
@@ -17,15 +19,25 @@ export class RateLimiter {
    * @param limit 时间窗口内最大请求数
    * @param windowMs 时间窗口（毫秒）
    */
-  check(
+  async check(
     key: string,
     limit: number = 100,
     windowMs: number = 60000,
-  ): {
+  ): Promise<{
     allowed: boolean
     remaining: number
     resetIn: number
-  } {
+  }> {
+    const redisResult = await redisIncrWithExpire(`rate-limit:${key}`, Math.ceil(windowMs / 1000))
+    if (redisResult) {
+      const remaining = Math.max(0, limit - redisResult.count)
+      return {
+        allowed: redisResult.count <= limit,
+        remaining,
+        resetIn: redisResult.ttl * 1000,
+      }
+    }
+
     const now = Date.now()
     const entry = this.requests.get(key)
 

@@ -2,9 +2,6 @@
 import * as locales from '@nuxt/ui/locale'
 import { merge } from 'es-toolkit'
 
-const menuStore = useMenuStore()
-const appStore = useAppStore()
-
 const { locale, setLocaleMessage, getLocaleMessage } = useI18n()
 const { getLocales } = useSystemApi()
 const { data: localeRes } = useAsyncData('locales', () => getLocales(), { lazy: true })
@@ -53,14 +50,15 @@ useFaviconFromTheme()
         },
       }"
     >
-      <FullLoading />
+      <ClientOnly>
+        <FullLoading />
+      </ClientOnly>
       <UMain>
         <ClientOnly>
           <NuxtLoadingIndicator color="var(--ui-primary)" />
         </ClientOnly>
         <NuxtLayout>
-          <NuxtPage :transition="{ name: appStore.transition }" :keepalive="{ include: menuStore.keepAliveList }" />
-          <BackTop />
+          <NuxtPage />
         </NuxtLayout>
       </UMain>
     </UTheme>

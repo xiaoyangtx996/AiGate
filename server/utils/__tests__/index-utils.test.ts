@@ -26,11 +26,11 @@ describe('index utils', () => {
       vi.useRealTimers()
     })
 
-    it('should accept custom msg and code', () => {
-      const result = responseSuccess(null, '自定义成功', RESPONSE_CODE.BAD_REQUEST)
+    it('should always return success code', () => {
+      const result = responseSuccess(null, '自定义成功')
 
       expect(result.msg).toBe('自定义成功')
-      expect(result.code).toBe(RESPONSE_CODE.BAD_REQUEST)
+      expect(result.code).toBe(RESPONSE_CODE.SUCCESS)
     })
   })
 
@@ -213,7 +213,7 @@ describe('index utils', () => {
     })
 
     it('should return empty locale objects for empty input', () => {
-      expect(transformToLangTree([])).toEqual({ en: {}, 'zh-CN': {} })
+      expect(transformToLangTree([])).toEqual({ 'en': {}, 'zh-CN': {} })
     })
 
     it('should skip missing locale values on leaf nodes', () => {

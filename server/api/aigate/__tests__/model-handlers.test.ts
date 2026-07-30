@@ -14,9 +14,23 @@ vi.mock('@/db/drizzle', () => ({
 
 vi.mock('@/db/schema', () => ({
   aiModel: {
+    id: 'id',
     name: 'name',
     provider: 'provider',
+    type: 'type',
+    contextWindow: 'contextWindow',
+    inputPrice: 'inputPrice',
+    outputPrice: 'outputPrice',
+    features: 'features',
     status: 'status',
+    enabled: 'enabled',
+    sourceChannelId: 'sourceChannelId',
+    updatedAt: 'updatedAt',
+    createdAt: 'createdAt',
+  },
+  channel: {
+    id: 'id',
+    name: 'name',
   },
 }))
 
@@ -38,10 +52,12 @@ function createCountSelectChain(result: unknown[]) {
 function createListSelectChain(result: unknown[]) {
   return {
     from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        orderBy: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue({
-            offset: vi.fn().mockResolvedValue(result),
+      leftJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockReturnValue({
+            limit: vi.fn().mockReturnValue({
+              offset: vi.fn().mockResolvedValue(result),
+            }),
           }),
         }),
       }),

@@ -2,7 +2,7 @@ import { and, asc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { apiKey } from '@/db/schema'
 
-const apiKeyStatuses = ['active', 'revoked', 'expired'] as const
+const apiKeyStatuses = ['active', 'revoked', 'expired', 'disabled'] as const
 type ApiKeyStatus = (typeof apiKeyStatuses)[number]
 
 function isApiKeyStatus(status: unknown): status is ApiKeyStatus {

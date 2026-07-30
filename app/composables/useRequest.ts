@@ -1,5 +1,9 @@
-type RequestOptions = Parameters<typeof $fetch>[1]
-type RequestBody = NonNullable<RequestOptions>['body']
+type RequestOptions = NonNullable<Parameters<typeof $fetch>[1]>
+type RequestBody = RequestOptions['body']
+
+interface MutationOptions extends RequestOptions {
+  invalidates?: string[]
+}
 
 export interface CacheConfig {
   staleTime: number
@@ -14,6 +18,7 @@ interface CacheEntry<T> {
 }
 
 const responseCache = new Map<string, CacheEntry<unknown>>()
+const RESOURCE_ID_RE = /\/[^/?#]+$/
 
 function isCacheConfig(value: unknown): value is CacheConfig {
   return typeof value === 'object' && value !== null && 'staleTime' in value
@@ -23,7 +28,7 @@ function buildCacheKey(url: string, params?: Record<string, unknown>) {
   return `${url}?${JSON.stringify(params ?? {})}`
 }
 
-function getCacheEntry<T>(key: string): { data: T; isStale: boolean } | null {
+function getCacheEntry<T>(key: string): { data: T, isStale: boolean } | null {
   const entry = responseCache.get(key)
   if (!entry) {
     return null
@@ -48,6 +53,36 @@ function setCacheEntry<T>(key: string, data: T, config: CacheConfig) {
     staleTime: config.staleTime,
     gcTime: config.gcTime ?? config.staleTime * 2,
   })
+}
+
+function getResourcePrefix(url: string) {
+  return url.replace(RESOURCE_ID_RE, '')
+}
+
+export function invalidateCache(prefix: string) {
+  if (!prefix) {
+    responseCache.clear()
+    return
+  }
+
+  for (const key of responseCache.keys()) {
+    if (key.startsWith(prefix))
+      responseCache.delete(key)
+  }
+}
+
+function extractRequestOptions(options?: MutationOptions): RequestOptions | undefined {
+  if (!options)
+    return undefined
+  const { invalidates: _invalidates, ...requestOptions } = options
+  return requestOptions
+}
+
+function invalidateMutationCache(url: string, options?: MutationOptions) {
+  invalidateCache(getResourcePrefix(url))
+  for (const prefix of options?.invalidates ?? []) {
+    invalidateCache(prefix)
+  }
 }
 
 export function useRequest() {
@@ -75,7 +110,8 @@ export function useRequest() {
     if (isCacheConfig(cacheOrOptions)) {
       cacheConfig = cacheOrOptions
       options = maybeOptions
-    } else {
+    }
+    else {
       options = cacheOrOptions
     }
 
@@ -86,7 +122,7 @@ export function useRequest() {
       if (cached) {
         if (cached.isStale) {
           request<T>(url, { method: 'GET', params, ...options })
-            .then(data => {
+            .then((data) => {
               setCacheEntry(cacheKey, data, cacheConfig!)
             })
             .catch(() => {})
@@ -111,34 +147,40 @@ export function useRequest() {
   /**
    * @description: POST 请求
    */
-  const post = <T = unknown>(url: string, body?: unknown, options?: RequestOptions) => {
-    return request<T>(url, {
+  const post = async <T = unknown>(url: string, body?: unknown, options?: MutationOptions) => {
+    const result = await request<T>(url, {
       method: 'POST',
       body: body as RequestBody,
-      ...options,
+      ...extractRequestOptions(options),
     })
+    invalidateMutationCache(url, options)
+    return result
   }
 
   /**
    * @description: PUT 请求
    */
-  const put = <T = unknown>(url: string, body?: unknown, options?: RequestOptions) => {
-    return request<T>(url, {
+  const put = async <T = unknown>(url: string, body?: unknown, options?: MutationOptions) => {
+    const result = await request<T>(url, {
       method: 'PUT',
       body: body as RequestBody,
-      ...options,
+      ...extractRequestOptions(options),
     })
+    invalidateMutationCache(url, options)
+    return result
   }
 
   /**
    * @description: DELETE 请求
    */
-  const del = <T = unknown>(url: string, params?: Record<string, unknown>, options?: RequestOptions) => {
-    return request<T>(url, {
+  const del = async <T = unknown>(url: string, params?: Record<string, unknown>, options?: MutationOptions) => {
+    const result = await request<T>(url, {
       method: 'DELETE',
       params,
-      ...options,
+      ...extractRequestOptions(options),
     })
+    invalidateMutationCache(url, options)
+    return result
   }
 
   return {
@@ -147,5 +189,6 @@ export function useRequest() {
     post,
     put,
     del,
+    invalidateCache,
   }
 }

@@ -7,12 +7,18 @@ import channelDeleteHandler from '../channel/[id].delete'
 import promptDeleteHandler from '../prompt/[id].delete'
 import { createMockEvent } from './nitro-test-utils'
 
+const mockSelect = vi.fn()
 const mockDelete = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
+    select: (...args: unknown[]) => mockSelect(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
   },
+}))
+
+vi.mock('#server/utils/audit-log', () => ({
+  auditLog: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/db/schema', () => ({
@@ -26,6 +32,14 @@ function createDeleteChain(result: unknown[]) {
   return {
     where: vi.fn().mockReturnValue({
       returning: vi.fn().mockResolvedValue(result),
+    }),
+  }
+}
+
+function createSelectWhereChain(result: unknown[]) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(result),
     }),
   }
 }
@@ -78,6 +92,7 @@ describe('aigate delete handlers', () => {
     })
 
     it('should return 404 when channel not found', async () => {
+      mockSelect.mockReturnValue(createSelectWhereChain([]))
       mockDelete.mockReturnValue(createDeleteChain([]))
 
       const response = await channelDeleteHandler(
@@ -91,6 +106,7 @@ describe('aigate delete handlers', () => {
     })
 
     it('should delete channel by id', async () => {
+      mockSelect.mockReturnValue(createSelectWhereChain([{ id: 'ch-1', name: 'OpenAI' }]))
       mockDelete.mockReturnValue(createDeleteChain([{ id: 'ch-1' }]))
 
       const response = await channelDeleteHandler(

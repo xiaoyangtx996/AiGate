@@ -2,6 +2,12 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { organization, quotaChangeLog, quotaRequest } from '@/db/schema'
 
+interface DbClient {
+  select: typeof db.select
+  update: typeof db.update
+  delete: typeof db.delete
+}
+
 export interface QuotaNode {
   id: string
   parentId?: string | null
@@ -215,13 +221,88 @@ export async function checkQuota(organizationId: string, requestedTokens: number
   return { allowed: true, remaining }
 }
 
-export async function consumeQuota(organizationId: string, tokens: number) {
+export async function consumeQuota(organizationId: string, tokens: number, cost = 0) {
   await db
     .update(organization)
     .set({
       tokenUsed: sql`${organization.tokenUsed} + ${tokens}`,
+      costUsed: sql`${organization.costUsed} + ${cost}`,
     })
     .where(eq(organization.id, organizationId))
+}
+
+function buildOrganizationChildren(orgs: Array<typeof organization.$inferSelect>) {
+  const children = new Map<string, Array<typeof organization.$inferSelect>>()
+  for (const org of orgs) {
+    if (!org.parentId)
+      continue
+    const list = children.get(org.parentId) ?? []
+    list.push(org)
+    children.set(org.parentId, list)
+  }
+  return children
+}
+
+function collectSubtreePostOrder(
+  root: typeof organization.$inferSelect,
+  children: Map<string, Array<typeof organization.$inferSelect>>,
+  result: Array<typeof organization.$inferSelect> = [],
+) {
+  for (const child of children.get(root.id) ?? []) {
+    collectSubtreePostOrder(child, children, result)
+  }
+  result.push(root)
+  return result
+}
+
+export async function deleteOrganizationReturningQuota(organizationId: string) {
+  return db.transaction(async (tx: DbClient) => {
+    const orgs = await tx.select().from(organization)
+    const target = orgs.find(org => org.id === organizationId)
+    if (!target) {
+      throw createError({ statusCode: 404, statusMessage: 'Organization not found' })
+    }
+
+    const children = buildOrganizationChildren(orgs)
+    const deletionOrder = collectSubtreePostOrder(target, children)
+    for (const org of deletionOrder) {
+      if (org.parentId && org.tokenLimit > 0) {
+        await tx
+          .update(organization)
+          .set({ tokenLimit: sql`${organization.tokenLimit} + ${org.tokenLimit}` })
+          .where(eq(organization.id, org.parentId))
+      }
+      await tx.delete(organization).where(eq(organization.id, org.id))
+    }
+
+    return target
+  })
+}
+
+export async function moveOrganizationParentQuota(
+  tx: DbClient,
+  current: typeof organization.$inferSelect,
+  nextParentId: string | null | undefined,
+) {
+  if (nextParentId === undefined || nextParentId === current.parentId)
+    return
+  if (nextParentId === current.id) {
+    throw createError({ statusCode: 400, statusMessage: '组织不能迁移到自身下级' })
+  }
+
+  if (current.parentId && current.tokenLimit > 0) {
+    await tx
+      .update(organization)
+      .set({ tokenLimit: sql`${organization.tokenLimit} + ${current.tokenLimit}` })
+      .where(eq(organization.id, current.parentId))
+  }
+
+  if (nextParentId && current.tokenLimit > 0) {
+    await tx
+      .update(organization)
+      .set({ tokenLimit: sql`${organization.tokenLimit} - ${current.tokenLimit}` })
+      .where(eq(organization.id, nextParentId))
+  }
 }
 
 export async function getQuotaStatus(organizationId: string) {

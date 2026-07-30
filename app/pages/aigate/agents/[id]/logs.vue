@@ -43,8 +43,8 @@ const statusColor: Record<string, 'success' | 'error' | 'warning'> = {
   rate_limited: 'warning',
 }
 
-function formatCost(cents?: number | null) {
-  return `¥${((cents || 0) / 100).toFixed(2)}`
+function formatCost(cost?: number | null) {
+  return `¥${Number(cost || 0).toFixed(8)}`
 }
 
 function formatLatency(ms?: number | null) {

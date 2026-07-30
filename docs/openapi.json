@@ -154,7 +154,12 @@
       },
       "ErrorResponse": {
         "type": "object",
-        "required": ["code", "msg", "data", "timestamp"],
+        "required": [
+          "code",
+          "msg",
+          "data",
+          "timestamp"
+        ],
         "properties": {
           "code": {
             "type": "integer",
@@ -180,7 +185,13 @@
       },
       "ApiKey": {
         "type": "object",
-        "required": ["id", "name", "key", "env", "status"],
+        "required": [
+          "id",
+          "name",
+          "key",
+          "env",
+          "status"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -193,11 +204,19 @@
           },
           "env": {
             "type": "string",
-            "enum": ["dev", "staging", "prod"]
+            "enum": [
+              "dev",
+              "staging",
+              "prod"
+            ]
           },
           "status": {
             "type": "string",
-            "enum": ["active", "revoked", "expired"]
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ]
           },
           "scopes": {
             "type": "array",
@@ -260,7 +279,12 @@
       },
       "ApiLog": {
         "type": "object",
-        "required": ["id", "model", "status", "createdAt"],
+        "required": [
+          "id",
+          "model",
+          "status",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -380,7 +404,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending", "approved", "rejected"]
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
           },
           "approverId": {
             "type": "string",
@@ -410,7 +438,9 @@
       },
       "MyApiKeyCreateRequest": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -418,14 +448,21 @@
           },
           "env": {
             "type": "string",
-            "enum": ["dev", "staging", "prod"],
+            "enum": [
+              "dev",
+              "staging",
+              "prod"
+            ],
             "default": "dev"
           },
           "scopes": {
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["read", "write"]
+              "enum": [
+                "read",
+                "write"
+              ]
             }
           },
           "expiresAt": {
@@ -454,13 +491,20 @@
           },
           "env": {
             "type": "string",
-            "enum": ["dev", "staging", "prod"]
+            "enum": [
+              "dev",
+              "staging",
+              "prod"
+            ]
           },
           "scopes": {
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["read", "write"]
+              "enum": [
+                "read",
+                "write"
+              ]
             }
           },
           "expiresAt": {
@@ -480,13 +524,18 @@
           },
           "status": {
             "type": "string",
-            "enum": ["active", "revoked"]
+            "enum": [
+              "active",
+              "revoked"
+            ]
           }
         }
       },
       "QuotaRequestCreateRequest": {
         "type": "object",
-        "required": ["requestedTokenLimit"],
+        "required": [
+          "requestedTokenLimit"
+        ],
         "properties": {
           "organizationId": {
             "type": "string"
@@ -502,11 +551,16 @@
       },
       "QuotaDecisionRequest": {
         "type": "object",
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["approved", "rejected"]
+            "enum": [
+              "approved",
+              "rejected"
+            ]
           },
           "comment": {
             "type": "string"
@@ -523,7 +577,12 @@
             "properties": {
               "data": {
                 "type": "object",
-                "required": ["items", "total", "page", "pageSize"],
+                "required": [
+                  "items",
+                  "total",
+                  "page",
+                  "pageSize"
+                ],
                 "properties": {
                   "items": {
                     "type": "array",
@@ -571,7 +630,12 @@
             "properties": {
               "data": {
                 "type": "object",
-                "required": ["items", "total", "page", "pageSize"],
+                "required": [
+                  "items",
+                  "total",
+                  "page",
+                  "pageSize"
+                ],
                 "properties": {
                   "items": {
                     "type": "array",
@@ -637,11 +701,22 @@
             "properties": {
               "data": {
                 "type": "object",
-                "required": ["profile", "quota", "usage", "apiKeys", "agents", "alerts"],
+                "required": [
+                  "profile",
+                  "quota",
+                  "usage",
+                  "apiKeys",
+                  "agents",
+                  "alerts"
+                ],
                 "properties": {
                   "profile": {
                     "type": "object",
-                    "required": ["userId", "organizationId", "organizationName"],
+                    "required": [
+                      "userId",
+                      "organizationId",
+                      "organizationName"
+                    ],
                     "properties": {
                       "userId": {
                         "type": "string"
@@ -676,7 +751,12 @@
                   },
                   "usage": {
                     "type": "object",
-                    "required": ["totalTokens", "totalRequests", "totalCost", "daily"],
+                    "required": [
+                      "totalTokens",
+                      "totalRequests",
+                      "totalCost",
+                      "daily"
+                    ],
                     "properties": {
                       "totalTokens": {
                         "type": "integer"
@@ -749,7 +829,14 @@
       },
       "Agent": {
         "type": "object",
-        "required": ["id", "name", "status", "enabled", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "name",
+          "status",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -821,7 +908,9 @@
       },
       "AgentRequest": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -878,7 +967,15 @@
       },
       "Conversation": {
         "type": "object",
-        "required": ["id", "agentId", "userId", "status", "messageCount", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "agentId",
+          "userId",
+          "status",
+          "messageCount",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -933,7 +1030,15 @@
       },
       "Prompt": {
         "type": "object",
-        "required": ["id", "name", "content", "status", "enabled", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "name",
+          "content",
+          "status",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -989,7 +1094,10 @@
       },
       "PromptRequest": {
         "type": "object",
-        "required": ["name", "content"],
+        "required": [
+          "name",
+          "content"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -1031,7 +1139,13 @@
       },
       "PromptVersion": {
         "type": "object",
-        "required": ["id", "promptId", "content", "version", "createdAt"],
+        "required": [
+          "id",
+          "promptId",
+          "content",
+          "version",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1109,11 +1223,18 @@
           },
           "status": {
             "type": "string",
-            "enum": ["enabled", "disabled"]
+            "enum": [
+              "enabled",
+              "disabled"
+            ]
           },
           "health": {
             "type": "string",
-            "enum": ["healthy", "degraded", "down"]
+            "enum": [
+              "healthy",
+              "degraded",
+              "down"
+            ]
           },
           "rateLimitQps": {
             "type": "integer",
@@ -1146,7 +1267,12 @@
       },
       "ChannelRequest": {
         "type": "object",
-        "required": ["name", "vendor", "vendorTag", "endpoint"],
+        "required": [
+          "name",
+          "vendor",
+          "vendorTag",
+          "endpoint"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -1181,11 +1307,18 @@
           },
           "status": {
             "type": "string",
-            "enum": ["enabled", "disabled"]
+            "enum": [
+              "enabled",
+              "disabled"
+            ]
           },
           "health": {
             "type": "string",
-            "enum": ["healthy", "degraded", "down"]
+            "enum": [
+              "healthy",
+              "degraded",
+              "down"
+            ]
           },
           "rateLimitQps": {
             "type": "integer",
@@ -1218,7 +1351,13 @@
       },
       "ChannelHealthResult": {
         "type": "object",
-        "required": ["channelId", "name", "healthy", "latency", "timestamp"],
+        "required": [
+          "channelId",
+          "name",
+          "healthy",
+          "latency",
+          "timestamp"
+        ],
         "properties": {
           "channelId": {
             "type": "string"
@@ -1246,7 +1385,12 @@
       },
       "ChannelHealthSummary": {
         "type": "object",
-        "required": ["total", "healthy", "unhealthy", "results"],
+        "required": [
+          "total",
+          "healthy",
+          "unhealthy",
+          "results"
+        ],
         "properties": {
           "total": {
             "type": "integer"
@@ -1267,14 +1411,22 @@
       },
       "ChannelStats": {
         "type": "object",
-        "required": ["channel", "stats"],
+        "required": [
+          "channel",
+          "stats"
+        ],
         "properties": {
           "channel": {
             "$ref": "#/components/schemas/Channel"
           },
           "stats": {
             "type": "object",
-            "required": ["totalRequests", "successRate", "avgLatency", "trend"],
+            "required": [
+              "totalRequests",
+              "successRate",
+              "avgLatency",
+              "trend"
+            ],
             "properties": {
               "totalRequests": {
                 "type": "integer"
@@ -1289,7 +1441,12 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "required": ["time", "requests", "success", "avgLatency"],
+                  "required": [
+                    "time",
+                    "requests",
+                    "success",
+                    "avgLatency"
+                  ],
                   "properties": {
                     "time": {
                       "type": "string"
@@ -1328,7 +1485,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -1419,7 +1581,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -1495,7 +1662,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -1577,7 +1749,14 @@
       },
       "KnowledgeBase": {
         "type": "object",
-        "required": ["id", "name", "status", "enabled", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "name",
+          "status",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1623,7 +1802,9 @@
       },
       "KnowledgeBaseRequest": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -1649,7 +1830,11 @@
       },
       "KnowledgeBaseSummary": {
         "type": "object",
-        "required": ["id", "name", "status"],
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1664,7 +1849,17 @@
       },
       "Document": {
         "type": "object",
-        "required": ["id", "knowledgeBaseId", "name", "type", "size", "status", "chunks", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "knowledgeBaseId",
+          "name",
+          "type",
+          "size",
+          "status",
+          "chunks",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1708,7 +1903,13 @@
       },
       "DocumentUploadResponseData": {
         "type": "object",
-        "required": ["id", "name", "size", "type", "status"],
+        "required": [
+          "id",
+          "name",
+          "size",
+          "type",
+          "status"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1729,7 +1930,11 @@
       },
       "KnowledgeBaseDocumentsData": {
         "type": "object",
-        "required": ["knowledgeBase", "documents", "total"],
+        "required": [
+          "knowledgeBase",
+          "documents",
+          "total"
+        ],
         "properties": {
           "knowledgeBase": {
             "$ref": "#/components/schemas/KnowledgeBaseSummary"
@@ -1747,7 +1952,15 @@
       },
       "McpTool": {
         "type": "object",
-        "required": ["id", "name", "type", "status", "enabled", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "name",
+          "type",
+          "status",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1801,7 +2014,9 @@
       },
       "McpToolRequest": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -1831,7 +2046,14 @@
       },
       "McpMarketplacePreset": {
         "type": "object",
-        "required": ["id", "name", "description", "type", "vendor", "endpoint"],
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "vendor",
+          "endpoint"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1869,7 +2091,9 @@
       },
       "McpInstallRequest": {
         "type": "object",
-        "required": ["presetId"],
+        "required": [
+          "presetId"
+        ],
         "properties": {
           "presetId": {
             "type": "string"
@@ -1892,7 +2116,9 @@
       },
       "McpTestResult": {
         "type": "object",
-        "required": ["healthy"],
+        "required": [
+          "healthy"
+        ],
         "properties": {
           "healthy": {
             "type": "boolean"
@@ -1914,7 +2140,15 @@
       },
       "Alert": {
         "type": "object",
-        "required": ["id", "type", "severity", "title", "message", "read", "createdAt"],
+        "required": [
+          "id",
+          "type",
+          "severity",
+          "title",
+          "message",
+          "read",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1924,7 +2158,11 @@
           },
           "severity": {
             "type": "string",
-            "enum": ["info", "warning", "critical"]
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
           },
           "title": {
             "type": "string"
@@ -1955,7 +2193,14 @@
       },
       "AlertRule": {
         "type": "object",
-        "required": ["id", "name", "type", "condition", "enabled", "createdAt"],
+        "required": [
+          "id",
+          "name",
+          "type",
+          "condition",
+          "enabled",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1991,7 +2236,10 @@
       },
       "AlertRuleRequest": {
         "type": "object",
-        "required": ["name", "type"],
+        "required": [
+          "name",
+          "type"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -2051,7 +2299,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -2220,7 +2473,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -2295,7 +2553,9 @@
       },
       "ApiKeyRequest": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -2329,7 +2589,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["active", "revoked", "expired"]
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ]
           },
           "dailyLimit": {
             "type": "integer",
@@ -2346,7 +2610,12 @@
       },
       "SearchResult": {
         "type": "object",
-        "required": ["id", "name", "type", "url"],
+        "required": [
+          "id",
+          "name",
+          "type",
+          "url"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2368,7 +2637,14 @@
       },
       "DashboardResponseData": {
         "type": "object",
-        "required": ["range", "overview", "trend", "modelBreakdown", "statusDistribution", "quotaStatus"],
+        "required": [
+          "range",
+          "overview",
+          "trend",
+          "modelBreakdown",
+          "statusDistribution",
+          "quotaStatus"
+        ],
         "properties": {
           "range": {
             "type": "string"
@@ -2405,7 +2681,16 @@
       },
       "Organization": {
         "type": "object",
-        "required": ["id", "name", "level", "tokenLimit", "tokenUsed", "enabled", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "name",
+          "level",
+          "tokenLimit",
+          "tokenUsed",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2448,7 +2733,10 @@
       },
       "OrganizationRequest": {
         "type": "object",
-        "required": ["name", "level"],
+        "required": [
+          "name",
+          "level"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -2474,7 +2762,12 @@
       },
       "BillingRecord": {
         "type": "object",
-        "required": ["id", "period", "status", "createdAt"],
+        "required": [
+          "id",
+          "period",
+          "status",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2537,7 +2830,12 @@
       },
       "BillingGenerateResult": {
         "type": "object",
-        "required": ["period", "created", "updated", "totalOrgs"],
+        "required": [
+          "period",
+          "created",
+          "updated",
+          "totalOrgs"
+        ],
         "properties": {
           "period": {
             "type": "string"
@@ -2555,7 +2853,10 @@
       },
       "CleanupResult": {
         "type": "object",
-        "required": ["deleted", "cutoffDate"],
+        "required": [
+          "deleted",
+          "cutoffDate"
+        ],
         "properties": {
           "deleted": {
             "type": "integer"
@@ -2568,7 +2869,11 @@
       },
       "GatewayStatus": {
         "type": "object",
-        "required": ["overview", "channels", "recentLogs"],
+        "required": [
+          "overview",
+          "channels",
+          "recentLogs"
+        ],
         "properties": {
           "overview": {
             "type": "object",
@@ -2592,7 +2897,12 @@
       },
       "Member": {
         "type": "object",
-        "required": ["id", "userId", "organizationId", "createdAt"],
+        "required": [
+          "id",
+          "userId",
+          "organizationId",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2624,7 +2934,9 @@
       },
       "MemberRequest": {
         "type": "object",
-        "required": ["userId"],
+        "required": [
+          "userId"
+        ],
         "properties": {
           "userId": {
             "type": "string"
@@ -2637,7 +2949,15 @@
       },
       "AiModel": {
         "type": "object",
-        "required": ["id", "name", "provider", "type", "status", "createdAt", "updatedAt"],
+        "required": [
+          "id",
+          "name",
+          "provider",
+          "type",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2684,7 +3004,11 @@
       },
       "Role": {
         "type": "object",
-        "required": ["id", "name", "code"],
+        "required": [
+          "id",
+          "name",
+          "code"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2725,7 +3049,10 @@
       },
       "RoleRequest": {
         "type": "object",
-        "required": ["name", "code"],
+        "required": [
+          "name",
+          "code"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -2744,7 +3071,10 @@
       },
       "RolePermission": {
         "type": "object",
-        "required": ["menuId", "permissions"],
+        "required": [
+          "menuId",
+          "permissions"
+        ],
         "properties": {
           "menuId": {
             "type": "string"
@@ -2756,7 +3086,9 @@
       },
       "RolePermissionRequest": {
         "type": "object",
-        "required": ["permissions"],
+        "required": [
+          "permissions"
+        ],
         "properties": {
           "permissions": {
             "type": "array",
@@ -2768,7 +3100,10 @@
       },
       "PromptExportItem": {
         "type": "object",
-        "required": ["name", "content"],
+        "required": [
+          "name",
+          "content"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -2813,7 +3148,10 @@
       },
       "PromptImportResult": {
         "type": "object",
-        "required": ["imported", "total"],
+        "required": [
+          "imported",
+          "total"
+        ],
         "properties": {
           "imported": {
             "type": "integer"
@@ -2825,7 +3163,10 @@
       },
       "InternalizationItem": {
         "type": "object",
-        "required": ["id", "name"],
+        "required": [
+          "id",
+          "name"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2868,7 +3209,9 @@
       },
       "MenuItem": {
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2905,7 +3248,9 @@
       },
       "OperationLog": {
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -2950,7 +3295,9 @@
       },
       "User": {
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -3000,7 +3347,10 @@
       },
       "ListTotalData": {
         "type": "object",
-        "required": ["list", "total"],
+        "required": [
+          "list",
+          "total"
+        ],
         "properties": {
           "list": {
             "type": "array",
@@ -3032,7 +3382,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -3141,7 +3496,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -3244,7 +3604,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -3302,7 +3667,12 @@
                   },
                   {
                     "type": "object",
-                    "required": ["items", "total", "page", "pageSize"],
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
                     "properties": {
                       "items": {
                         "type": "array",
@@ -3451,7 +3821,10 @@
             "properties": {
               "data": {
                 "type": "object",
-                "required": ["list", "total"],
+                "required": [
+                  "list",
+                  "total"
+                ],
                 "properties": {
                   "list": {
                     "type": "array",
@@ -3478,7 +3851,10 @@
             "properties": {
               "data": {
                 "type": "object",
-                "required": ["list", "total"],
+                "required": [
+                  "list",
+                  "total"
+                ],
                 "properties": {
                   "list": {
                     "type": "array",
@@ -3523,7 +3899,10 @@
             "properties": {
               "data": {
                 "type": "object",
-                "required": ["list", "total"],
+                "required": [
+                  "list",
+                  "total"
+                ],
                 "properties": {
                   "list": {
                     "type": "array",
@@ -3571,6 +3950,1625 @@
                 "items": {
                   "$ref": "#/components/schemas/RolePermission"
                 }
+              }
+            }
+          }
+        ]
+      },
+      "ModelResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AiModel"
+              }
+            }
+          }
+        ]
+      },
+      "ActiveOrganizationResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "organizationId"
+                ],
+                "properties": {
+                  "organizationId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ActiveOrganizationsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "activeOrganizationId",
+                  "globalAvailable",
+                  "items"
+                ],
+                "properties": {
+                  "activeOrganizationId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "globalAvailable": {
+                    "type": "boolean"
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Organization"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BotToolStep": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "input": {
+            "nullable": true
+          },
+          "result": {
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "called",
+              "failed"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "latency": {
+            "type": "integer"
+          }
+        }
+      },
+      "BotChatResult": {
+        "type": "object",
+        "required": [
+          "conversationId",
+          "message",
+          "toolSteps"
+        ],
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "toolSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BotToolStep"
+            }
+          }
+        }
+      },
+      "BotChatResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/BotChatResult"
+              }
+            }
+          }
+        ]
+      },
+      "BotConversationMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content",
+          "toolSteps"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "toolSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BotToolStep"
+            }
+          }
+        }
+      },
+      "BotConversation": {
+        "type": "object",
+        "required": [
+          "id",
+          "agentId",
+          "title",
+          "lastMessage",
+          "messages"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agentId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "lastMessage": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BotConversationMessage"
+            }
+          }
+        }
+      },
+      "BotConversationListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BotConversation"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ChannelPreset": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "vendor",
+          "vendorTag",
+          "endpoint",
+          "models"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "vendorTag": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ChannelPresetListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChannelPreset"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ChannelCredential": {
+        "type": "object",
+        "required": [
+          "id",
+          "channelId",
+          "name",
+          "status",
+          "sort",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "cooldownUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastCheckedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "apiKeyMasked": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChannelCredentialListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChannelCredential"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ChannelCredentialResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ChannelCredential"
+              }
+            }
+          }
+        ]
+      },
+      "ChannelTestResult": {
+        "type": "object",
+        "required": [
+          "channelId",
+          "healthy",
+          "latency",
+          "models",
+          "timestamp"
+        ],
+        "properties": {
+          "channelId": {
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "credentialName": {
+            "type": "string"
+          },
+          "healthy": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "latency": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      },
+      "ChannelTestSummary": {
+        "type": "object",
+        "required": [
+          "channelId",
+          "total",
+          "healthy",
+          "unhealthy",
+          "channelHealth",
+          "results"
+        ],
+        "properties": {
+          "channelId": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "healthy": {
+            "type": "integer"
+          },
+          "unhealthy": {
+            "type": "integer"
+          },
+          "channelHealth": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelTestResult"
+            }
+          }
+        }
+      },
+      "ChannelCredentialTestResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ChannelTestResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChannelTestSummary"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ChannelModelSyncResult": {
+        "type": "object",
+        "required": [
+          "created",
+          "updated",
+          "total",
+          "models",
+          "test"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer"
+          },
+          "updated": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "test": {
+            "$ref": "#/components/schemas/ChannelTestResult"
+          }
+        }
+      },
+      "ChannelModelSyncResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ChannelModelSyncResult"
+              }
+            }
+          }
+        ]
+      },
+      "ModelComboItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "comboId",
+          "sort",
+          "channelId",
+          "modelName"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "comboId": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "channelId": {
+            "type": "string"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ModelCombo": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelComboItem"
+            }
+          }
+        }
+      },
+      "ModelComboListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ModelCombo"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ModelComboResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ModelCombo"
+              }
+            }
+          }
+        ]
+      },
+      "DocumentChunk": {
+        "type": "object",
+        "required": [
+          "id",
+          "documentId",
+          "knowledgeBaseId",
+          "sort",
+          "content",
+          "tokenCount",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "knowledgeBaseId": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "tokenCount": {
+            "type": "integer"
+          },
+          "contentHash": {
+            "type": "string",
+            "nullable": true
+          },
+          "embedding": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DocumentChunkPageResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "total",
+                  "page",
+                  "pageSize"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DocumentChunk"
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "page": {
+                    "type": "integer"
+                  },
+                  "pageSize": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "KnowledgeDocumentRetryResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "retried"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "retried": {
+            "type": "boolean"
+          }
+        }
+      },
+      "KnowledgeDocumentRetryResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/KnowledgeDocumentRetryResult"
+              }
+            }
+          }
+        ]
+      },
+      "KnowledgeQaResult": {
+        "type": "object",
+        "required": [
+          "query",
+          "answer",
+          "references"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentChunk"
+            }
+          }
+        }
+      },
+      "KnowledgeQaResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/KnowledgeQaResult"
+              }
+            }
+          }
+        ]
+      },
+      "KnowledgeSearchHitsResult": {
+        "type": "object",
+        "required": [
+          "query",
+          "hits"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "hits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentChunk"
+            }
+          }
+        }
+      },
+      "KnowledgeSearchHitsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/KnowledgeSearchHitsResult"
+              }
+            }
+          }
+        ]
+      },
+      "McpMarketplaceDetailResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/McpMarketplacePreset"
+              }
+            }
+          }
+        ]
+      },
+      "McpMarketplaceInstallResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/McpTool"
+              }
+            }
+          }
+        ]
+      },
+      "McpMarketplaceBatchInstallItem": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/McpTool"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "McpMarketplaceBatchInstallResult": {
+        "type": "object",
+        "required": [
+          "total",
+          "success",
+          "failed",
+          "results"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "success": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpMarketplaceBatchInstallItem"
+            }
+          }
+        }
+      },
+      "McpMarketplaceBatchInstallResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/McpMarketplaceBatchInstallResult"
+              }
+            }
+          }
+        ]
+      },
+      "NotificationPreference": {
+        "type": "object",
+        "required": [
+          "userId",
+          "alertType",
+          "channels",
+          "updatedAt"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "alertType": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NotificationPreferenceListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NotificationPreference"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "NotificationPreferenceSaveResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NotificationPreference"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PromptVariable": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "defaultValue": {
+            "nullable": true
+          }
+        }
+      },
+      "PromptRenderResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "content",
+          "rendered",
+          "variables",
+          "values"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "rendered": {
+            "type": "string"
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromptVariable"
+            }
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "PromptRenderResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/PromptRenderResult"
+              }
+            }
+          }
+        ]
+      },
+      "PromptRunResult": {
+        "type": "object",
+        "required": [
+          "rendered",
+          "message",
+          "latency",
+          "model"
+        ],
+        "properties": {
+          "rendered": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "usage": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "latency": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          }
+        }
+      },
+      "PromptRunResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/PromptRunResult"
+              }
+            }
+          }
+        ]
+      },
+      "SkillFile": {
+        "type": "object",
+        "required": [
+          "id",
+          "skillId",
+          "path",
+          "content"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "skillId": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Skill": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "content",
+          "version",
+          "hasFiles",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "hasFiles": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillFile"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SkillListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Skill"
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
+                    "properties": {
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Skill"
+                        }
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "pageSize": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "SkillResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Skill"
+              }
+            }
+          }
+        ]
+      },
+      "SkillImportResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Skill"
+              }
+            }
+          }
+        ]
+      },
+      "SkillFileListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SkillFile"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SkillFileResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SkillFile"
+              }
+            }
+          }
+        ]
+      },
+      "StorageInstance": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "type",
+          "isDefault",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StorageInstanceListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/StorageInstance"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "StorageInstanceResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/StorageInstance"
+              }
+            }
+          }
+        ]
+      },
+      "TenantPackage": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "menuCodes",
+          "enabled",
+          "sort",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "menuCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TenantPackageListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TenantPackage"
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "items",
+                      "total",
+                      "page",
+                      "pageSize"
+                    ],
+                    "properties": {
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/TenantPackage"
+                        }
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "page": {
+                        "type": "integer"
+                      },
+                      "pageSize": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "TenantPackageResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/TenantPackage"
+              }
+            }
+          }
+        ]
+      },
+      "SettingsValuesResult": {
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "properties": {
+          "values": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "SettingsValuesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SettingsValuesResult"
+              }
+            }
+          }
+        ]
+      },
+      "SettingsSaveResult": {
+        "type": "object",
+        "required": [
+          "saved",
+          "values"
+        ],
+        "properties": {
+          "saved": {
+            "type": "integer"
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "SettingsSaveResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SettingsSaveResult"
+              }
+            }
+          }
+        ]
+      },
+      "UserImportRowResult": {
+        "type": "object",
+        "required": [
+          "row",
+          "ok"
+        ],
+        "properties": {
+          "row": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "UserImportResult": {
+        "type": "object",
+        "required": [
+          "imported",
+          "failed",
+          "results"
+        ],
+        "properties": {
+          "imported": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserImportRowResult"
+            }
+          }
+        }
+      },
+      "UserImportResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/UserImportResult"
+              }
+            }
+          }
+        ]
+      },
+      "UserOffboardStep": {
+        "type": "object",
+        "required": [
+          "key",
+          "ok"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "UserOffboardResult": {
+        "type": "object",
+        "required": [
+          "steps"
+        ],
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOffboardStep"
+            }
+          }
+        }
+      },
+      "UserOffboardResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/UserOffboardResult"
               }
             }
           }
@@ -3658,7 +5656,9 @@
   "paths": {
     "/aigate/agent": {
       "get": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "List agents",
         "parameters": [
           {
@@ -3702,7 +5702,9 @@
         }
       },
       "post": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "Create agent",
         "requestBody": {
           "required": true,
@@ -3733,7 +5735,9 @@
     },
     "/aigate/agent/{id}": {
       "get": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "Get agent by ID",
         "parameters": [
           {
@@ -3762,7 +5766,9 @@
         }
       },
       "put": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "Update agent",
         "parameters": [
           {
@@ -3801,7 +5807,9 @@
         }
       },
       "delete": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "Delete agent",
         "parameters": [
           {
@@ -3832,7 +5840,9 @@
     },
     "/aigate/agent/{id}/chat": {
       "post": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "Chat with agent",
         "parameters": [
           {
@@ -3878,7 +5888,9 @@
     },
     "/aigate/prompt": {
       "get": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "List prompts",
         "parameters": [
           {
@@ -3913,7 +5925,9 @@
         }
       },
       "post": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "Create prompt",
         "requestBody": {
           "required": true,
@@ -3944,7 +5958,9 @@
     },
     "/aigate/prompt/{id}": {
       "put": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "Update prompt",
         "parameters": [
           {
@@ -3983,7 +5999,9 @@
         }
       },
       "delete": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "Delete prompt",
         "parameters": [
           {
@@ -4014,7 +6032,9 @@
     },
     "/aigate/prompt/{id}/versions": {
       "get": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "List prompt versions",
         "parameters": [
           {
@@ -4045,7 +6065,9 @@
     },
     "/aigate/api-key": {
       "get": {
-        "tags": ["ApiKey"],
+        "tags": [
+          "ApiKey"
+        ],
         "summary": "List API keys",
         "responses": {
           "200": {
@@ -4064,7 +6086,9 @@
         }
       },
       "post": {
-        "tags": ["ApiKey"],
+        "tags": [
+          "ApiKey"
+        ],
         "summary": "Create API key",
         "requestBody": {
           "required": true,
@@ -4095,7 +6119,9 @@
     },
     "/aigate/api-key/{id}": {
       "put": {
-        "tags": ["ApiKey"],
+        "tags": [
+          "ApiKey"
+        ],
         "summary": "Update API key",
         "parameters": [
           {
@@ -4134,7 +6160,9 @@
         }
       },
       "delete": {
-        "tags": ["ApiKey"],
+        "tags": [
+          "ApiKey"
+        ],
         "summary": "Revoke API key",
         "parameters": [
           {
@@ -4161,11 +6189,44 @@
             "$ref": "#/components/responses/ErrorResponse"
           }
         }
+      },
+      "get": {
+        "tags": [
+          "ApiKey"
+        ],
+        "summary": "GET Aigate Api Key Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/aigate/search": {
       "get": {
-        "tags": ["Search"],
+        "tags": [
+          "Search"
+        ],
         "summary": "Global search",
         "parameters": [
           {
@@ -4181,7 +6242,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["agent", "prompt", "knowledge-base", "all"]
+              "enum": [
+                "agent",
+                "prompt",
+                "knowledge-base",
+                "all"
+              ]
             }
           }
         ],
@@ -4204,7 +6270,9 @@
     },
     "/aigate/dashboard": {
       "get": {
-        "tags": ["Dashboard"],
+        "tags": [
+          "Dashboard"
+        ],
         "summary": "Dashboard metrics",
         "parameters": [
           {
@@ -4212,7 +6280,11 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["7d", "30d", "90d"],
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ],
               "default": "7d"
             }
           }
@@ -4236,7 +6308,9 @@
     },
     "/aigate/channel": {
       "get": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "List model channels",
         "responses": {
           "200": {
@@ -4255,7 +6329,9 @@
         }
       },
       "post": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "Create channel",
         "requestBody": {
           "required": true,
@@ -4286,7 +6362,9 @@
     },
     "/aigate/knowledge-base": {
       "get": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "List knowledge bases",
         "responses": {
           "200": {
@@ -4305,7 +6383,9 @@
         }
       },
       "post": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "Create knowledge base",
         "requestBody": {
           "required": true,
@@ -4336,7 +6416,9 @@
     },
     "/aigate/organization": {
       "get": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "List organizations",
         "responses": {
           "200": {
@@ -4355,7 +6437,9 @@
         }
       },
       "post": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Create or execute Organization",
         "responses": {
           "200": {
@@ -4386,7 +6470,9 @@
     },
     "/aigate/organization/tree": {
       "get": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Organization tree",
         "responses": {
           "200": {
@@ -4407,7 +6493,9 @@
     },
     "/aigate/alert/rule": {
       "get": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "List alert rules",
         "responses": {
           "200": {
@@ -4426,7 +6514,9 @@
         }
       },
       "post": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "Create alert rule",
         "requestBody": {
           "required": true,
@@ -4457,7 +6547,9 @@
     },
     "/aigate/billing": {
       "get": {
-        "tags": ["Billing"],
+        "tags": [
+          "Billing"
+        ],
         "summary": "List billing records",
         "responses": {
           "200": {
@@ -4478,7 +6570,9 @@
     },
     "/aigate/agent/{id}/conversations": {
       "get": {
-        "tags": ["Agent"],
+        "tags": [
+          "Agent"
+        ],
         "summary": "Get Agent Id Conversations",
         "parameters": [
           {
@@ -4509,7 +6603,9 @@
     },
     "/aigate/alert": {
       "get": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "List Alert",
         "responses": {
           "200": {
@@ -4530,7 +6626,9 @@
     },
     "/aigate/alert/{id}": {
       "delete": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "Delete Alert Id",
         "parameters": [
           {
@@ -4570,7 +6668,9 @@
         }
       },
       "put": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "Update Alert Id",
         "parameters": [
           {
@@ -4612,7 +6712,9 @@
     },
     "/aigate/alert/check": {
       "post": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "Create or execute Alert Check",
         "responses": {
           "200": {
@@ -4644,7 +6746,9 @@
     },
     "/aigate/alert/rule/{id}": {
       "delete": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "Delete Alert Rule Id",
         "parameters": [
           {
@@ -4684,7 +6788,9 @@
         }
       },
       "put": {
-        "tags": ["Alert"],
+        "tags": [
+          "Alert"
+        ],
         "summary": "Update Alert Rule Id",
         "parameters": [
           {
@@ -4725,7 +6831,9 @@
     },
     "/aigate/api-log": {
       "get": {
-        "tags": ["ApiLog"],
+        "tags": [
+          "ApiLog"
+        ],
         "summary": "List Api Log",
         "responses": {
           "200": {
@@ -4746,7 +6854,9 @@
     },
     "/aigate/api-log/cleanup": {
       "post": {
-        "tags": ["ApiLog"],
+        "tags": [
+          "ApiLog"
+        ],
         "summary": "Create or execute Api Log Cleanup",
         "responses": {
           "200": {
@@ -4778,7 +6888,9 @@
     },
     "/aigate/billing/{id}": {
       "get": {
-        "tags": ["Billing"],
+        "tags": [
+          "Billing"
+        ],
         "summary": "Get Billing Id",
         "parameters": [
           {
@@ -4809,7 +6921,9 @@
     },
     "/aigate/billing/generate": {
       "post": {
-        "tags": ["Billing"],
+        "tags": [
+          "Billing"
+        ],
         "summary": "Create or execute Billing Generate",
         "responses": {
           "200": {
@@ -4840,7 +6954,9 @@
     },
     "/aigate/channel/{id}": {
       "delete": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "Delete Channel Id",
         "parameters": [
           {
@@ -4880,7 +6996,9 @@
         }
       },
       "get": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "Get Channel Id",
         "parameters": [
           {
@@ -4909,7 +7027,9 @@
         }
       },
       "put": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "Update Channel Id",
         "parameters": [
           {
@@ -4950,7 +7070,9 @@
     },
     "/aigate/channel/{id}/stats": {
       "get": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "Get Channel Id Stats",
         "parameters": [
           {
@@ -4981,7 +7103,9 @@
     },
     "/aigate/channel/health-check": {
       "post": {
-        "tags": ["Channel"],
+        "tags": [
+          "Channel"
+        ],
         "summary": "Create or execute Channel Health Check",
         "responses": {
           "200": {
@@ -5012,7 +7136,9 @@
     },
     "/aigate/gateway": {
       "get": {
-        "tags": ["Gateway"],
+        "tags": [
+          "Gateway"
+        ],
         "summary": "List Gateway",
         "responses": {
           "200": {
@@ -5033,7 +7159,9 @@
     },
     "/aigate/knowledge-base/{id}": {
       "delete": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "Delete Knowledge Base Id",
         "parameters": [
           {
@@ -5073,7 +7201,9 @@
         }
       },
       "put": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "Update Knowledge Base Id",
         "parameters": [
           {
@@ -5110,11 +7240,44 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "GET Aigate Knowledge Base Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBaseResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/aigate/knowledge-base/{id}/documents": {
       "get": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "Get Knowledge Base Id Documents",
         "parameters": [
           {
@@ -5143,7 +7306,9 @@
         }
       },
       "post": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "Create or execute Knowledge Base Id Documents",
         "parameters": [
           {
@@ -5185,7 +7350,9 @@
     },
     "/aigate/knowledge-base/{id}/documents/{docId}": {
       "delete": {
-        "tags": ["KnowledgeBase"],
+        "tags": [
+          "KnowledgeBase"
+        ],
         "summary": "Delete Knowledge Base Id Documents DocId",
         "parameters": [
           {
@@ -5235,7 +7402,9 @@
     },
     "/aigate/mcp-tool": {
       "get": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "List Mcp Tool",
         "responses": {
           "200": {
@@ -5254,7 +7423,9 @@
         }
       },
       "post": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "Create or execute Mcp Tool",
         "responses": {
           "200": {
@@ -5285,7 +7456,9 @@
     },
     "/aigate/mcp-tool/{id}": {
       "delete": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "Delete Mcp Tool Id",
         "parameters": [
           {
@@ -5325,7 +7498,9 @@
         }
       },
       "put": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "Update Mcp Tool Id",
         "parameters": [
           {
@@ -5362,11 +7537,44 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "McpTool"
+        ],
+        "summary": "GET Aigate Mcp Tool Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpToolResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/aigate/mcp-tool/install": {
       "post": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "Create or execute Mcp Tool Install",
         "responses": {
           "200": {
@@ -5397,7 +7605,9 @@
     },
     "/aigate/mcp-tool/marketplace": {
       "get": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "List Mcp Tool Marketplace",
         "responses": {
           "200": {
@@ -5418,7 +7628,9 @@
     },
     "/aigate/mcp-tool/test": {
       "post": {
-        "tags": ["McpTool"],
+        "tags": [
+          "McpTool"
+        ],
         "summary": "Create or execute Mcp Tool Test",
         "responses": {
           "200": {
@@ -5449,7 +7661,9 @@
     },
     "/aigate/member": {
       "get": {
-        "tags": ["Member"],
+        "tags": [
+          "Member"
+        ],
         "summary": "List Member",
         "responses": {
           "200": {
@@ -5468,7 +7682,9 @@
         }
       },
       "post": {
-        "tags": ["Member"],
+        "tags": [
+          "Member"
+        ],
         "summary": "Create or execute Member",
         "responses": {
           "200": {
@@ -5499,7 +7715,9 @@
     },
     "/aigate/member/{id}": {
       "delete": {
-        "tags": ["Member"],
+        "tags": [
+          "Member"
+        ],
         "summary": "Delete Member Id",
         "parameters": [
           {
@@ -5541,7 +7759,9 @@
     },
     "/aigate/model": {
       "get": {
-        "tags": ["Model"],
+        "tags": [
+          "Model"
+        ],
         "summary": "List Model",
         "responses": {
           "200": {
@@ -5558,11 +7778,45 @@
             "$ref": "#/components/responses/ErrorResponse"
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "POST Aigate Model",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "/aigate/organization/{id}": {
       "put": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Update Organization Id",
         "parameters": [
           {
@@ -5603,7 +7857,9 @@
     },
     "/aigate/prompt/{id}/versions/{versionId}/restore": {
       "post": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "Create or execute Prompt Id Versions VersionId Restore",
         "parameters": [
           {
@@ -5653,7 +7909,9 @@
     },
     "/aigate/prompt/export": {
       "get": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "List Prompt Export",
         "responses": {
           "200": {
@@ -5677,7 +7935,9 @@
     },
     "/aigate/prompt/import": {
       "post": {
-        "tags": ["Prompt"],
+        "tags": [
+          "Prompt"
+        ],
         "summary": "Create or execute Prompt Import",
         "responses": {
           "200": {
@@ -5708,7 +7968,9 @@
     },
     "/aigate/role": {
       "get": {
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "summary": "List Role",
         "responses": {
           "200": {
@@ -5729,7 +7991,9 @@
     },
     "/gateway/{path}": {
       "post": {
-        "tags": ["Gateway"],
+        "tags": [
+          "Gateway"
+        ],
         "summary": "Create or execute Gateway path",
         "parameters": [
           {
@@ -5775,7 +8039,9 @@
         }
       },
       "get": {
-        "tags": ["Gateway"],
+        "tags": [
+          "Gateway"
+        ],
         "summary": "Proxy Gateway path",
         "parameters": [
           {
@@ -5812,7 +8078,9 @@
     },
     "/system-settings/internalization": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings internalization",
         "responses": {
           "200": {
@@ -5831,7 +8099,9 @@
         }
       },
       "post": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Create or execute System settings internalization",
         "responses": {
           "200": {
@@ -5863,7 +8133,9 @@
     },
     "/system-settings/internalization/{id}": {
       "delete": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Delete System settings internalization Id",
         "parameters": [
           {
@@ -5903,7 +8175,9 @@
         }
       },
       "put": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Update System settings internalization Id",
         "parameters": [
           {
@@ -5945,7 +8219,9 @@
     },
     "/system-settings/internalization/locales": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings internalization Locales",
         "responses": {
           "200": {
@@ -5966,7 +8242,9 @@
     },
     "/system-settings/menu-manage": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings menu Manage",
         "responses": {
           "200": {
@@ -5985,7 +8263,9 @@
         }
       },
       "post": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Create or execute System settings menu Manage",
         "responses": {
           "200": {
@@ -6017,7 +8297,9 @@
     },
     "/system-settings/menu-manage/{id}": {
       "delete": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Delete System settings menu Manage Id",
         "parameters": [
           {
@@ -6057,7 +8339,9 @@
         }
       },
       "put": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Update System settings menu Manage Id",
         "parameters": [
           {
@@ -6099,7 +8383,9 @@
     },
     "/system-settings/operation-log": {
       "delete": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Delete System settings operation Log",
         "responses": {
           "200": {
@@ -6129,7 +8415,9 @@
         }
       },
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings operation Log",
         "responses": {
           "200": {
@@ -6150,7 +8438,9 @@
     },
     "/system-settings/operation-log/export": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings operation Log Export",
         "responses": {
           "200": {
@@ -6171,7 +8461,9 @@
     },
     "/system-settings/operation-log/users": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings operation Log Users",
         "responses": {
           "200": {
@@ -6192,7 +8484,9 @@
     },
     "/system-settings/role-manage": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings role Manage",
         "responses": {
           "200": {
@@ -6211,7 +8505,9 @@
         }
       },
       "post": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Create or execute System settings role Manage",
         "responses": {
           "200": {
@@ -6242,7 +8538,9 @@
     },
     "/system-settings/role-manage/{id}": {
       "delete": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Delete System settings role Manage Id",
         "parameters": [
           {
@@ -6282,7 +8580,9 @@
         }
       },
       "put": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Update System settings role Manage Id",
         "parameters": [
           {
@@ -6323,7 +8623,9 @@
     },
     "/system-settings/role-manage/{id}/permissions": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Get System settings role Manage Id Permissions",
         "parameters": [
           {
@@ -6352,7 +8654,9 @@
         }
       },
       "post": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "Create or execute System settings role Manage Id Permissions",
         "parameters": [
           {
@@ -6393,7 +8697,9 @@
     },
     "/system-settings/user-manage": {
       "get": {
-        "tags": ["SystemSettings"],
+        "tags": [
+          "SystemSettings"
+        ],
         "summary": "List System settings user Manage",
         "responses": {
           "200": {
@@ -6414,7 +8720,9 @@
     },
     "/aigate/quota/request": {
       "get": {
-        "tags": ["Quota"],
+        "tags": [
+          "Quota"
+        ],
         "summary": "List quota requests",
         "parameters": [
           {
@@ -6423,7 +8731,11 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["pending", "approved", "rejected"]
+              "enum": [
+                "pending",
+                "approved",
+                "rejected"
+              ]
             }
           },
           {
@@ -6452,7 +8764,9 @@
         }
       },
       "post": {
-        "tags": ["Quota"],
+        "tags": [
+          "Quota"
+        ],
         "summary": "Create quota request",
         "requestBody": {
           "required": true,
@@ -6483,7 +8797,9 @@
     },
     "/aigate/quota/request/{id}/decision": {
       "post": {
-        "tags": ["Quota"],
+        "tags": [
+          "Quota"
+        ],
         "summary": "Approve or reject quota request",
         "parameters": [
           {
@@ -6524,7 +8840,9 @@
     },
     "/aigate/me/workbench": {
       "get": {
-        "tags": ["Me"],
+        "tags": [
+          "Me"
+        ],
         "summary": "Current user workbench",
         "responses": {
           "200": {
@@ -6548,7 +8866,9 @@
     },
     "/aigate/me/api-log": {
       "get": {
-        "tags": ["Me"],
+        "tags": [
+          "Me"
+        ],
         "summary": "Current user API logs",
         "parameters": [
           {
@@ -6617,7 +8937,9 @@
     },
     "/aigate/me/api-key": {
       "get": {
-        "tags": ["Me"],
+        "tags": [
+          "Me"
+        ],
         "summary": "List current user API keys",
         "parameters": [
           {
@@ -6653,7 +8975,11 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["active", "revoked", "expired"]
+              "enum": [
+                "active",
+                "revoked",
+                "expired"
+              ]
             }
           }
         ],
@@ -6674,7 +9000,9 @@
         }
       },
       "post": {
-        "tags": ["Me"],
+        "tags": [
+          "Me"
+        ],
         "summary": "Create current user API key",
         "requestBody": {
           "required": true,
@@ -6705,7 +9033,9 @@
     },
     "/aigate/me/api-key/{id}": {
       "put": {
-        "tags": ["Me"],
+        "tags": [
+          "Me"
+        ],
         "summary": "Update current user API key",
         "parameters": [
           {
@@ -6740,6 +9070,1817 @@
           },
           "default": {
             "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/aigate/active-organization": {
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "POST Aigate Active Organization",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveOrganizationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/active-organizations": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "GET Aigate Active Organizations",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveOrganizationsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/aigate/bot/chat": {
+      "post": {
+        "tags": [
+          "Bot"
+        ],
+        "summary": "POST Aigate Bot Chat",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BotChatResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/bot/conversations": {
+      "get": {
+        "tags": [
+          "Bot"
+        ],
+        "summary": "GET Aigate Bot Conversations",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BotConversationListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/aigate/channel/presets": {
+      "get": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "GET Aigate Channel Presets",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelPresetListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/aigate/channel/{id}/credentials": {
+      "get": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "GET Aigate Channel Id Credentials",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelCredentialListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "POST Aigate Channel Id Credentials",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelCredentialResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/channel/{id}/credentials/{credentialId}": {
+      "delete": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "DELETE Aigate Channel Id Credentials CredentialId",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "PUT Aigate Channel Id Credentials CredentialId",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelCredentialResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/channel/{id}/sync-models": {
+      "post": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "POST Aigate Channel Id Sync Models",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelModelSyncResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/channel/{id}/test": {
+      "post": {
+        "tags": [
+          "Channel"
+        ],
+        "summary": "POST Aigate Channel Id Test",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelCredentialTestResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/combo": {
+      "get": {
+        "tags": [
+          "Gateway"
+        ],
+        "summary": "GET Aigate Combo",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelComboListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Gateway"
+        ],
+        "summary": "POST Aigate Combo",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelComboResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/combo/{id}": {
+      "delete": {
+        "tags": [
+          "Gateway"
+        ],
+        "summary": "DELETE Aigate Combo Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelComboResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Gateway"
+        ],
+        "summary": "PUT Aigate Combo Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelComboResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/knowledge-base/{id}/chunks": {
+      "get": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "GET Aigate Knowledge Base Id Chunks",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentChunkPageResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/aigate/knowledge-base/{id}/documents/{docId}/retry": {
+      "post": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "POST Aigate Knowledge Base Id Documents DocId Retry",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentRetryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/knowledge-base/{id}/qa": {
+      "post": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "POST Aigate Knowledge Base Id Qa",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeQaResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/knowledge-base/{id}/search": {
+      "post": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "POST Aigate Knowledge Base Id Search",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeSearchHitsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/mcp-tool/marketplace/batch-install": {
+      "post": {
+        "tags": [
+          "McpTool"
+        ],
+        "summary": "POST Aigate Mcp Tool Marketplace Batch Install",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpMarketplaceBatchInstallResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/mcp-tool/marketplace/{slug}": {
+      "get": {
+        "tags": [
+          "McpTool"
+        ],
+        "summary": "GET Aigate Mcp Tool Marketplace Slug",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpMarketplaceDetailResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/aigate/mcp-tool/marketplace/{slug}/install": {
+      "post": {
+        "tags": [
+          "McpTool"
+        ],
+        "summary": "POST Aigate Mcp Tool Marketplace Slug Install",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpMarketplaceInstallResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/me/notification-pref": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "summary": "GET Aigate Me Notification Pref",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferenceListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Me"
+        ],
+        "summary": "POST Aigate Me Notification Pref",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferenceSaveResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/model/{id}": {
+      "delete": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "DELETE Aigate Model Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "PUT Aigate Model Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/prompt/{id}/render": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "POST Aigate Prompt Id Render",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRenderResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/prompt/{id}/run": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "POST Aigate Prompt Id Run",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRunResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/skill/import": {
+      "post": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "POST Aigate Skill Import",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillImportResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/skill": {
+      "get": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "GET Aigate Skill",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "POST Aigate Skill",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/skill/{id}/files": {
+      "get": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "GET Aigate Skill Id Files",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillFileListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "POST Aigate Skill Id Files",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillFileResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/skill/{id}/files/{fileId}": {
+      "delete": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "DELETE Aigate Skill Id Files FileId",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "PUT Aigate Skill Id Files FileId",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillFileResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/skill/{id}": {
+      "delete": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "DELETE Aigate Skill Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "GET Aigate Skill Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Skill"
+        ],
+        "summary": "PUT Aigate Skill Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/storage-instance": {
+      "get": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "GET Aigate Storage Instance",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageInstanceListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "POST Aigate Storage Instance",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageInstanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/storage-instance/{id}": {
+      "delete": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "DELETE Aigate Storage Instance Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "KnowledgeBase"
+        ],
+        "summary": "PUT Aigate Storage Instance Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageInstanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/tenant-package": {
+      "get": {
+        "tags": [
+          "TenantPackage"
+        ],
+        "summary": "GET Aigate Tenant Package",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPackageListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TenantPackage"
+        ],
+        "summary": "POST Aigate Tenant Package",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPackageResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aigate/tenant-package/{id}": {
+      "delete": {
+        "tags": [
+          "TenantPackage"
+        ],
+        "summary": "DELETE Aigate Tenant Package Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoidResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "TenantPackage"
+        ],
+        "summary": "PUT Aigate Tenant Package Id",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPackageResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-settings/operation-log/cleanup": {
+      "post": {
+        "tags": [
+          "OperationLog"
+        ],
+        "summary": "POST System Settings Operation Log Cleanup",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CleanupResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-settings/settings": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "GET System Settings Settings",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsValuesResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "POST System Settings Settings",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsSaveResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-settings/user-manage/import": {
+      "post": {
+        "tags": [
+          "UserManage"
+        ],
+        "summary": "POST System Settings User Manage Import",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserImportResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-settings/user-manage/{id}/offboard": {
+      "post": {
+        "tags": [
+          "UserManage"
+        ],
+        "summary": "POST System Settings User Manage Id Offboard",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOffboardResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
           }
         }
       }

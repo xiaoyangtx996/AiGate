@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike } from 'drizzle-orm'
+import { and, asc, eq, ilike, sql } from 'drizzle-orm'
 import { db } from '@/db/drizzle'
 import { knowledgeBase } from '@/db/schema'
 
@@ -14,12 +14,16 @@ export default defineEventHandler(async event => {
     if (!principal.isAdmin && principal.organizationId)
       conditions.push(eq(knowledgeBase.organizationId, principal.organizationId))
     if (query.keyword) conditions.push(ilike(knowledgeBase.name, `%${query.keyword}%`))
+    const [countRow] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(knowledgeBase)
+      .where(conditions.length ? and(...conditions) : undefined)
     const data = await db
       .select()
       .from(knowledgeBase)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(asc(knowledgeBase.createdAt))
-    return responseSuccess(data)
+    return responseSuccess({ items: data, total: countRow?.total || data.length })
   } catch (err) {
     return responseError(err)
   }

@@ -37,6 +37,7 @@ vi.mock('@/db/schema', () => ({
 }))
 
 vi.mock('#server/utils/api-key', () => ({
+  applyApiKeyDefaults: (body: unknown) => body,
   checkApiKeyLimit: (...args: unknown[]) => mockCheckApiKeyLimit(...args),
   generateApiKey: (...args: unknown[]) => mockGenerateApiKey(...args),
 }))

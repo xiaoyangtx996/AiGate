@@ -3,6 +3,8 @@ interface ChatMessage {
   role: string
   content: string
   time: string
+  references?: Array<{ knowledgeBaseName?: string, content?: string, score?: number }>
+  toolSteps?: Array<{ name?: string, status?: string, message?: string }>
 }
 interface ChatConversation {
   id: string
@@ -46,7 +48,8 @@ onMounted(async () => {
     try {
       const parsed = JSON.parse(saved) as { conversations?: ChatConversation[] }
       conversations.value = parsed.conversations || []
-    } catch {
+    }
+    catch {
       /* ignore */
     }
   }
@@ -54,7 +57,8 @@ onMounted(async () => {
   const agentId = route.query.agentId as string | undefined
   if (agentId) {
     const target = agents.value.find(a => a.id === agentId)
-    if (target) await selectAgent(target)
+    if (target)
+      await selectAgent(target)
   }
 })
 
@@ -75,7 +79,8 @@ async function selectAgent(agent: AgentItem) {
   try {
     const res = await getAgentConversations(agent.id)
     conversations.value = res.data || []
-  } catch {
+  }
+  catch {
     conversations.value = []
   }
 }
@@ -86,7 +91,8 @@ async function startNewConversation() {
 }
 
 async function sendMessage() {
-  if (!inputText.value.trim() || sending.value || !selectedAgent.value) return
+  if (!inputText.value.trim() || sending.value || !selectedAgent.value)
+    return
   const userMsg = { role: 'user', content: inputText.value.trim(), time: new Date().toISOString() }
   messages.value.push(userMsg)
   const msg = inputText.value.trim()
@@ -117,49 +123,71 @@ async function sendMessage() {
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done)
+          break
         const chunk = decoder.decode(value, { stream: true })
         for (const line of chunk.split('\n')) {
-          if (!line.startsWith('data: ')) continue
+          if (!line.startsWith('data: '))
+            continue
           const payload = line.slice(6).trim()
-          if (payload === '[DONE]') continue
+          if (payload === '[DONE]')
+            continue
           try {
             const parsed = JSON.parse(payload)
             if (parsed.type === 'start' && parsed.conversationId) {
               conversationId.value = parsed.conversationId
+              if (lastMessage) {
+                lastMessage.references = parsed.references || []
+                lastMessage.toolSteps = parsed.toolSteps || []
+              }
             }
             if (parsed.type === 'delta' && parsed.content) {
               reply += parsed.content
-              if (lastMessage) lastMessage.content = reply
+              if (lastMessage)
+                lastMessage.content = reply
             }
             if (parsed.type === 'done') {
               conversationId.value = parsed.conversationId || conversationId.value
               reply = parsed.message || reply
-              if (lastMessage) lastMessage.content = reply
+              if (lastMessage) {
+                lastMessage.content = reply
+                lastMessage.references = parsed.references || lastMessage.references || []
+                lastMessage.toolSteps = parsed.toolSteps || lastMessage.toolSteps || []
+              }
             }
             if (parsed.type === 'error') {
               throw new Error(parsed.message || 'Stream error')
             }
-          } catch (e: unknown) {
+          }
+          catch (e: unknown) {
             const err = e as { message?: string }
-            if (err?.message && !err.message.includes('JSON')) throw e
+            if (err?.message && !err.message.includes('JSON'))
+              throw e
           }
         }
       }
 
       saveToLocalStorage(conversationId.value, agent.id, msg, reply)
-    } else {
+    }
+    else {
       const res = await response.json()
       conversationId.value = res.data?.conversationId
       const reply = res.data?.message || p('noReply')
-      if (lastMessage) lastMessage.content = reply
+      if (lastMessage) {
+        lastMessage.content = reply
+        lastMessage.references = res.data?.references || []
+        lastMessage.toolSteps = res.data?.toolSteps || []
+      }
       saveToLocalStorage(conversationId.value, agent.id, msg, reply)
     }
-  } catch (err: unknown) {
+  }
+  catch (err: unknown) {
     const message = err instanceof Error ? err.message : p('checkGateway')
     const errorMsg = p('requestFailed', { message })
-    if (lastMessage) lastMessage.content = errorMsg
-  } finally {
+    if (lastMessage)
+      lastMessage.content = errorMsg
+  }
+  finally {
     sending.value = false
   }
 }
@@ -168,7 +196,7 @@ function saveToLocalStorage(convId: string | undefined, agentId: string, userMsg
   try {
     const saved = localStorage.getItem('aigate-chat-history')
     const history = saved
-      ? (JSON.parse(saved) as { conversations: ChatConversation[]; currentConv: string | null })
+      ? (JSON.parse(saved) as { conversations: ChatConversation[], currentConv: string | null })
       : { conversations: [], currentConv: null }
 
     const id = convId || `local-${Date.now()}`
@@ -187,7 +215,8 @@ function saveToLocalStorage(convId: string | undefined, agentId: string, userMsg
         conversation.updatedAt = new Date().toISOString()
         conversation.messages = storedMessages
       }
-    } else {
+    }
+    else {
       history.conversations.unshift({
         id,
         agentId,
@@ -205,9 +234,29 @@ function saveToLocalStorage(convId: string | undefined, agentId: string, userMsg
     history.currentConv = id
     conversations.value = history.conversations
     localStorage.setItem('aigate-chat-history', JSON.stringify(history))
-  } catch {
+  }
+  catch {
     /* ignore */
   }
+}
+
+const activeRefByMessage = ref<Record<number, number | null>>({})
+
+function setActiveRef(messageIndex: number, refIndex: number) {
+  activeRefByMessage.value = { ...activeRefByMessage.value, [messageIndex]: refIndex }
+  nextTick(() => {
+    document.getElementById(`ref-${messageIndex}-${refIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  })
+}
+
+function toolStepLabel(step: { name?: string, status?: string }) {
+  const name = step.name || 'Tool'
+  const status = step.status || 'pending'
+  return `${name} · ${status}`
+}
+
+function toolStepContent(step: { message?: string }) {
+  return step.message || 'No details'
 }
 
 async function loadConversation(convId: string) {
@@ -221,7 +270,7 @@ function deleteConversation(convId: string, e: Event) {
   try {
     const saved = localStorage.getItem('aigate-chat-history')
     if (saved) {
-      const history = JSON.parse(saved) as { conversations: ChatConversation[]; currentConv: string | null }
+      const history = JSON.parse(saved) as { conversations: ChatConversation[], currentConv: string | null }
       history.conversations = history.conversations.filter(c => c.id !== convId)
       if (history.currentConv === convId) {
         history.currentConv = null
@@ -231,13 +280,15 @@ function deleteConversation(convId: string, e: Event) {
       localStorage.setItem('aigate-chat-history', JSON.stringify(history))
       conversations.value = history.conversations
     }
-  } catch {
+  }
+  catch {
     /* ignore */
   }
 }
 
 function exportConversation() {
-  if (messages.value.length === 0) return
+  if (messages.value.length === 0)
+    return
 
   let md = `# ${p('exportTitle')}\n\n`
   md += `**${p('exportTime')}**: ${new Date().toLocaleString()}\n`
@@ -378,6 +429,45 @@ function exportConversation() {
               <p class="text-xs opacity-60 mt-1">
                 {{ new Date(msg.time).toLocaleTimeString() }}
               </p>
+              <UAccordion
+                v-if="msg.toolSteps?.length"
+                class="mt-2"
+                :items="msg.toolSteps.map(step => ({
+                  label: toolStepLabel(step),
+                  icon: step.status === 'failed' ? 'lucide:triangle-alert' : 'lucide:wrench',
+                  content: toolStepContent(step),
+                }))"
+              />
+              <div v-if="msg.references?.length" class="mt-2 space-y-2">
+                <div class="flex flex-wrap items-center gap-1">
+                  <span class="text-xs opacity-70">Sources:</span>
+                  <button
+                    v-for="(ref, refIndex) in msg.references"
+                    :key="`badge-${i}-${refIndex}`"
+                    type="button"
+                    class="rounded bg-background/80 px-1.5 py-0.5 text-xs font-medium hover:bg-background"
+                    :class="activeRefByMessage[i] === refIndex ? 'ring-1 ring-primary' : ''"
+                    @click="setActiveRef(i, refIndex)"
+                  >
+                    [{{ refIndex + 1 }}]
+                  </button>
+                </div>
+                <div
+                  v-for="(ref, refIndex) in msg.references"
+                  :id="`ref-${i}-${refIndex}`"
+                  :key="refIndex"
+                  class="rounded bg-background/60 px-2 py-1 text-xs transition-colors"
+                  :class="activeRefByMessage[i] === refIndex ? 'ring-1 ring-primary' : ''"
+                >
+                  <div class="mb-1 flex items-center justify-between gap-2">
+                    <span class="font-medium">[{{ refIndex + 1 }}] {{ ref.knowledgeBaseName || 'Knowledge' }}</span>
+                    <span class="opacity-70">{{ ref.score ?? '' }}</span>
+                  </div>
+                  <p class="line-clamp-3 whitespace-pre-wrap opacity-80">
+                    {{ ref.content }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           <div v-if="sending" class="flex justify-start">

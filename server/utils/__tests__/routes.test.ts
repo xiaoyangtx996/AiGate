@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { apiRoutePolicy } from '../routes'
+import { apiRoutePolicy, normalizeApiRoutePath } from '../routes'
 
 describe('aPI Route Policy', () => {
+  describe('versioned routes', () => {
+    it('should normalize v1 aigate aliases to existing aigate paths', () => {
+      expect(normalizeApiRoutePath('/api/v1/aigate')).toBe('/api/aigate')
+      expect(normalizeApiRoutePath('/api/v1/aigate/channel')).toBe('/api/aigate/channel')
+      expect(normalizeApiRoutePath('/api/v1/aigate/channel/abc?x=1')).toBe('/api/aigate/channel/abc?x=1')
+      expect(normalizeApiRoutePath('/api/gateway/v1/chat/completions')).toBe('/api/gateway/v1/chat/completions')
+    })
+
+    it('should apply the same policy to v1 aigate aliases', () => {
+      expect(apiRoutePolicy.isAdminRoute('/api/v1/aigate/channel')).toBe(true)
+      expect(apiRoutePolicy.isAdminRoute('/api/v1/aigate/dashboard')).toBe(false)
+      expect(apiRoutePolicy.isPublicRoute('/api/v1/aigate/dashboard')).toBe(false)
+    })
+  })
+
   describe('admin Routes', () => {
     it('should identify admin routes', () => {
       expect(apiRoutePolicy.isAdminRoute('/api/aigate/organization')).toBe(true)

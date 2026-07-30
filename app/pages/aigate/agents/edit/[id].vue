@@ -8,11 +8,20 @@ interface AgentDetail {
   temperature?: number | null
   maxTokens?: number | null
   tags?: string[] | null
+  memoryEnabled?: boolean
+  mcpEnabled?: boolean
+  skillEnabled?: boolean
+  ragEnabled?: boolean
+  ragCallMode?: string
+  shortTermMemorySize?: number
+  knowledgeBaseIds?: string[]
+  toolIds?: string[]
+  skillIds?: string[]
 }
 
 const route = useRoute()
 const router = useRouter()
-const { getAgent, updateAgent } = useAigateApi()
+const { getAgent, updateAgent, getKnowledgeBaseList, getMcpToolList, getSkillList } = useAigateApi()
 const { successToast, errorToast } = useAppToast()
 const { t } = useI18n()
 const id = computed(() => route.params.id as string)
@@ -36,10 +45,31 @@ const form = reactive({
   temperature: 30,
   maxTokens: 4096,
   tags: [] as string[],
+  memoryEnabled: true,
+  shortTermMemorySize: 10,
+  ragEnabled: false,
+  ragCallMode: 'auto',
+  mcpEnabled: false,
+  skillEnabled: false,
+  knowledgeBaseIds: [] as string[],
+  toolIds: [] as string[],
+  skillIds: [] as string[],
 })
 
 const tagInput = ref('')
 const saving = ref(false)
+const { data: bindingOptions } = await useAsyncData('agent-edit-bindings', async () => {
+  const [kbRes, toolRes, skillRes] = await Promise.all([
+    getKnowledgeBaseList({ page: 1, pageSize: 100 }),
+    getMcpToolList({ page: 1, pageSize: 100 }),
+    getSkillList({ page: 1, pageSize: 100 }),
+  ])
+  return {
+    knowledgeBases: kbRes.data?.items || [],
+    tools: toolRes.data?.items || [],
+    skills: skillRes.data?.items || [],
+  }
+})
 
 watchEffect(() => {
   if (agent.value) {
@@ -50,6 +80,15 @@ watchEffect(() => {
     form.temperature = agent.value.temperature || 30
     form.maxTokens = agent.value.maxTokens || 4096
     form.tags = agent.value.tags || []
+    form.memoryEnabled = agent.value.memoryEnabled !== false
+    form.shortTermMemorySize = agent.value.shortTermMemorySize || 10
+    form.ragEnabled = agent.value.ragEnabled === true
+    form.ragCallMode = agent.value.ragCallMode || 'auto'
+    form.mcpEnabled = agent.value.mcpEnabled === true
+    form.skillEnabled = agent.value.skillEnabled === true
+    form.knowledgeBaseIds = agent.value.knowledgeBaseIds || []
+    form.toolIds = agent.value.toolIds || []
+    form.skillIds = agent.value.skillIds || []
   }
 })
 
@@ -65,16 +104,29 @@ function removeTag(tag: string) {
   form.tags = form.tags.filter(t => t !== tag)
 }
 
+function toggleSelection(list: string[], id: string, checked: boolean) {
+  if (checked && !list.includes(id))
+    list.push(id)
+  if (!checked) {
+    const index = list.indexOf(id)
+    if (index >= 0)
+      list.splice(index, 1)
+  }
+}
+
 async function handleSave() {
-  if (!form.name) return
+  if (!form.name)
+    return
   saving.value = true
   try {
     await updateAgent({ id: id.value, ...form })
     successToast(p('updateSuccess'))
     router.push('/aigate/agents')
-  } catch {
+  }
+  catch {
     errorToast(p('updateFail'))
-  } finally {
+  }
+  finally {
     saving.value = false
   }
 }
@@ -135,6 +187,64 @@ const models = [
           </div>
           <UInput v-model="tagInput" :placeholder="p('tagPlaceholder')" @keyup.enter="addTag" />
         </UFormField>
+
+        <div class="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
+          <UCheckbox v-model="form.memoryEnabled" label="Short-term memory" />
+          <UFormField label="Memory messages">
+            <UInput v-model.number="form.shortTermMemorySize" type="number" :min="1" :max="50" />
+          </UFormField>
+          <UCheckbox v-model="form.ragEnabled" label="RAG" />
+          <UFormField label="RAG mode">
+            <USelect
+              v-model="form.ragCallMode"
+              :items="[
+                { label: 'Auto', value: 'auto' },
+                { label: 'Force', value: 'force' },
+              ]"
+            />
+          </UFormField>
+          <UCheckbox v-model="form.mcpEnabled" label="MCP tools" />
+          <UCheckbox v-model="form.skillEnabled" label="Skills" />
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="space-y-2 rounded-md border p-3">
+            <p class="text-sm font-medium">
+              Knowledge Bases
+            </p>
+            <UCheckbox
+              v-for="kb in bindingOptions?.knowledgeBases || []"
+              :key="kb.id"
+              :model-value="form.knowledgeBaseIds.includes(kb.id)"
+              :label="kb.name"
+              @update:model-value="value => toggleSelection(form.knowledgeBaseIds, kb.id, Boolean(value))"
+            />
+          </div>
+          <div class="space-y-2 rounded-md border p-3">
+            <p class="text-sm font-medium">
+              MCP Tools
+            </p>
+            <UCheckbox
+              v-for="tool in bindingOptions?.tools || []"
+              :key="tool.id"
+              :model-value="form.toolIds.includes(tool.id)"
+              :label="tool.name"
+              @update:model-value="value => toggleSelection(form.toolIds, tool.id, Boolean(value))"
+            />
+          </div>
+          <div class="space-y-2 rounded-md border p-3">
+            <p class="text-sm font-medium">
+              Skills
+            </p>
+            <UCheckbox
+              v-for="skill in bindingOptions?.skills || []"
+              :key="skill.id"
+              :model-value="form.skillIds.includes(skill.id)"
+              :label="skill.name"
+              @update:model-value="value => toggleSelection(form.skillIds, skill.id, Boolean(value))"
+            />
+          </div>
+        </div>
       </div>
       <div v-else class="text-center py-8 text-muted">
         {{ p('notFound') }}

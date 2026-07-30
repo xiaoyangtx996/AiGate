@@ -8,12 +8,22 @@ import { createMockEvent } from './nitro-test-utils'
 
 const mockInsert = vi.fn()
 const mockDelete = vi.fn()
+const mockAssertTenantAccountLimit = vi.fn()
+const mockAuditLog = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
     insert: (...args: unknown[]) => mockInsert(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
   },
+}))
+
+vi.mock('#server/utils/tenant', () => ({
+  assertTenantAccountLimit: (...args: unknown[]) => mockAssertTenantAccountLimit(...args),
+}))
+
+vi.mock('#server/utils/audit-log', () => ({
+  auditLog: (...args: unknown[]) => mockAuditLog(...args),
 }))
 
 const memberBodySchema = z.object({
@@ -51,6 +61,8 @@ function createDeleteChain(result: unknown[]) {
 describe('aigate member handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAssertTenantAccountLimit.mockResolvedValue(undefined)
+    mockAuditLog.mockResolvedValue(undefined)
   })
 
   describe('member index.post', () => {
@@ -78,7 +90,28 @@ describe('aigate member handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
+      expect(mockAssertTenantAccountLimit).toHaveBeenCalledWith('org-1', 'user-1')
       expect(mockInsert).toHaveBeenCalledTimes(1)
+    })
+
+    it('should write audit log after creating member', async () => {
+      const created = { id: 'member-audit', userId: 'user-1', organizationId: 'org-1' }
+      mockInsert.mockReturnValue(createInsertChain([created]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'admin-1', organizationId: 'org-1' } },
+        body: { userId: 'user-1' },
+      })
+      const response = await memberPostHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'member.create',
+        { type: 'member', id: 'member-audit' },
+        null,
+        created,
+      )
     })
 
     it('should reject explicit organizationId outside non-admin principal organization', async () => {
@@ -106,6 +139,24 @@ describe('aigate member handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(created)
+      expect(mockAssertTenantAccountLimit).toHaveBeenCalledWith('org-2', 'user-2')
+    })
+
+    it('should reject member creation when tenant account limit is reached', async () => {
+      mockAssertTenantAccountLimit.mockRejectedValue(
+        Object.assign(new Error('Tenant account limit reached'), { statusCode: 403 }),
+      )
+
+      const response = await memberPostHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          body: { userId: 'user-3' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.FORBIDDEN)
+      expect(response.msg).toBe('Tenant account limit reached')
+      expect(mockInsert).not.toHaveBeenCalled()
     })
 
     it('should reject non-admin principals without organization context', async () => {
@@ -148,6 +199,26 @@ describe('aigate member handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(mockDelete).toHaveBeenCalledTimes(1)
+    })
+
+    it('should write audit log when deleting member', async () => {
+      const deleted = { id: 'member-audit', userId: 'user-1', organizationId: 'org-1' }
+      mockDelete.mockReturnValue(createDeleteChain([deleted]))
+
+      const event = createMockEvent({
+        context: { principal: { userId: 'admin-1', organizationId: 'org-1' } },
+        params: { id: 'member-audit' },
+      })
+      const response = await memberDeleteHandler(event)
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(mockAuditLog).toHaveBeenCalledWith(
+        event,
+        'member.delete',
+        { type: 'member', id: 'member-audit' },
+        deleted,
+        null,
+      )
     })
 
     it('should allow admin to delete member by id without organization context', async () => {

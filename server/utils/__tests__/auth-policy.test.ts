@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RESPONSE_CODE } from '@/enums'
-import { apiRoutePolicy, matchApiRoute } from '../routes'
+import { apiRoutePolicy, matchApiRoute, normalizeApiRoutePath } from '../routes'
 
 interface Principal {
   isAdmin: boolean
@@ -11,7 +11,9 @@ function resolveApiAccess(path: string, method: string, principal?: Principal) {
     return { action: 'skip' as const }
   }
 
-  if (apiRoutePolicy.isPublicRoute(path)) {
+  const policyPath = normalizeApiRoutePath(path)
+
+  if (apiRoutePolicy.isPublicRoute(policyPath)) {
     return { action: 'allow' as const, reason: 'public' }
   }
 
@@ -19,11 +21,11 @@ function resolveApiAccess(path: string, method: string, principal?: Principal) {
     return { action: 'unauthorized' as const }
   }
 
-  if (apiRoutePolicy.isAuthenticatedRoute(path, method)) {
+  if (apiRoutePolicy.isAuthenticatedRoute(policyPath, method)) {
     return { action: 'allow' as const, reason: 'authenticated' }
   }
 
-  if (apiRoutePolicy.isAdminRoute(path) && !principal.isAdmin) {
+  if (apiRoutePolicy.isAdminRoute(policyPath) && !principal.isAdmin) {
     return {
       action: 'forbidden' as const,
       code: RESPONSE_CODE.FORBIDDEN,
@@ -126,6 +128,18 @@ describe('auth route policy', () => {
       expect(resolveApiAccess('/api/aigate/dashboard', 'GET', { isAdmin: false })).toEqual({
         action: 'allow',
         reason: 'default',
+      })
+    })
+
+    it('should apply existing auth policy to v1 aigate aliases', () => {
+      expect(resolveApiAccess('/api/v1/aigate/dashboard', 'GET')).toEqual({ action: 'unauthorized' })
+      expect(resolveApiAccess('/api/v1/aigate/dashboard', 'GET', { isAdmin: false })).toEqual({
+        action: 'allow',
+        reason: 'default',
+      })
+      expect(resolveApiAccess('/api/v1/aigate/channel', 'GET', { isAdmin: false })).toMatchObject({
+        action: 'forbidden',
+        code: RESPONSE_CODE.FORBIDDEN,
       })
     })
   })

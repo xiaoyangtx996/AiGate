@@ -1,11 +1,13 @@
+import { normalizeMcpToolPayload, toPublicMcpTool } from '#server/utils/mcp-tool-config'
+import { auditLog } from '#server/utils/audit-log'
 import { db } from '@/db/drizzle'
 import { insertMcpToolSchema, mcpTool } from '@/db/schema'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
-    const principal = event.context.principal as { isAdmin?: boolean; organizationId?: string | null } | undefined
+    const principal = event.context.principal as { isAdmin?: boolean, organizationId?: string | null } | undefined
     const body = await readBody(event)
-    const parsed = insertMcpToolSchema.parse(body)
+    const parsed = insertMcpToolSchema.parse(normalizeMcpToolPayload(body))
     if (!principal?.isAdmin && !principal?.organizationId) {
       return responseError(null, '当前账号缺少组织上下文', { statusCode: 403 })
     }
@@ -20,8 +22,10 @@ export default defineEventHandler(async event => {
         ...(principal?.organizationId && !parsed.organizationId ? { organizationId: principal.organizationId } : {}),
       })
       .returning()
-    return responseSuccess(res)
-  } catch (err) {
+    await auditLog(event, 'mcp_tool.create', { type: 'mcp_tool', id: res?.id }, null, res)
+    return responseSuccess(toPublicMcpTool(res))
+  }
+  catch (err) {
     return responseError(err)
   }
 })

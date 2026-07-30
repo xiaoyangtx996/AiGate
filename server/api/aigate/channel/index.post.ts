@@ -1,7 +1,9 @@
+import { auditLog } from '#server/utils/audit-log'
+import { encryptCredential } from '#server/utils/credential-crypto'
 import { db } from '@/db/drizzle'
-import { channel, insertChannelSchema } from '@/db/schema'
+import { channel, channelCredential, insertChannelSchema } from '@/db/schema'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as { isAdmin?: boolean } | undefined
     if (!principal?.isAdmin) {
@@ -9,10 +11,30 @@ export default defineEventHandler(async event => {
     }
 
     const body = await readBody(event)
+    const apiKey = typeof body?.apiKey === 'string' ? body.apiKey : undefined
     const parsed = insertChannelSchema.parse(body)
-    const [res] = await db.insert(channel).values(parsed).returning()
+    const { apiKey: _ignoredApiKey, ...channelValues } = parsed as typeof parsed & { apiKey?: string }
+    const res = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(channel).values(channelValues).returning()
+      if (!created)
+        throw createError({ statusCode: 500, statusMessage: '渠道创建失败' })
+
+      if (apiKey) {
+        await tx.insert(channelCredential).values({
+          channelId: created.id,
+          name: '主凭证',
+          apiKey: encryptCredential(apiKey),
+          status: 'active',
+          sort: 0,
+        })
+      }
+
+      return created
+    })
+    await auditLog(event, 'channel.create', { type: 'channel', id: res.id }, null, res)
     return responseSuccess(res)
-  } catch (err) {
+  }
+  catch (err) {
     return responseError(err)
   }
 })

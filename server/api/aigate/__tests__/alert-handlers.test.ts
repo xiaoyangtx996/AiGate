@@ -18,6 +18,8 @@ vi.mock('@/db/schema', () => ({
     organizationId: 'organizationId',
     title: 'title',
     message: 'message',
+    status: 'status',
+    read: 'read',
     createdAt: 'createdAt',
   },
 }))
@@ -134,6 +136,45 @@ describe('aigate alert handlers', () => {
         page: 1,
         pageSize: 10,
       })
+    })
+
+    it('should accept category and status filters', async () => {
+      const items = [{ id: 'alert-3', title: 'Key expiring soon', read: false, status: 'open' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await alertListHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          query: { page: '1', pageSize: '10', category: 'quota', status: 'unread' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data).toEqual({
+        items,
+        total: 1,
+        page: 1,
+        pageSize: 10,
+      })
+    })
+
+    it('should accept resolved status filter', async () => {
+      const items = [{ id: 'alert-4', title: 'Resolved alert', read: true, status: 'resolved' }]
+      mockSelect
+        .mockReturnValueOnce(createCountSelectChain([{ total: 1 }]))
+        .mockReturnValueOnce(createListSelectChain(items))
+
+      const response = await alertListHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          query: { page: '1', pageSize: '10', status: 'resolved' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(response.data.items).toEqual(items)
     })
 
     it('should return empty paginated result when no alerts match', async () => {

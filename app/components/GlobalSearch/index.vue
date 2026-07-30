@@ -3,10 +3,13 @@ import type { CommandPaletteGroup, CommandPaletteItem } from '@nuxt/ui'
 
 interface SearchResult {
   id: string
+  title?: string
   name: string
+  subtitle?: string | null
   description?: string | null
   type: string
-  url: string
+  route?: string
+  url?: string
 }
 
 const props = defineProps<{
@@ -21,15 +24,30 @@ const results = ref<SearchResult[]>([])
 const loading = ref(false)
 
 const typeIcons: Record<string, string> = {
-  Agent: 'lucide:bot',
-  Prompt: 'lucide:file-text',
-  Channel: 'lucide:server',
+  'User': 'lucide:user',
+  'Organization': 'lucide:building-2',
+  'API Key': 'lucide:key',
+  'Agent': 'lucide:bot',
+  'Prompt': 'lucide:file-text',
+  'Channel': 'lucide:server',
+  'Knowledge Base': 'lucide:database',
   'MCP Tool': 'lucide:wrench',
+}
+
+const typeLabels: Record<string, string> = {
+  'User': 'Users',
+  'Organization': 'Organizations',
+  'API Key': 'API Keys',
+  'Agent': 'Agents',
+  'Prompt': 'Prompts',
+  'Channel': 'Channels',
+  'Knowledge Base': 'Knowledge Bases',
+  'MCP Tool': 'MCP Tools',
 }
 
 let timeout: ReturnType<typeof setTimeout> | undefined
 
-watch(searchQuery, newQuery => {
+watch(searchQuery, (newQuery) => {
   clearTimeout(timeout)
   if (newQuery.length < 2) {
     results.value = []
@@ -41,7 +59,8 @@ watch(searchQuery, newQuery => {
     try {
       const res = await globalSearch(newQuery)
       results.value = (res.data as SearchResult[]) || []
-    } finally {
+    }
+    finally {
       loading.value = false
     }
   }, 300)
@@ -57,22 +76,37 @@ function onSelect() {
   close()
 }
 
+function createSearchItem(r: SearchResult): CommandPaletteItem {
+  const title = r.title || r.name
+  const subtitle = r.subtitle ?? r.description
+  return {
+    id: `${r.type}-${r.id}`,
+    label: title,
+    description: subtitle ? `${r.type} - ${subtitle}` : r.type,
+    icon: typeIcons[r.type] || 'lucide:search',
+    onSelect: () => navigateTo(r.route || r.url || '/'),
+  }
+}
+
 const groups = computed(() => {
   const paletteGroups: CommandPaletteGroup<CommandPaletteItem>[] = [...(props.menuGroups || [])]
 
   if (searchQuery.value.length >= 2) {
-    paletteGroups.unshift({
-      id: 'results',
-      label: t('components.globalSearch.results'),
-      ignoreFilter: true,
-      items: results.value.map(r => ({
-        id: `${r.type}-${r.id}`,
-        label: r.name,
-        description: r.description ? `${r.type} · ${r.description}` : r.type,
-        icon: typeIcons[r.type] || 'lucide:search',
-        onSelect: () => navigateTo(r.url),
+    const groupedResults = results.value.reduce<Record<string, SearchResult[]>>((acc, item) => {
+      if (!acc[item.type])
+        acc[item.type] = []
+      acc[item.type]!.push(item)
+      return acc
+    }, {})
+
+    paletteGroups.unshift(
+      ...Object.entries(groupedResults).map(([type, items]) => ({
+        id: `results-${type}`,
+        label: typeLabels[type] || type || t('components.globalSearch.results'),
+        ignoreFilter: true,
+        items: items.map(createSearchItem),
       })),
-    })
+    )
   }
 
   return paletteGroups
@@ -80,6 +114,12 @@ const groups = computed(() => {
 
 defineShortcuts({
   meta_k: {
+    usingInput: true,
+    handler: () => {
+      isOpen.value = !isOpen.value
+    },
+  },
+  ctrl_k: {
     usingInput: true,
     handler: () => {
       isOpen.value = !isOpen.value

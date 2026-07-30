@@ -10,6 +10,7 @@ import { createMockEvent } from './nitro-test-utils'
 
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
+const mockAuditLog = vi.fn()
 
 const insertPromptBodySchema = z.object({
   name: z.string().min(1),
@@ -56,6 +57,10 @@ vi.mock('@/db/schema', () => ({
   insertPromptSchema: {
     parse: (body: unknown) => insertPromptBodySchema.parse(body),
   },
+}))
+
+vi.mock('#server/utils/audit-log', () => ({
+  auditLog: (...args: unknown[]) => mockAuditLog(...args),
 }))
 
 interface OrgRow {
@@ -120,6 +125,7 @@ describe('aigate misc handlers', () => {
 
       const response = await promptPostHandler(
         createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
           body: { name: 'Onboarding', content: 'Hello {{name}}' },
         }),
       )
@@ -167,7 +173,7 @@ describe('aigate misc handlers', () => {
 
       const response = await promptPostHandler(
         createMockEvent({
-          context: { principal: { organizationId: 'org-principal' } },
+          context: { principal: { isAdmin: true } },
           body: { name: 'Explicit org', content: 'Body', organizationId: 'org-explicit' },
         }),
       )
@@ -192,6 +198,7 @@ describe('aigate misc handlers', () => {
 
       const response = await promptPostHandler(
         createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
           body: {
             name: 'Rich prompt',
             content: 'Hi {{user}}',

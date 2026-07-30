@@ -55,7 +55,8 @@ async function handleDelete(id: string) {
   })
   if (confirmed) {
     successToast(i18nCommon('deleteSuccess'))
-    if (selectedKb.value?.id === id) selectedKb.value = null
+    if (selectedKb.value?.id === id)
+      selectedKb.value = null
     refresh()
   }
 }
@@ -85,15 +86,18 @@ async function selectKb(kb: KnowledgeBaseRow) {
   try {
     const res = await getKbDocuments(kb.id)
     documents.value = (res.data || []) as KbDocument[]
-  } catch {
+  }
+  catch {
     documents.value = []
-  } finally {
+  }
+  finally {
     docsLoading.value = false
   }
 }
 
 async function handleCreate() {
-  if (!createForm.name) return
+  if (!createForm.name)
+    return
   createLoading.value = true
   try {
     await insertKnowledgeBase(createForm)
@@ -102,13 +106,15 @@ async function handleCreate() {
     createForm.name = ''
     createForm.description = ''
     refresh()
-  } finally {
+  }
+  finally {
     createLoading.value = false
   }
 }
 
 function handleEdit() {
-  if (!selectedKb.value) return
+  if (!selectedKb.value)
+    return
   editForm.name = selectedKb.value.name || ''
   editForm.description = selectedKb.value.description || ''
   editForm.embeddingModel = selectedKb.value.embeddingModel || 'text-embedding-3-small'
@@ -116,7 +122,8 @@ function handleEdit() {
 }
 
 async function handleUpdate() {
-  if (!selectedKb.value || !editForm.name) return
+  if (!selectedKb.value || !editForm.name)
+    return
   editLoading.value = true
   try {
     await updateKnowledgeBase({ id: selectedKb.value.id, ...editForm })
@@ -124,13 +131,14 @@ async function handleUpdate() {
     selectedKb.value = { ...selectedKb.value, ...editForm }
     showEdit.value = false
     refresh()
-  } finally {
+  }
+  finally {
     editLoading.value = false
   }
 }
 
 const uploading = ref(false)
-const uploadQueue = ref<Array<{ name: string; progress: number }>>([])
+const uploadQueue = ref<Array<{ name: string, progress: number }>>([])
 const fileInput = ref<HTMLInputElement>()
 
 function triggerFileUpload() {
@@ -141,7 +149,8 @@ async function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const files = Array.from(target.files || [])
 
-  if (!selectedKb.value || files.length === 0) return
+  if (!selectedKb.value || files.length === 0)
+    return
 
   uploading.value = true
   uploadQueue.value = files.map(f => ({ name: f.name, progress: 0 }))
@@ -150,7 +159,8 @@ async function handleFileSelect(event: Event) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const queueItem = uploadQueue.value[i]
-      if (!file || !queueItem) continue
+      if (!file || !queueItem)
+        continue
 
       const formData = new FormData()
       formData.append('file', file)
@@ -166,17 +176,21 @@ async function handleFileSelect(event: Event) {
 
     successToast(p('uploadSuccess', { count: files.length }))
     selectKb(selectedKb.value)
-  } catch {
+  }
+  catch {
     errorToast(p('uploadFail'))
-  } finally {
+  }
+  finally {
     uploading.value = false
     uploadQueue.value = []
-    if (fileInput.value) fileInput.value.value = ''
+    if (fileInput.value)
+      fileInput.value.value = ''
   }
 }
 
 async function handleDeleteDoc(docId: string) {
-  if (!selectedKb.value) return
+  if (!selectedKb.value)
+    return
   const kb = selectedKb.value
   const confirmed = await confirm({
     title: i18nCommon('confirmDeleteTitle'),
@@ -232,6 +246,11 @@ async function handleDeleteDoc(docId: string) {
           <UBadge :color="statusColor[kb.status] || 'neutral'" variant="subtle" size="xs">
             {{ kb.status }}
           </UBadge>
+        </div>
+        <div class="mt-3 flex justify-end">
+          <UButton size="xs" variant="ghost" icon="lucide:external-link" :to="`/aigate/knowledge-base/${kb.id}`" @click.stop>
+            Detail
+          </UButton>
         </div>
       </UCard>
     </div>
@@ -298,7 +317,7 @@ async function handleDeleteDoc(docId: string) {
                 accept=".pdf,.txt,.md,.json"
                 class="hidden"
                 @change="handleFileSelect"
-              />
+              >
             </div>
           </template>
 

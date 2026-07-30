@@ -1,5 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
 import pg from 'pg'
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@xiaoyangtx.icu'
@@ -28,27 +27,33 @@ if (!rows.length) {
 
 const user = rows[0]
 
-await pool.query('UPDATE "user" SET role = $1, updated_at = NOW() WHERE id = $2', ['admin', user.id])
-
-const envPath = resolve(process.cwd(), '.env')
-let envText = readFileSync(envPath, 'utf8')
-const key = 'BETTER_AUTH_ADMIN_USER_IDS'
-const line = `${key}=${user.id}`
-
-if (new RegExp(`^${key}=`, 'm').test(envText)) {
-  envText = envText.replace(new RegExp(`^${key}=.*$`, 'm'), line)
-}
-else {
-  envText = envText.replace(
-    /(# Better Auth\r?\n)/,
-    `$1${line}\n`,
+await pool.query('BEGIN')
+try {
+  await pool.query('UPDATE "user" SET role = $1, updated_at = NOW() WHERE id = $2', ['admin', user.id])
+  await pool.query(
+    `
+    INSERT INTO role (id, name, code, description, enabled, sort, created_at, updated_at)
+    VALUES ('role-super-admin', 'Super Admin', 'super_admin', 'Built-in database super administrator', true, -100, NOW(), NOW())
+    ON CONFLICT (code) DO UPDATE
+      SET enabled = true, updated_at = NOW()
+    `,
   )
-  if (!envText.includes(line)) {
-    envText += `\n${line}\n`
-  }
+  await pool.query(
+    `
+    INSERT INTO user_role (user_id, role_id, created_at)
+    SELECT $1, id, NOW()
+    FROM role
+    WHERE code = 'super_admin'
+    ON CONFLICT DO NOTHING
+    `,
+    [user.id],
+  )
+  await pool.query('COMMIT')
 }
-
-writeFileSync(envPath, envText, 'utf8')
+catch (error) {
+  await pool.query('ROLLBACK')
+  throw error
+}
 
 const { rows: after } = await pool.query(
   'SELECT id, email, name, role FROM "user" WHERE id = $1',
@@ -57,7 +62,7 @@ const { rows: after } = await pool.query(
 
 console.log('Promoted to admin:')
 console.table(after)
-console.log(`Updated ${envPath}: ${key}=${user.id}`)
+console.log('Assigned DB role: super_admin')
 console.log('Restart dev server and sign in again for changes to take effect.')
 
 await pool.end()

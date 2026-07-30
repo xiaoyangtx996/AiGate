@@ -15,7 +15,7 @@ vi.mock('@/db/drizzle', () => ({
 }))
 
 vi.mock('@/db/schema', () => ({
-  alert: { id: 'id', organizationId: 'organizationId', read: 'read' },
+  alert: { id: 'id', organizationId: 'organizationId', read: 'read', status: 'status' },
   alertRule: {
     id: 'id',
     organizationId: 'organizationId',
@@ -70,7 +70,7 @@ describe('aigate alert extended handlers', () => {
     })
 
     it('should mark alert as read scoped to organization', async () => {
-      const updated = { id: 'alert-1', read: true, organizationId: 'org-1' }
+      const updated = { id: 'alert-1', read: true, status: 'acknowledged', organizationId: 'org-1' }
       const chain = createUpdateChain([updated])
       mockUpdate.mockReturnValue(chain)
 
@@ -83,12 +83,12 @@ describe('aigate alert extended handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(updated)
-      expect(chain.set).toHaveBeenCalledWith({ read: true })
+      expect(chain.set).toHaveBeenCalledWith({ read: true, status: 'acknowledged' })
       expect(mockUpdate).toHaveBeenCalledTimes(1)
     })
 
     it('should mark alert as read without organization scoping', async () => {
-      const updated = { id: 'alert-2', read: true, organizationId: null }
+      const updated = { id: 'alert-2', read: true, status: 'acknowledged', organizationId: null }
       const chain = createUpdateChain([updated])
       mockUpdate.mockReturnValue(chain)
 
@@ -100,11 +100,11 @@ describe('aigate alert extended handlers', () => {
 
       expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
       expect(response.data).toEqual(updated)
-      expect(chain.set).toHaveBeenCalledWith({ read: true })
+      expect(chain.set).toHaveBeenCalledWith({ read: true, status: 'acknowledged' })
     })
 
-    it('should always set read to true regardless of request body', async () => {
-      const updated = { id: 'alert-3', read: true }
+    it('should ignore unsupported request body fields', async () => {
+      const updated = { id: 'alert-3', read: true, status: 'acknowledged' }
       const chain = createUpdateChain([updated])
       mockUpdate.mockReturnValue(chain)
 
@@ -116,7 +116,41 @@ describe('aigate alert extended handlers', () => {
         }),
       )
 
-      expect(chain.set).toHaveBeenCalledWith({ read: true })
+      expect(chain.set).toHaveBeenCalledWith({ read: true, status: 'acknowledged' })
+    })
+
+    it('should resolve alert when status is resolved', async () => {
+      const updated = { id: 'alert-4', read: true, status: 'resolved' }
+      const chain = createUpdateChain([updated])
+      mockUpdate.mockReturnValue(chain)
+
+      const response = await alertPutHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          params: { id: 'alert-4' },
+          body: { status: 'resolved' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.set).toHaveBeenCalledWith({ read: true, status: 'resolved' })
+    })
+
+    it('should reopen alert when status is open', async () => {
+      const updated = { id: 'alert-5', read: false, status: 'open' }
+      const chain = createUpdateChain([updated])
+      mockUpdate.mockReturnValue(chain)
+
+      const response = await alertPutHandler(
+        createMockEvent({
+          context: { principal: { organizationId: 'org-1' } },
+          params: { id: 'alert-5' },
+          body: { status: 'open' },
+        }),
+      )
+
+      expect(response.code).toBe(RESPONSE_CODE.SUCCESS)
+      expect(chain.set).toHaveBeenCalledWith({ read: false, status: 'open' })
     })
   })
 

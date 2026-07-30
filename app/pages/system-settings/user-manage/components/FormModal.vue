@@ -27,7 +27,7 @@ const modelValue = defineModel<boolean>({ required: true })
 // 初始表单状态
 const INITIAL_STATE = Object.freeze<UserFormSchema>({
   name: '',
-  email: '',
+  username: '',
   password: '',
   role: undefined,
 })
@@ -36,7 +36,7 @@ const initialState = computed<UserFormSchema>(() => ({
   ...INITIAL_STATE,
   ...(props.data
     ? ({
-        ...pick(props.data, ['name', 'email', 'displayUsername']),
+        ...pick(props.data, ['name', 'username', 'displayUsername']),
         role: props.data?.role ? props.data.role.split(',') : undefined,
       } as UserFormSchema)
     : {}),

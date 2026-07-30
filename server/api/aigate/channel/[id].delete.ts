@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { auditLog } from '#server/utils/audit-log'
 import { db } from '@/db/drizzle'
 import { channel } from '@/db/schema'
 
@@ -10,12 +11,15 @@ export default defineEventHandler(async event => {
     }
 
     const id = getRouterParam(event, 'id')
+    const [before] = await db.select().from(channel).where(eq(channel.id, id!))
     const [res] = await db.delete(channel).where(eq(channel.id, id!)).returning()
     if (!res) {
       return responseError(null, '资源不存在或无权操作', { statusCode: 404 })
     }
+    await auditLog(event, 'channel.delete', { type: 'channel', id }, before ?? null, null)
     return responseSuccess(null)
-  } catch (err) {
+  }
+  catch (err) {
     return responseError(err)
   }
 })

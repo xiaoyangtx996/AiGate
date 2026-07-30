@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const { getMcpToolList, insertMcpTool, updateMcpTool, delMcpTool, testMcpTool } = useAigateApi()
+import McpRegisterDrawer from './components/McpRegisterDrawer.vue'
+
+import AgentCardSkeleton from '~/components/AgentCardSkeleton.vue'
+
+const { getMcpToolList, updateMcpTool, delMcpTool, testMcpTool } = useAigateApi()
 const { successToast } = useAppToast()
 const { t } = useI18n()
 const { i18nCommon } = useMessage()
@@ -40,7 +44,8 @@ interface McpToolRow {
   usageCount?: number
 }
 
-const open = ref(false)
+const registerOpen = ref(false)
+const editOpen = ref(false)
 const editData = ref<McpToolRow | null>(null)
 const saveLoading = ref(false)
 
@@ -53,13 +58,7 @@ const form = reactive({
 })
 
 function handleAdd() {
-  editData.value = null
-  form.name = ''
-  form.description = ''
-  form.type = 'sse'
-  form.endpoint = ''
-  form.status = 'enabled'
-  open.value = true
+  registerOpen.value = true
 }
 
 function handleEdit(row: McpToolRow) {
@@ -69,7 +68,7 @@ function handleEdit(row: McpToolRow) {
   form.type = row.type || 'sse'
   form.endpoint = row.endpoint || ''
   form.status = row.status || 'enabled'
-  open.value = true
+  editOpen.value = true
 }
 
 async function handleDelete(id: string) {
@@ -90,18 +89,16 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.name) return
+  if (!editData.value?.id || !form.name)
+    return
   saveLoading.value = true
   try {
-    if (editData.value?.id) {
-      await updateMcpTool({ ...form, id: editData.value.id })
-    } else {
-      await insertMcpTool(form)
-    }
+    await updateMcpTool({ ...form, id: editData.value.id })
     successToast()
-    open.value = false
+    editOpen.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -123,7 +120,8 @@ async function handleTest(tool: McpToolRow) {
         : p('testFail', { error: res.data?.error || t('common.requestError') }),
     )
     refresh()
-  } finally {
+  }
+  finally {
     testingId.value = null
   }
 }
@@ -176,9 +174,10 @@ async function handleTest(tool: McpToolRow) {
           <span class="text-muted">{{ (tool.usageCount || 0).toLocaleString() }} {{ p('calls') }}</span>
         </div>
         <div class="flex gap-2 mt-3">
-          <UButton v-permission="'EDIT'" size="xs" variant="outline" class="flex-1" @click="handleEdit(tool)">
-            {{ p('config') }}
+          <UButton size="xs" variant="outline" class="flex-1" :to="`/aigate/mcp-tools/${tool.id}`">
+            详情
           </UButton>
+          <UButton v-permission="'EDIT'" size="xs" variant="outline" icon="lucide:edit" @click="handleEdit(tool)" />
           <UButton
             v-permission="'EDIT'"
             size="xs"
@@ -203,10 +202,12 @@ async function handleTest(tool: McpToolRow) {
       <UPagination v-model:page="page" :items-per-page="pageSize" :total="total" />
     </div>
 
-    <UModal v-model:open="open">
+    <McpRegisterDrawer v-model:open="registerOpen" @success="refresh" />
+
+    <UModal v-model:open="editOpen">
       <template #header>
         <h3 class="text-lg font-bold">
-          {{ editData ? $t('common.save') : p('add') }}
+          {{ $t('common.save') }}
         </h3>
       </template>
       <template #body>
@@ -243,7 +244,7 @@ async function handleTest(tool: McpToolRow) {
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="open = false">
+          <UButton variant="ghost" @click="editOpen = false">
             {{ $t('common.cancel') }}
           </UButton>
           <UButton

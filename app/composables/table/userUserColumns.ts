@@ -9,8 +9,9 @@ export function userUserColumns(options: {
   onDelete: (id: string) => void
   onBan: (row: User) => void
   onResetPassword: (id: string) => void
+  onOffboard?: (row: User) => void
 }) {
-  const { onViewSessions, onEdit, onDelete, onBan, onResetPassword } = options
+  const { onViewSessions, onEdit, onDelete, onBan, onResetPassword, onOffboard } = options
   const { i18nUser, i18nCommon, i18nPermissions } = useMessage()
   const { createCreatedAtColumn, getHeader } = useTableColumns()
   const { getUserDisplayName } = useCurrentUser()
@@ -64,8 +65,7 @@ export function userUserColumns(options: {
       cell: ({ row }) => {
         const val = row.getValue('emailVerified')
         return h(UBadge, { variant: 'soft', color: val ? 'success' : 'error' }, () =>
-          i18nUser(`emailVerified${val ? 'Yes' : 'No'}`),
-        )
+          i18nUser(`emailVerified${val ? 'Yes' : 'No'}`))
       },
     },
     {
@@ -96,12 +96,10 @@ export function userUserColumns(options: {
         const val = row.original.banExpires
         const banned = row.original.banned
 
-        // 未封禁
         if (!banned) {
           return '-'
         }
 
-        // 永久封禁
         if (!val) {
           return h(UBadge, { variant: 'soft', color: 'error' }, () => i18nUser('permanentBan'))
         }
@@ -109,15 +107,12 @@ export function userUserColumns(options: {
         const now = dayjs()
         const expires = dayjs(val)
         const isActiveBan = expires.isAfter(now)
-
         const abs = expires.format('YYYY-MM-DD HH:mm')
 
-        // 已过期（已解除封禁）
         if (!isActiveBan) {
           return h(UBadge, { variant: 'soft', color: 'success' }, () => i18nUser('unbanned'))
         }
 
-        // 正在封禁中
         return h(
           UTooltip,
           {
@@ -145,8 +140,8 @@ export function userUserColumns(options: {
         return h(
           UDropdownMenu,
           {
-            arrow: true,
-            items: [
+            'arrow': true,
+            'items': [
               {
                 label: i18nPermissions(PERMISSIONS.label(PERMISSIONS.VIEW_SESSIONS)),
                 icon: PERMISSIONS.raw(PERMISSIONS.VIEW_SESSIONS).icon,
@@ -181,6 +176,14 @@ export function userUserColumns(options: {
                 },
               },
               {
+                label: 'Offboard',
+                icon: 'lucide:workflow',
+                color: 'warning',
+                onSelect() {
+                  onOffboard?.(row.original)
+                },
+              },
+              {
                 label: i18nPermissions(PERMISSIONS.label(PERMISSIONS.DELETE)),
                 icon: PERMISSIONS.raw(PERMISSIONS.DELETE).icon,
                 color: 'error',
@@ -193,9 +196,9 @@ export function userUserColumns(options: {
           },
           () =>
             h(UButton, {
-              icon: 'i-lucide-ellipsis',
-              color: 'neutral',
-              variant: 'ghost',
+              'icon': 'i-lucide-ellipsis',
+              'color': 'neutral',
+              'variant': 'ghost',
               'aria-label': 'Actions dropdown',
             }),
         )

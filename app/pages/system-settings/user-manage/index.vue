@@ -9,12 +9,14 @@ import ResetPasswordModal from './components/ResetPasswordModal.vue'
 import SessionsModal from './components/SessionsModal.vue'
 
 const { initialPagination, pageSizeOptions } = usePagination()
-const { getUserList } = useSystemApi()
+const { getUserList, importUsers, offboardUser } = useSystemApi()
 const { $authClient } = useNuxtApp()
 const { i18nCommon } = useMessage()
 const confirm = useConfirmDialog()
 const { successToast, errorToast } = useAppToast()
 const { unbanUser } = useAuthActions()
+
+const csvLineBreakPattern = /\r?\n/
 
 const table = useTemplateRef('table')
 const pagination = computed<PaginationState>(() => table.value?.tableApi?.getState().pagination ?? initialPagination)
@@ -26,6 +28,22 @@ const formKey = ref(0)
 const banUserId = ref<string | null>(null)
 const resetPasswordUserId = ref<string | null>(null)
 const viewSessionsUserId = ref<string | null>(null)
+const importInput = ref<HTMLInputElement | null>(null)
+const importOpen = ref(false)
+const importResults = ref<Array<{ row: number, username?: string, ok: boolean, reason?: string }>>([])
+const offboardOpen = ref(false)
+const offboardTarget = ref<User | null>(null)
+const offboardLoading = ref(false)
+const offboardForm = reactive({
+  confirmText: '',
+  reason: 'offboarded',
+  banUser: true,
+  revokeApiKeys: true,
+  removeMembers: true,
+  transferAgents: false,
+  transferKnowledgeBases: false,
+  transferToUserId: '',
+})
 
 // 查询参数
 const query = reactive<Pick<UserQueryParams, 'keyword'>>({
@@ -73,7 +91,8 @@ function handleAdd() {
 async function handleBanUser(row: User) {
   if (row.banned) {
     await unbanUser(row.id, refresh)
-  } else {
+  }
+  else {
     banUserId.value = row.id
     formKey.value++
   }
@@ -105,20 +124,77 @@ async function handleDelete(id: string) {
 }
 
 const { columns } = userUserColumns({
-  onViewSessions: id => {
+  onViewSessions: (id) => {
     viewSessionsUserId.value = id
   },
-  onEdit: row => {
+  onEdit: (row) => {
     editData.value = row
     open.value = true
   },
   onBan: handleBanUser,
   onDelete: handleDelete,
-  onResetPassword: id => {
+  onResetPassword: (id) => {
     resetPasswordUserId.value = id
     formKey.value++
   },
+  onOffboard: (row) => {
+    offboardTarget.value = row
+    offboardForm.confirmText = ''
+    offboardForm.transferAgents = false
+    offboardForm.transferKnowledgeBases = false
+    offboardForm.transferToUserId = ''
+    offboardOpen.value = true
+  },
 })
+
+function parseCsv(text: string) {
+  const lines = text.split(csvLineBreakPattern).map(line => line.trim()).filter(Boolean)
+  const [headerLine, ...rows] = lines
+  const headers = (headerLine || '').split(',').map(item => item.trim())
+  return rows.map((line, index) => {
+    const values = line.split(',').map(item => item.trim())
+    return headers.reduce<Record<string, string>>((acc, key, valueIndex) => {
+      acc[key] = values[valueIndex] || ''
+      acc.row = String(index + 2)
+      return acc
+    }, {})
+  })
+}
+
+async function handleImportFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file)
+    return
+  const rows = parseCsv(await file.text())
+  try {
+    const res = await importUsers(rows)
+    importResults.value = res.data?.results || []
+    importOpen.value = true
+    refresh()
+  }
+  catch (error) {
+    errorToast(error instanceof Error ? error.message : i18nCommon('actionFailed'))
+  }
+  finally {
+    if (importInput.value)
+      importInput.value.value = ''
+  }
+}
+
+async function executeOffboard() {
+  if (!offboardTarget.value)
+    return
+  offboardLoading.value = true
+  try {
+    await offboardUser(offboardTarget.value.id, { ...offboardForm })
+    successToast()
+    offboardOpen.value = false
+    refresh()
+  }
+  finally {
+    offboardLoading.value = false
+  }
+}
 
 // 表单提交
 async function handleSubmit(values: SubmitForm) {
@@ -132,11 +208,14 @@ async function handleSubmit(values: SubmitForm) {
       if (error) {
         return errorToast(error.message)
       }
-    } else {
-      const { displayUsername, ...formData } = values
+    }
+    else {
+      const { displayUsername, username, ...formData } = values
       const { error } = await $authClient.admin.createUser({
         ...formData,
+        email: `${username}@aigate.local`,
         data: {
+          username,
           displayUsername,
         },
       })
@@ -147,9 +226,11 @@ async function handleSubmit(values: SubmitForm) {
     successToast()
     open.value = false
     refresh()
-  } catch (error) {
+  }
+  catch (error) {
     errorToast(error instanceof Error ? error.message : i18nCommon('actionFailed'))
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }
@@ -162,7 +243,7 @@ watch(
   { deep: true },
 )
 
-watch(open, val => {
+watch(open, (val) => {
   if (!val) {
     editData.value = null
   }
@@ -172,8 +253,17 @@ watch(open, val => {
 <template>
   <div class="space-y-4">
     <ClientOnly>
-      <HeaderContent v-if="table?.tableApi" v-model="query" :refresh :handle-add :loading :table="table?.tableApi" />
+      <HeaderContent
+        v-if="table?.tableApi"
+        v-model="query"
+        :refresh
+        :handle-add
+        :handle-import="() => importInput?.click()"
+        :loading
+        :table="table?.tableApi"
+      />
     </ClientOnly>
+    <input ref="importInput" type="file" accept=".csv" class="hidden" @change="handleImportFile">
     <UTable
       ref="table"
       v-model:column-visibility="columnVisibility"
@@ -214,5 +304,67 @@ watch(open, val => {
     <BanUserFormModal v-model:user-id="banUserId" :form-key :refresh />
     <ResetPasswordModal v-model:user-id="resetPasswordUserId" :form-key :refresh />
     <SessionsModal v-model:user-id="viewSessionsUserId" :refresh />
+
+    <UModal v-model:open="importOpen">
+      <template #header>
+        <h3 class="font-bold">
+          Import result
+        </h3>
+      </template>
+      <template #body>
+        <div class="space-y-2">
+          <div v-for="item in importResults" :key="item.row" class="flex items-center justify-between rounded-md border p-2">
+            <span class="text-sm">#{{ item.row }} {{ item.username || '-' }}</span>
+            <UBadge :color="item.ok ? 'success' : 'error'" variant="subtle">
+              {{ item.ok ? 'OK' : item.reason }}
+            </UBadge>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <USlideover v-model:open="offboardOpen">
+      <template #header>
+        <h3 class="font-bold">
+          Offboard user
+        </h3>
+      </template>
+      <template #body>
+        <div class="space-y-4">
+          <UAlert
+            color="warning"
+            variant="soft"
+            icon="lucide:triangle-alert"
+            :title="offboardTarget?.username || offboardTarget?.email || offboardTarget?.name"
+            description="Type the username or email to confirm offboarding."
+          />
+          <UCheckbox v-model="offboardForm.banUser" label="Ban account" />
+          <UCheckbox v-model="offboardForm.revokeApiKeys" label="Revoke all API keys" />
+          <UCheckbox v-model="offboardForm.removeMembers" label="Remove organization memberships" />
+          <UCheckbox v-model="offboardForm.transferAgents" label="Transfer owned Agents" />
+          <UCheckbox v-model="offboardForm.transferKnowledgeBases" label="Transfer owned knowledge bases" />
+          <UFormField
+            v-if="offboardForm.transferAgents || offboardForm.transferKnowledgeBases"
+            label="Transfer target user ID"
+          >
+            <UInput v-model="offboardForm.transferToUserId" placeholder="user id" />
+          </UFormField>
+          <UFormField label="Reason">
+            <UInput v-model="offboardForm.reason" />
+          </UFormField>
+          <UFormField label="Confirm text">
+            <UInput v-model="offboardForm.confirmText" :placeholder="offboardTarget?.username || offboardTarget?.email || ''" />
+          </UFormField>
+          <div class="flex justify-end gap-2">
+            <UButton variant="ghost" @click="offboardOpen = false">
+              {{ $t('common.cancel') }}
+            </UButton>
+            <UButton color="error" :loading="offboardLoading" @click="executeOffboard">
+              Offboard
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </USlideover>
   </div>
 </template>

@@ -46,21 +46,29 @@ function isValidationError(error: ErrorLike) {
 function getErrorStatusCode(err: unknown, fallback = RESPONSE_CODE.SERVER_ERROR): number {
   const error = toErrorLike(err)
 
-  if (isHttpStatus(error.statusCode)) return error.statusCode
-  if (isHttpStatus(error.status)) return error.status
-  if (isHttpStatus(error.code)) return error.code
-  if (isValidationError(error)) return RESPONSE_CODE.BAD_REQUEST
-  if (error.code === RESPONSE_CODE.UNIQUE_VIOLATION) return RESPONSE_CODE.CONFLICT
+  if (isHttpStatus(error.statusCode))
+    return error.statusCode
+  if (isHttpStatus(error.status))
+    return error.status
+  if (isHttpStatus(error.code))
+    return error.code
+  if (isValidationError(error))
+    return RESPONSE_CODE.BAD_REQUEST
+  if (error.code === RESPONSE_CODE.UNIQUE_VIOLATION)
+    return RESPONSE_CODE.CONFLICT
 
   return fallback
 }
 
 function getErrorMessage(err: unknown, fallback = DEFAULT_ERROR_MESSAGE) {
-  if (typeof err === 'string') return err
+  if (typeof err === 'string')
+    return err
 
   const error = toErrorLike(err)
-  if (typeof error.statusMessage === 'string' && error.statusMessage) return error.statusMessage
-  if (typeof error.message === 'string' && error.message) return error.message
+  if (typeof error.statusMessage === 'string' && error.statusMessage)
+    return error.statusMessage
+  if (typeof error.message === 'string' && error.message)
+    return error.message
 
   return fallback
 }
@@ -72,9 +80,12 @@ function getStatusMessage(statusCode: number) {
 function getErrorData(err: unknown) {
   const error = toErrorLike(err)
 
-  if (Array.isArray(error.issues)) return error.issues
-  if (isHttpStatus(error.statusCode) && error.data !== undefined) return error.data
-  if (err !== null && err !== undefined) return err
+  if (Array.isArray(error.issues))
+    return error.issues
+  if (isHttpStatus(error.statusCode) && error.data !== undefined)
+    return error.data
+  if (err !== null && err !== undefined)
+    return err
 
   return null
 }
@@ -82,20 +93,23 @@ function getErrorData(err: unknown) {
 function tryUseEvent() {
   try {
     return useEvent()
-  } catch {
+  }
+  catch {
     return undefined
   }
 }
 
 function applyResponseStatus(statusCode: number, event?: H3Event) {
   const targetEvent = event ?? tryUseEvent()
-  if (!targetEvent) return
+  if (!targetEvent)
+    return
 
   setResponseStatus(targetEvent, statusCode)
 }
 
 function shouldExposeMessage(statusCode: number, expose?: boolean) {
-  if (expose !== undefined) return expose
+  if (expose !== undefined)
+    return expose
   return process.env.NODE_ENV !== 'production' || statusCode < 500
 }
 
@@ -105,9 +119,8 @@ function shouldExposeMessage(statusCode: number, expose?: boolean) {
 export function responseSuccess<T>(
   data: T,
   msg = RESPONSE_CODE.label(RESPONSE_CODE.SUCCESS),
-  code: typeof RESPONSE_CODE.valueType = RESPONSE_CODE.SUCCESS,
 ): IResponse<T> {
-  return { data, msg, code, timestamp: Date.now() }
+  return { data, msg, code: RESPONSE_CODE.SUCCESS, timestamp: Date.now() }
 }
 
 /**
@@ -115,9 +128,9 @@ export function responseSuccess<T>(
  */
 export function responseError(data: unknown = null, msg?: string, options: ErrorResponseOptions = {}): IResponse {
   const isExplicitMessage = typeof msg === 'string'
-  const statusCode =
-    options.statusCode ??
-    (isExplicitMessage && msg === 'Validation failed' ? RESPONSE_CODE.BAD_REQUEST : getErrorStatusCode(data))
+  const statusCode
+    = options.statusCode
+      ?? (isExplicitMessage && msg === 'Validation failed' ? RESPONSE_CODE.BAD_REQUEST : getErrorStatusCode(data))
   const message = isExplicitMessage ? msg : getErrorMessage(data, getStatusMessage(statusCode))
 
   applyResponseStatus(statusCode, options.event)
@@ -139,18 +152,18 @@ export function catchError(err: unknown): IResponse {
 
 type TreeNode<T> = T & { children?: TreeNode<T>[] }
 
-export function convertFlatDataToTree<T extends { id: any; parentId?: any }>(
+export function convertFlatDataToTree<T extends { id: any, parentId?: any }>(
   flatData: T[],
   rootId?: any,
 ): TreeNode<T>[] {
   const map: Record<any, TreeNode<T>> = {}
   const roots: TreeNode<T>[] = []
 
-  flatData.forEach(node => {
+  flatData.forEach((node) => {
     map[node.id] = { ...node } as TreeNode<T>
   })
 
-  flatData.forEach(node => {
+  flatData.forEach((node) => {
     const parentNode = map[node.parentId ?? rootId]
     if (parentNode) {
       let children = parentNode.children
@@ -159,7 +172,8 @@ export function convertFlatDataToTree<T extends { id: any; parentId?: any }>(
         Object.assign(parentNode, { children })
       }
       children.push(map[node.id] as TreeNode<T>)
-    } else {
+    }
+    else {
       roots.push(map[node.id] as TreeNode<T>)
     }
   })
@@ -175,7 +189,7 @@ export function convertFlatDataToTree<T extends { id: any; parentId?: any }>(
 
 export function transformToLangTree(nodes: InternalizationTree[]) {
   const result: Record<Locale, any> = {
-    en: {},
+    'en': {},
     'zh-CN': {},
   }
 
@@ -185,9 +199,12 @@ export function transformToLangTree(nodes: InternalizationTree[]) {
         enTarget[node.name] = enTarget[node.name] || {}
         zhTarget[node.name] = zhTarget[node.name] || {}
         traverse(node.children, enTarget[node.name], zhTarget[node.name])
-      } else {
-        if (node.en) enTarget[node.name] = node.en
-        if (node.zh) zhTarget[node.name] = node.zh
+      }
+      else {
+        if (node.en)
+          enTarget[node.name] = node.en
+        if (node.zh)
+          zhTarget[node.name] = node.zh
       }
     }
   }

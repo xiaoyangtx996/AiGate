@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import FooterLink from '../components/FooterLink.vue'
-import LoginProvides from '../components/LoginProvides.vue'
-import MagicLinkButton from '../components/MagicLinkButton.vue'
-
 definePageMeta({
   layout: 'auth',
 })
@@ -19,7 +15,7 @@ const loading = ref(false)
  */
 async function onSubmit(data: SignInFormSchema) {
   loading.value = true
-  const { error } = await $authClient.signIn.email({ ...data, callbackURL: '/aigate/my-workbench' }).finally(() => {
+  const { error } = await $authClient.signIn.username({ ...data, callbackURL: '/aigate/my-workbench' }).finally(() => {
     loading.value = false
   })
   if (error) {
@@ -53,14 +49,8 @@ async function onSubmit(data: SignInFormSchema) {
       @submit="onSubmit"
     >
       <template #password-hint>
-        <ULink as="button" to="/auth/forgot-password">
-          {{ i18nAuth('password.forgot') }}
-        </ULink>
+        <span class="text-xs text-muted">忘记密码请联系管理员重置</span>
       </template>
     </AutoForm>
-    <MagicLinkButton />
-    <USeparator label="or" />
-    <LoginProvides />
-    <FooterLink :left-text="i18nAuth('signIn.footer')" :right-text="i18nAuth('signIn.footerLink')" to="/auth/sign-up" />
   </UPageCard>
 </template>

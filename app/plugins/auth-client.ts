@@ -1,7 +1,6 @@
 import {
   adminClient,
   lastLoginMethodClient,
-  magicLinkClient,
   multiSessionClient,
   usernameClient,
 } from 'better-auth/client/plugins'
@@ -9,10 +8,13 @@ import { createAuthClient } from 'better-auth/vue'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
+  const baseURL = import.meta.client
+    ? window.location.origin
+    : config.public.appDomain
 
   const authClient = createAuthClient({
-    baseURL: config.public.appDomain,
-    plugins: [usernameClient(), magicLinkClient(), lastLoginMethodClient(), multiSessionClient(), adminClient()],
+    baseURL,
+    plugins: [usernameClient(), lastLoginMethodClient(), multiSessionClient(), adminClient()],
   })
   return {
     provide: {

@@ -1,7 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { auth } from '#server/utils/auth'
 import { db } from '@/db/drizzle'
-import { member, userRole } from '@/db/schema'
+import { member, organization, role as roleTable, userRole } from '@/db/schema'
+
+const adminRoleCodes = new Set(['admin', 'super_admin'])
+
+function isAdminRoleCode(role: string | null | undefined) {
+  return !!role && adminRoleCodes.has(role)
+}
 
 export async function getRequestPrincipal(event: import('h3').H3Event) {
   const session = await auth.api.getSession({ headers: event.headers })
@@ -14,25 +20,51 @@ export async function getRequestPrincipal(event: import('h3').H3Event) {
   const email = session.user.email
   const preferredRole = session.user.role ?? null
 
-  const roles = await db.select({ roleId: userRole.roleId }).from(userRole).where(eq(userRole.userId, userId))
+  const roles = await db
+    .select({ roleId: userRole.roleId, code: roleTable.code })
+    .from(userRole)
+    .leftJoin(roleTable, eq(userRole.roleId, roleTable.id))
+    .where(eq(userRole.userId, userId))
 
   const roleIds = roles.map(role => role.roleId)
-  const role = preferredRole || roles[0]?.roleId || 'user'
+  const roleCodes = roles.map(role => role.code).filter((code): code is string => !!code)
+  const dbAdminRole = roleCodes.find(isAdminRoleCode)
+  const role = dbAdminRole || (isAdminRoleCode(preferredRole) ? preferredRole : roleCodes[0] || roles[0]?.roleId || preferredRole || 'user')
+  const isAdmin = isAdminRoleCode(role)
 
-  const memberships = await db
+  const membershipRows = await db
     .select({ organizationId: member.organizationId })
     .from(member)
     .where(eq(member.userId, userId))
+  const memberships = membershipRows.map(item => item.organizationId)
+  const activeOrganizationId = getCookie(event, 'aigate_active_org') || null
+  let organizationId: string | null = null
 
-  const organizationId = memberships[0]?.organizationId ?? null
+  if (isAdmin) {
+    if (activeOrganizationId) {
+      const [activeOrg] = await db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.id, activeOrganizationId))
+      organizationId = activeOrg?.id ?? null
+    }
+  }
+  else {
+    organizationId
+      = activeOrganizationId && memberships.includes(activeOrganizationId)
+        ? activeOrganizationId
+        : memberships[0] ?? null
+  }
 
   return {
     userId,
     email,
     role,
     roleIds,
+    roleCodes,
+    memberships,
     organizationId,
-    isAdmin: role === 'admin',
+    isAdmin,
     session,
   }
 }

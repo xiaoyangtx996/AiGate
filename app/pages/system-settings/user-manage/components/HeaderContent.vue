@@ -5,6 +5,7 @@ defineProps<{
   table: Table<User>
   refresh: VoidFunction
   handleAdd: VoidFunction
+  handleImport: VoidFunction
   loading: boolean
 }>()
 
@@ -23,6 +24,9 @@ const query = defineModel<Pick<UserQueryParams, 'keyword'>>({ required: true })
         :placeholder="i18nCommon('searchKeyword')"
       />
       <AutoFormSearchButton :loading @refresh="refresh" />
+      <UButton icon="lucide:upload" variant="outline" @click="handleImport">
+        Import CSV
+      </UButton>
       <AutoFormAddButton @add="handleAdd" />
     </div>
     <TableColumnVisibility v-if="table" :table="table" />

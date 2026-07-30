@@ -73,6 +73,38 @@ export function useSystemApi() {
    */
   const getLogsUserList = () => get<User[]>('/system-settings/operation-log/users')
 
+  const offboardUser = (
+    id: string,
+    body: {
+      confirmText: string
+      reason?: string
+      banUser?: boolean
+      revokeApiKeys?: boolean
+      removeMembers?: boolean
+      transferAgents?: boolean
+      transferKnowledgeBases?: boolean
+      transferToUserId?: string
+    },
+  ) => post<{ steps: Array<{ key: string, ok: boolean, count?: number }> }>(`/system-settings/user-manage/${id}/offboard`, body)
+
+  const importUsers = (rows: Array<Record<string, string>>) =>
+    post<{
+      imported: number
+      failed: number
+      results: Array<{ row: number, username?: string, ok: boolean, userId?: string, reason?: string }>
+    }>('/system-settings/user-manage/import', { rows })
+
+  const getSettings = (params?: { organizationId?: string | null }) =>
+    get<{ values: Record<string, unknown> }>('/system-settings/settings', params)
+
+  const saveSettings = (body: { organizationId?: string | null, values: Record<string, unknown>, confirmSensitive?: boolean }) =>
+    post<{ saved: number, values: Record<string, unknown> }>('/system-settings/settings', body)
+
+  const markUserMustChangePassword = (id: string, mustChangePassword = true) =>
+    post<{ id: string, mustChangePassword: boolean }>(`/system-settings/user-manage/${id}/force-password-change`, {
+      mustChangePassword,
+    })
+
   /**
    * @description: 获取 i18n 多语言层级数据
    */
@@ -120,6 +152,11 @@ export function useSystemApi() {
     getLogsList,
     delLogs,
     getLogsUserList,
+    offboardUser,
+    importUsers,
+    getSettings,
+    saveSettings,
+    markUserMustChangePassword,
     getLocales,
     getInternalizationList,
     insertInternalization,

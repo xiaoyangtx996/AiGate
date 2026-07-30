@@ -64,6 +64,132 @@
       "when": 1779771274374,
       "tag": "0009_phase2_phase3_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "8",
+      "when": 1781078400000,
+      "tag": "0012_gateway_channels",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "8",
+      "when": 1781078400001,
+      "tag": "0013_mcp_marketplace",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "8",
+      "when": 1781078400002,
+      "tag": "0014_knowledge_skills_agent",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "8",
+      "when": 1781078400003,
+      "tag": "0015_tenant_package",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "8",
+      "when": 1781078400004,
+      "tag": "0016_ops_experience",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "8",
+      "when": 1781078400005,
+      "tag": "0017_settings_global_ux",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "8",
+      "when": 1781078400006,
+      "tag": "0018_bot_conversation_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "8",
+      "when": 1781078400007,
+      "tag": "0019_resource_owner_transfer",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "8",
+      "when": 1781078400008,
+      "tag": "0020_api_key_disabled_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "8",
+      "when": 1781078400009,
+      "tag": "0021_api_log_trace_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "8",
+      "when": 1781078400010,
+      "tag": "0022_alert_status_flow",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "8",
+      "when": 1781078400011,
+      "tag": "0023_menu_code_for_packages",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "8",
+      "when": 1781078400012,
+      "tag": "0024_drop_channel_api_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "8",
+      "when": 1781078400013,
+      "tag": "0025_api_log_tokens_estimated",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "8",
+      "when": 1781078400014,
+      "tag": "0026_model_combo_org_name_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "8",
+      "when": 1781078400015,
+      "tag": "0027_pgvector_embedding",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "8",
+      "when": 1781078400016,
+      "tag": "0028_gateway_cost_precision",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "8",
+      "when": 1781078400017,
+      "tag": "0029_user_must_change_password",
+      "breakpoints": true
     }
   ]
 }

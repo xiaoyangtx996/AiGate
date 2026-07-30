@@ -7,8 +7,10 @@ import { useTabStore } from '@/stores/useTabStore'
 const config = useRuntimeConfig()
 const menuStore = useMenuStore()
 const tabStore = useTabStore()
+const { getMenuList } = useSystemApi()
 
 const open = ref(false)
+const botOpen = ref(false)
 const isMac = ref(false)
 const route = useRoute()
 const { menuItems } = useMenu()
@@ -16,6 +18,7 @@ const { user } = useCurrentUser()
 const appScrollContainer = useAppScrollContainer()
 
 const GlobalSearch = defineAsyncComponent(() => import('@/components/GlobalSearch/index.vue'))
+const AigateBotDrawer = defineAsyncComponent(() => import('@/components/AigateBotDrawer.vue'))
 
 const skeletonWidths = ['w-[70%]', 'w-[75%]', 'w-[80%]', 'w-[85%]', 'w-[90%]', 'w-[72%]']
 const applePlatformPattern = /Mac|iPhone|iPad|iPod/
@@ -57,29 +60,33 @@ const groups = computed(
     ] as CommandPaletteGroup<CommandPaletteItem>[],
 )
 
+function syncTabFromRoute() {
+  if (!menuStore.menuTree?.length)
+    return
+
+  const path = route.path
+
+  tabStore.setActive(path)
+
+  if (path === '/')
+    return
+
+  const menu = menuStore.menuPathMap.get(path)
+
+  if (!menu)
+    return
+
+  if (tabStore.ignoreNextAdd) {
+    tabStore.ignoreNextAdd = false
+    return
+  }
+
+  tabStore.addTag(menu)
+}
+
 watch(
   () => [route.path, menuStore.menuTree],
-  () => {
-    if (!menuStore.menuTree?.length) return
-
-    const path = route.path
-
-    tabStore.setActive(path)
-
-    if (path === '/') return
-
-    const menu = menuStore.menuPathMap.get(path)
-
-    if (!menu) return
-
-    if (tabStore.ignoreNextAdd) {
-      tabStore.ignoreNextAdd = false
-      return
-    }
-
-    tabStore.addTag(menu)
-  },
-  { immediate: true },
+  syncTabFromRoute,
 )
 
 useHead({
@@ -88,18 +95,45 @@ useHead({
   }),
 })
 
-onMounted(async () => {
-  await menuStore.init()
+function applyMenuTree(tree: MenuTree[] | null | undefined) {
+  if (!tree?.length)
+    return
+
+  menuStore.menuTree = tree
+  menuStore.inited = true
+  menuStore.loading = false
+}
+
+const { data: menuTreeData } = await useAsyncData('menu-tree-init', async () => {
+  menuStore.loading = true
+  try {
+    const res = await getMenuList({ enabled: true })
+    return res.data ?? []
+  }
+  catch {
+    return []
+  }
+  finally {
+    menuStore.loading = false
+  }
 })
+
+watch(menuTreeData, applyMenuTree, { immediate: true })
 
 watch(
   () => user.value?.id,
   () => {
-    if (user.value && !menuStore.menuTree.length) void menuStore.init()
+    if (user.value && !menuStore.menuTree.length)
+      void menuStore.fetchMenuTree()
   },
+  { immediate: true },
 )
 
 onMounted(() => {
+  if (!menuStore.menuTree.length)
+    void menuStore.fetchMenuTree()
+
+  syncTabFromRoute()
   appScrollContainer.value = document.querySelector('.app-scroll-container')
   isMac.value = applePlatformPattern.test(navigator.platform)
 })
@@ -122,7 +156,12 @@ onMounted(() => {
         <div class="flex items-center gap-1.5">
           <UDashboardSearchButton :collapsed class="bg-transparent ring-default flex-1" />
           <div v-if="!collapsed" class="flex shrink-0 items-center gap-0.5 pointer-events-none">
-            <UKbd>{{ isMac ? '⌘' : 'Ctrl' }}</UKbd>
+            <ClientOnly>
+              <UKbd>{{ isMac ? '⌘' : 'Ctrl' }}</UKbd>
+              <template #fallback>
+                <UKbd>Ctrl</UKbd>
+              </template>
+            </ClientOnly>
             <UKbd>K</UKbd>
           </div>
         </div>
@@ -155,25 +194,15 @@ onMounted(() => {
       <template #header>
         <UDashboardNavbar>
           <template #title>
-            <Transition
-              mode="out-in"
-              enter-active-class="transition-all duration-500"
-              enter-from-class="opacity-0 translate-x-[-10px] blur-sm"
-              enter-to-class="opacity-100 translate-x-0 blur-0"
-              leave-active-class="transition-all duration-500"
-              leave-from-class="opacity-100 translate-x-0 blur-0"
-              leave-to-class="opacity-0 translate-x-[10px] blur-sm"
-            >
-              <span :key="title" class="block">
-                {{ title }}
-              </span>
-            </Transition>
+            <span class="block">{{ title }}</span>
           </template>
           <template #leading>
             <UDashboardSidebarCollapse />
           </template>
           <template #right>
             <div class="flex items-center gap-2">
+              <OrganizationSwitcher />
+              <UButton icon="lucide:bot" variant="ghost" @click="botOpen = true" />
               <ThemePresetSelector />
               <FullScreen />
               <ThemePicker />
@@ -188,6 +217,10 @@ onMounted(() => {
         <ErrorBoundary>
           <slot />
         </ErrorBoundary>
+        <BackTop />
+        <ClientOnly>
+          <AigateBotDrawer v-model:open="botOpen" />
+        </ClientOnly>
       </template>
     </UDashboardPanel>
   </UDashboardGroup>

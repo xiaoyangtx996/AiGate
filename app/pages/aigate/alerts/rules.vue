@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AlertRuleType } from '~~/shared/alert-rule-templates'
 import { alertRuleTemplates } from '~~/shared/alert-rule-templates'
 
 interface AlertRuleRow {
@@ -7,7 +8,7 @@ interface AlertRuleRow {
   type: string
   enabled: boolean
   notifyChannels?: string[] | null
-  condition?: { threshold?: number; templateId?: string } | null
+  condition?: { threshold?: number, templateId?: string } | null
 }
 
 const { getAlertRules, insertAlertRule, updateAlertRule, delAlertRule } = useAigateApi()
@@ -30,7 +31,14 @@ const list = computed(() => data.value || [])
 const open = ref(false)
 const editData = ref<AlertRuleRow | null>(null)
 const saveLoading = ref(false)
-const form = reactive({
+const form = reactive<{
+  name: string
+  type: AlertRuleType
+  enabled: boolean
+  templateId: string
+  threshold: number
+  notifyChannels: string[]
+}>({
   name: '',
   type: 'quota_warning',
   enabled: true,
@@ -46,12 +54,12 @@ const templateOptions = computed(() =>
   })),
 )
 
-const typeOptions = computed(() => [
-  { label: p('types.quota_warning'), value: 'quota_warning' },
-  { label: p('types.key_expiring'), value: 'key_expiring' },
-  { label: p('types.error_spike'), value: 'error_spike' },
-  { label: p('types.rate_limit'), value: 'rate_limit' },
-])
+const typeOptions = computed(() =>
+  Array.from(new Set(alertRuleTemplates.map(template => template.type)), type => ({
+    label: p(`types.${type}`),
+    value: type,
+  })),
+)
 const notifyChannelOptions = computed(() => [
   { label: p('channels.in_app'), value: 'in_app' },
   { label: p('channels.email'), value: 'email' },
@@ -59,7 +67,8 @@ const notifyChannelOptions = computed(() => [
 
 function applyTemplate(templateId: string) {
   const template = alertRuleTemplates.find(item => item.id === templateId)
-  if (!template) return
+  if (!template)
+    return
 
   form.templateId = template.id
   form.type = template.type
@@ -81,7 +90,7 @@ function handleAdd() {
 function handleEdit(row: AlertRuleRow) {
   editData.value = row
   form.name = row.name
-  form.type = row.type
+  form.type = row.type as AlertRuleType
   form.enabled = row.enabled
   form.templateId = row.condition?.templateId || 'quota_90'
   form.threshold = row.condition?.threshold ?? 90
@@ -107,7 +116,8 @@ async function handleDelete(id: string) {
 }
 
 async function handleSubmit() {
-  if (!form.name) return
+  if (!form.name)
+    return
 
   saveLoading.value = true
   try {
@@ -120,13 +130,15 @@ async function handleSubmit() {
     }
     if (editData.value?.id) {
       await updateAlertRule({ id: editData.value.id, ...body })
-    } else {
+    }
+    else {
       await insertAlertRule(body)
     }
     successToast()
     open.value = false
     refresh()
-  } finally {
+  }
+  finally {
     saveLoading.value = false
   }
 }

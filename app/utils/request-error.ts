@@ -3,6 +3,7 @@ import { RESPONSE_CODE } from '@/enums'
 interface ResponseLike {
   code?: unknown
   msg?: unknown
+  data?: unknown
 }
 
 function isResponseLike(value: unknown): value is ResponseLike {
@@ -39,4 +40,11 @@ export function getRequestErrorMessage(error: unknown, fallback: string): string
 
 export function shouldRedirectUnauthorized(response: unknown, hasToken: boolean, path: string): boolean {
   return isUnauthorizedResponse(response) && hasToken && !path.startsWith('/auth')
+}
+
+export function getTenantBlockCode(response: unknown): string | null {
+  if (!isResponseLike(response) || typeof response.data !== 'object' || response.data === null)
+    return null
+  const code = (response.data as { code?: unknown }).code
+  return code === 'TENANT_EXPIRED' || code === 'TENANT_SUSPENDED' ? code : null
 }

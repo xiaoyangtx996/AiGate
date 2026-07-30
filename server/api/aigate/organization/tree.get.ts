@@ -8,6 +8,10 @@ interface OrgNode {
   level: string
   tokenLimit: number
   tokenUsed: number
+  packageId: string | null
+  expireTime: Date | null
+  accountLimit: number
+  tenantStatus: string
   children: OrgNode[]
 }
 
@@ -28,11 +32,15 @@ function toOrgNodes(orgs: Array<typeof organization.$inferSelect>): OrgNode[] {
     level: org.level,
     tokenLimit: org.tokenLimit,
     tokenUsed: org.tokenUsed,
+    packageId: org.packageId,
+    expireTime: org.expireTime,
+    accountLimit: org.accountLimit,
+    tenantStatus: org.tenantStatus,
     children: [],
   }))
 }
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as { isAdmin?: boolean } | undefined
     if (!principal?.isAdmin) {
@@ -46,7 +54,8 @@ export default defineEventHandler(async event => {
     }
     const tree = buildTree(toOrgNodes(allOrgs))
     return responseSuccess(tree)
-  } catch (err) {
+  }
+  catch (err) {
     return responseError(err)
   }
 })

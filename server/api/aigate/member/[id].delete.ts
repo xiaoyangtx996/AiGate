@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm'
+import { auditLog } from '#server/utils/audit-log'
 import { db } from '@/db/drizzle'
 import { member } from '@/db/schema'
 
@@ -18,6 +19,7 @@ export default defineEventHandler(async event => {
     if (!res) {
       return responseError(null, '成员不存在或无权操作', { statusCode: 404 })
     }
+    await auditLog(event, 'member.delete', { type: 'member', id }, res, null)
     return responseSuccess(null)
   } catch (err) {
     return responseError(err)

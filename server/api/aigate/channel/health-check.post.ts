@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
+import { testChannelCredential, updateChannelHealthFromCredentials } from '#server/utils/gateway-channel'
 import { db } from '@/db/drizzle'
-import { channel } from '@/db/schema'
+import { channel, channelCredential } from '@/db/schema'
 
 interface ChannelHealthResult {
   channelId: string
@@ -13,51 +14,39 @@ interface ChannelHealthResult {
 }
 
 async function checkOneChannel(ch: typeof channel.$inferSelect): Promise<ChannelHealthResult> {
-  const startTime = Date.now()
-
-  try {
-    const response = await fetch(ch.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(ch.apiKey ? { Authorization: `Bearer ${ch.apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        model: ch.models?.[0] || 'gpt-4o',
-        messages: [{ role: 'user', content: 'test' }],
-        max_tokens: 10,
-      }),
-      signal: AbortSignal.timeout(10000),
-    })
-
-    const latency = Date.now() - startTime
-    const health = response.ok ? 'healthy' : 'degraded'
-
-    await db.update(channel).set({ health, updatedAt: new Date() }).where(eq(channel.id, ch.id))
-
-    return {
-      channelId: ch.id,
-      name: ch.name,
-      healthy: response.ok,
-      status: response.status,
-      latency,
-      timestamp: new Date().toISOString(),
-    }
-  } catch (error) {
+  const credentials = await db.select().from(channelCredential).where(eq(channelCredential.channelId, ch.id))
+  if (credentials.length === 0) {
     await db.update(channel).set({ health: 'down', updatedAt: new Date() }).where(eq(channel.id, ch.id))
-
     return {
       channelId: ch.id,
       name: ch.name,
       healthy: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      latency: Date.now() - startTime,
+      error: '渠道没有可用凭证',
+      latency: 0,
       timestamp: new Date().toISOString(),
     }
   }
+
+  const results = await Promise.all(credentials.map(item => testChannelCredential(ch, item)))
+  const health = await updateChannelHealthFromCredentials(ch.id)
+  const healthy = health !== 'down'
+  const firstFailed = results.find(item => !item.healthy)
+  const avgLatency = results.length
+    ? Math.round(results.reduce((sum, item) => sum + item.latency, 0) / results.length)
+    : 0
+
+  return {
+    channelId: ch.id,
+    name: ch.name,
+    healthy,
+    status: firstFailed?.status ?? results[0]?.status,
+    latency: avgLatency,
+    error: firstFailed?.error,
+    timestamp: new Date().toISOString(),
+  }
 }
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
     const principal = event.context.principal as { isAdmin?: boolean } | undefined
     if (!principal?.isAdmin) {
@@ -67,10 +56,10 @@ export default defineEventHandler(async event => {
     const body = await readBody(event).catch(() => ({}))
     const channelId = body?.channelId as string | undefined
 
-    const conditions = []
-    if (channelId) conditions.push(eq(channel.id, channelId))
-
-    const channels = await db.select().from(channel).where(conditions[0])
+    const channels = await db
+      .select()
+      .from(channel)
+      .where(channelId ? eq(channel.id, channelId) : inArray(channel.status, ['enabled', 'disabled']))
 
     if (channelId && channels.length === 0) {
       return responseError(null, '渠道不存在或无权访问', { statusCode: 404 })
@@ -88,7 +77,8 @@ export default defineEventHandler(async event => {
       unhealthy: results.filter(item => !item.healthy).length,
       results,
     })
-  } catch (err) {
+  }
+  catch (err) {
     return responseError(err)
   }
 })

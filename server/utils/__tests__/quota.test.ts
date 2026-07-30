@@ -5,21 +5,27 @@ import {
   consumeQuota,
   createOrganizationQuotaRequest,
   createQuotaRequest,
+  deleteOrganizationReturningQuota,
   decideOrganizationQuotaRequest,
   decideQuotaRequest,
   getQuotaStatus,
+  moveOrganizationParentQuota,
   validateQuotaConservation,
 } from '../quota'
 
 const mockSelect = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
+const mockDelete = vi.fn()
+const mockTransaction = vi.fn()
 
 vi.mock('@/db/drizzle', () => ({
   db: {
     select: (...args: unknown[]) => mockSelect(...args),
     insert: (...args: unknown[]) => mockInsert(...args),
     update: (...args: unknown[]) => mockUpdate(...args),
+    delete: (...args: unknown[]) => mockDelete(...args),
+    transaction: (...args: unknown[]) => mockTransaction(...args),
   },
 }))
 
@@ -30,6 +36,7 @@ vi.mock('@/db/schema', () => ({
     parentId: 'parentId',
     tokenLimit: 'tokenLimit',
     tokenUsed: 'tokenUsed',
+    costUsed: 'costUsed',
   },
   quotaRequest: {
     id: 'id',
@@ -128,16 +135,65 @@ describe('quota utils', () => {
   })
 
   describe('consumeQuota', () => {
-    it('should increment tokenUsed for organization', async () => {
+    it('should increment tokenUsed and costUsed for organization', async () => {
+      const set = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) })
       const where = vi.fn().mockResolvedValue(undefined)
       mockUpdate.mockReturnValue({
-        set: vi.fn().mockReturnValue({ where }),
+        set: set.mockReturnValue({ where }),
       })
 
-      await consumeQuota('org-1', 150)
+      await consumeQuota('org-1', 150, 0.25)
 
       expect(mockUpdate).toHaveBeenCalledTimes(1)
+      expect(set).toHaveBeenCalledWith({
+        tokenUsed: expect.anything(),
+        costUsed: expect.anything(),
+      })
       expect(where).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('organization quota release helpers', () => {
+    it('should return subtree quota to direct parents before deleting organizations', async () => {
+      const orgs = [
+        { id: 'parent', parentId: null, tokenLimit: 5000, tokenUsed: 0 },
+        { id: 'child', parentId: 'parent', tokenLimit: 1000, tokenUsed: 0 },
+        { id: 'grandchild', parentId: 'child', tokenLimit: 300, tokenUsed: 0 },
+      ]
+      const updateSet = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) })
+      const deleteWhere = vi.fn().mockResolvedValue(undefined)
+      const tx = {
+        select: vi.fn().mockReturnValue({ from: vi.fn().mockResolvedValue(orgs) }),
+        update: vi.fn().mockReturnValue({ set: updateSet }),
+        delete: vi.fn().mockReturnValue({ where: deleteWhere }),
+      }
+      mockTransaction.mockImplementation(async callback => callback(tx))
+
+      const deleted = await deleteOrganizationReturningQuota('child')
+
+      expect(deleted).toEqual(orgs[1])
+      expect(tx.update).toHaveBeenCalledTimes(2)
+      expect(updateSet).toHaveBeenCalledTimes(2)
+      expect(tx.delete).toHaveBeenCalledTimes(2)
+      expect(deleteWhere).toHaveBeenCalledTimes(2)
+    })
+
+    it('should return old parent quota and deduct new parent quota when moving organization', async () => {
+      const updateSet = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) })
+      const tx = {
+        update: vi.fn().mockReturnValue({ set: updateSet }),
+      } as any
+      const current = {
+        id: 'child',
+        parentId: 'old-parent',
+        tokenLimit: 1000,
+        tokenUsed: 0,
+      } as any
+
+      await moveOrganizationParentQuota(tx, current, 'new-parent')
+
+      expect(tx.update).toHaveBeenCalledTimes(2)
+      expect(updateSet).toHaveBeenCalledTimes(2)
     })
   })
 
