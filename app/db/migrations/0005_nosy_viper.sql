@@ -1,1 +1,0 @@
-ALTER TABLE "role" RENAME COLUMN "status" TO "enabled";

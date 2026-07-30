@@ -1,61 +1,16 @@
-﻿# Node
-node_modules/
-
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-
-# IDE
-.idea/
-.vscode/
-.cursor/
-.codex/
-.claude/worktrees/
-.claude/settings.local.json
-.mcp.json
-.fleet
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# 项目特定
-data/*.json
-data/locks/*.lock
-target/
-*.class
-
-# 保留目录结构
-!data/.gitkeep
-!data/locks/.gitkeep
-
-# Logs
-logs/
-*.log
-dev-server*.log
-
-# Script outputs
-scripts/*-result*.txt
-scripts/browser-audit-result.txt
-
-# Test coverage
-coverage/
-test-results/
-
-# Local env files
 .env
 .env.*
 !.env.example
-
-# 临时文件
-*.tmp
-*.temp
-false/
+node_modules/
+.nuxt/
+.output/
+data/
+.playwright-mcp/
+*.exe
+*.log
+.idea/
+.vscode/
+dist/
+bin/
+coverage/
+tmp/
