@@ -185,7 +185,7 @@ func (h *Handler) proxyOpenAI(w http.ResponseWriter, r *http.Request, claudeIn b
 	upstreamReq.Header.Set("X-Trace-ID", traceID)
 	client := h.Client
 	if client == nil {
-		client = http.DefaultClient
+		client = &http.Client{Timeout: 2 * time.Minute}
 	}
 	response, err := client.Do(upstreamReq)
 	if err != nil {

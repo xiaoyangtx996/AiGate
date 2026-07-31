@@ -10,10 +10,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xiaoyangtx996/AiGate/internal/agent"
 	"github.com/xiaoyangtx996/AiGate/internal/alerts"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/audit"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
+	"github.com/xiaoyangtx996/AiGate/internal/bot"
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/db"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
@@ -69,6 +71,8 @@ func main() {
 	})
 	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), embedder)
 	mcpService := mcp.NewService(mcp.NewPostgres(store), store, cipher, jobs.NewPostgres(store), audit.NewService(audit.NewPostgres(store)), nil)
+	ragService := rag.NewService(store, rag.NewPostgres(store), embedder)
+	agentService := agent.NewService(agent.NewPostgres(store), store, ragService, agent.GatewayClient{BaseURL: envOr("AIGATE_GATEWAY_BASE_URL", "http://127.0.0.1:8081")}, mcpService, audit.NewService(audit.NewPostgres(store)))
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
 		rbac: rbacService, org: org.NewService(store),
@@ -80,8 +84,10 @@ func main() {
 		alerts:    alertService,
 		sessions:  store,
 		knowledge: knowledgeService,
-		rag:       rag.NewService(store, rag.NewPostgres(store), embedder),
+		rag:       ragService,
 		mcp:       mcpService,
+		agents:    agentService,
+		bot:       bot.NewService(bot.NewPostgres(store)),
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)

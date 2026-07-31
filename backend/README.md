@@ -63,3 +63,10 @@ When `AIGATE_EMBEDDING_BASE_URL` is unset, Plan 04 uses a deterministic local
 on **both** API and worker to switch to a provider-backed model (vectors remain
 384-d for pgvector). Retrieval always filters tenant, project, and KB before
 ranking.
+
+## Project agents and management bot
+
+Apply `migrations/000010_project_agents.up.sql`. Agent chat calls the OpenAI-compatible
+gateway only (`AIGATE_GATEWAY_BASE_URL`, default `http://127.0.0.1:8081`); the
+employee gateway API key is per-request and never stored. MCP assets bound at
+agent create must already have a project-level grant (`agent_id` empty).

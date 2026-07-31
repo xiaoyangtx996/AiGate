@@ -24,6 +24,7 @@ psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v O
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000007_project_knowledge.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000008_knowledge_pdf_embed.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000009_mcp_assets.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000010_project_agents.up.sql
 ```
 
 Bootstrap tenant administrator and login (JWT secret ≥ 32 bytes):

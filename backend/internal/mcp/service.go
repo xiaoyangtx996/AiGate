@@ -157,6 +157,10 @@ func (s *Service) Grant(ctx context.Context, g Grant) error {
 	return s.repo.Grant(ctx, g)
 }
 
+func (s *Service) Authorized(ctx context.Context, tenantID, assetID, projectID, agentID string) (bool, error) {
+	return s.repo.Authorized(ctx, tenantID, assetID, projectID, strings.TrimSpace(agentID))
+}
+
 type Invocation struct {
 	TenantID, ProjectID, AgentID, UserID, AssetID, ToolName string
 	Body                                                    json.RawMessage

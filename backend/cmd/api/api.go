@@ -11,10 +11,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/xiaoyangtx996/AiGate/internal/agent"
 	"github.com/xiaoyangtx996/AiGate/internal/alerts"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/audit"
 	"github.com/xiaoyangtx996/AiGate/internal/auth"
+	"github.com/xiaoyangtx996/AiGate/internal/bot"
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/gateway"
@@ -41,6 +43,8 @@ type api struct {
 	knowledge *knowledge.Service
 	rag       *rag.Service
 	mcp       *mcp.Service
+	agents    *agent.Service
+	bot       *bot.Service
 }
 
 type logReader interface {
@@ -91,6 +95,9 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("POST /v1/mcp/assets", a.admin(a.registerMCPAsset))
 	protected.HandleFunc("PUT /v1/projects/{projectID}/mcp/{assetID}/grants", a.admin(a.grantMCPAsset))
 	protected.HandleFunc("POST /v1/projects/{projectID}/mcp/{assetID}/invoke", a.invokeMCPAsset)
+	protected.HandleFunc("POST /v1/projects/{projectID}/agents", a.createProjectAgent)
+	protected.HandleFunc("POST /v1/projects/{projectID}/agents/{agentID}/chat", a.chatProjectAgent)
+	protected.HandleFunc("POST /v1/bot/chat", a.chatManagementBot)
 	protected.HandleFunc("GET /v1/api-keys", a.admin(a.listAPIKeys))
 	protected.HandleFunc("POST /v1/api-keys", a.admin(a.createAPIKey))
 	protected.HandleFunc("DELETE /v1/api-keys/{id}", a.admin(a.revokeAPIKey))
@@ -253,6 +260,39 @@ func (a *api) invokeMCPAsset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Trace-ID", result.TraceID)
 	w.WriteHeader(result.StatusCode)
 	_, _ = w.Write(result.Body)
+}
+
+func (a *api) createProjectAgent(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input agent.Agent
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	created, err := a.agents.Create(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID, input)
+	respond(w, created, err, http.StatusCreated)
+}
+func (a *api) chatProjectAgent(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Question      string `json:"question"`
+		GatewayAPIKey string `json:"gateway_api_key"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	result, err := a.agents.Chat(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("agentID"), identity.UserID, input.GatewayAPIKey, input.Question)
+	respond(w, result, err, http.StatusOK)
+}
+func (a *api) chatManagementBot(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Question string `json:"question"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	answer, err := a.bot.Ask(r.Context(), identity, input.Question)
+	respond(w, answer, err, http.StatusOK)
 }
 
 func (a *api) login(w http.ResponseWriter, r *http.Request) {
@@ -765,15 +805,11 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 }
 
 func respond(w http.ResponseWriter, value any, err error, status int) {
-	if errors.Is(err, knowledge.ErrForbidden) || errors.Is(err, rag.ErrForbidden) {
+	if errors.Is(err, knowledge.ErrForbidden) || errors.Is(err, rag.ErrForbidden) || errors.Is(err, agent.ErrForbidden) {
 		writeError(w, http.StatusForbidden, "forbidden")
 		return
 	}
-	if errors.Is(err, knowledge.ErrNotFound) {
-		writeError(w, http.StatusNotFound, "not found")
-		return
-	}
-	if errors.Is(err, mcp.ErrNotFound) {
+	if errors.Is(err, knowledge.ErrNotFound) || errors.Is(err, mcp.ErrNotFound) || errors.Is(err, agent.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
