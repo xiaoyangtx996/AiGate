@@ -36,6 +36,8 @@ type repoStub struct {
 }
 
 func (r *repoStub) CreateKnowledgeBase(_ context.Context, k KnowledgeBase) error {
+	now := time.Now().UTC()
+	k.CreatedAt, k.UpdatedAt = now, now
 	r.kb = k
 	return nil
 }
@@ -45,7 +47,12 @@ func (r *repoStub) GetKnowledgeBase(context.Context, string, string, string) (Kn
 	}
 	return r.kb, nil
 }
-func (r *repoStub) CreateDocument(_ context.Context, d Document) error { r.doc = d; return nil }
+func (r *repoStub) CreateDocument(_ context.Context, d Document) error {
+	now := time.Now().UTC()
+	d.CreatedAt, d.UpdatedAt = now, now
+	r.doc = d
+	return nil
+}
 func (r *repoStub) GetDocument(context.Context, string, string, string) (Document, error) {
 	if r.doc.ID == "" {
 		return Document{}, ErrNotFound
@@ -86,7 +93,7 @@ func TestUploadQueuesAndWorkerMarksReady(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if queue.job.Type != ProcessJobType || doc.Status != "queued" {
+	if queue.job.Type != ProcessJobType || doc.Status != "queued" || doc.CreatedAt.IsZero() {
 		t.Fatalf("job=%+v doc=%+v", queue.job, doc)
 	}
 	if err := svc.Handler(context.Background(), queue.job); err != nil {

@@ -101,7 +101,7 @@ func (s *Service) Create(ctx context.Context, tenantID, projectID, userID, name 
 	if err := s.repo.CreateKnowledgeBase(ctx, kb); err != nil {
 		return KnowledgeBase{}, err
 	}
-	return kb, nil
+	return s.repo.GetKnowledgeBase(ctx, tenantID, projectID, id)
 }
 
 func (s *Service) Upload(ctx context.Context, tenantID, projectID, kbID, userID, filename, mediaType string, body io.Reader) (Document, error) {
@@ -115,8 +115,8 @@ func (s *Service) Upload(ctx context.Context, tenantID, projectID, kbID, userID,
 	if mediaType == "" {
 		mediaType = mediaTypeFor(filename)
 	}
-	if mediaType != "text/markdown" && mediaType != "text/plain" {
-		return Document{}, errors.New("only Markdown or plain text is supported")
+	if !allowedMediaType(mediaType) {
+		return Document{}, errors.New("only Markdown, plain text, or PDF is supported")
 	}
 	id, err := domain.NewID()
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *Service) Upload(ctx context.Context, tenantID, projectID, kbID, userID,
 		_ = s.repo.MarkFailed(ctx, tenantID, projectID, id, err.Error())
 		return Document{}, err
 	}
-	return doc, nil
+	return s.repo.GetDocument(ctx, tenantID, projectID, id)
 }
 
 func (s *Service) Status(ctx context.Context, tenantID, projectID, documentID, userID string) (Document, error) {
@@ -181,7 +181,11 @@ func (s *Service) Handler(ctx context.Context, job jobs.Job) (err error) {
 		return err
 	}
 	defer r.Close()
-	body, err := io.ReadAll(r)
+	raw, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	body, err := extractPlainText(doc.MediaType, raw)
 	if err != nil {
 		return err
 	}
@@ -215,12 +219,23 @@ func (s *Service) enqueue(ctx context.Context, doc Document) error {
 	payload, _ := json.Marshal(map[string]string{"TenantID": doc.TenantID, "ProjectID": doc.ProjectID, "DocumentID": doc.ID})
 	return s.queue.Enqueue(ctx, jobs.Job{TenantID: doc.TenantID, Type: ProcessJobType, Payload: payload, MaxAttempts: 5})
 }
+func allowedMediaType(mediaType string) bool {
+	switch mediaType {
+	case "text/markdown", "text/plain", "application/pdf":
+		return true
+	default:
+		return false
+	}
+}
+
 func mediaTypeFor(name string) string {
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ".md", ".markdown":
 		return "text/markdown"
 	case ".txt":
 		return "text/plain"
+	case ".pdf":
+		return "application/pdf"
 	}
 	return ""
 }

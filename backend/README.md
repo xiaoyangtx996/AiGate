@@ -30,26 +30,36 @@ required.
 
 ## Project knowledge RAG
 
-Apply `migrations/000007_project_knowledge.up.sql`, then configure the same
-local object directory for the API and worker:
+Apply `migrations/000007_project_knowledge.up.sql` and
+`migrations/000008_knowledge_pdf_embed.up.sql`, then configure the same local
+object directory for the API and worker:
 
 ```bash
 export AIGATE_OBJECT_STORAGE_PATH=./data/objects
 export AIGATE_OBJECT_MAX_BYTES=20971520
+# Optional OpenAI-compatible embeddings (defaults to local HashEmbedder):
+# export AIGATE_EMBEDDING_BASE_URL=https://api.openai.com/v1
+# export AIGATE_EMBEDDING_API_KEY=sk-...
+# export AIGATE_EMBEDDING_MODEL=text-embedding-3-small
+# export AIGATE_EMBEDDING_DIMENSIONS=384
 go run ./cmd/api
 # Run separately with the same environment:
 go run ./cmd/worker
 ```
 
-Authenticated project members can create a KB at
-`POST /v1/projects/{projectID}/knowledge-bases`, upload Markdown at
-`POST /v1/projects/{projectID}/knowledge-bases/{kbID}/documents?filename=guide.md`,
-poll `GET /v1/projects/{projectID}/documents/{documentID}`, and search with
-`POST /v1/projects/{projectID}/knowledge-bases/{kbID}/search`. Search results
-include citation `document_id`, `span_start`, and `span_end`. Failed documents
-can be requeued with `POST /v1/projects/{projectID}/documents/{documentID}/retry`.
+Both `cmd/api` and `cmd/worker` must share the object storage path; otherwise
+uploads stay `queued` forever.
 
-Plan 04 uses a deterministic local 384-dimensional embedder for reproducible
-smoke tests. `rag.Embedder` remains the boundary for a later provider-backed
-embedding model. Vector retrieval always filters tenant, project, and KB before
+Authenticated project members (or tenant `platform_admin`) can:
+
+1. `POST /v1/projects/{projectID}/knowledge-bases` — create KB
+2. `POST /v1/projects/{projectID}/knowledge-bases/{kbID}/documents?filename=guide.md` — upload Markdown, plain text, or PDF (`Content-Type` / extension)
+3. `GET /v1/projects/{projectID}/documents/{documentID}` — poll until `ready` / `failed`
+4. `POST /v1/projects/{projectID}/knowledge-bases/{kbID}/search` — retrieve chunks with nested `citation`
+5. `POST /v1/projects/{projectID}/documents/{documentID}/retry` — requeue **failed** documents only
+
+When `AIGATE_EMBEDDING_BASE_URL` is unset, Plan 04 uses a deterministic local
+384-d `HashEmbedder` for reproducible smoke tests. Set the embedding env vars
+on **both** API and worker to switch to a provider-backed model (vectors remain
+384-d for pgvector). Retrieval always filters tenant, project, and KB before
 ranking.

@@ -60,7 +60,12 @@ func main() {
 	}
 	alertService := alerts.NewService(alerts.NewPostgres(store), nil)
 	objects := storage.Local{Root: envOr("AIGATE_OBJECT_STORAGE_PATH", "./data/objects"), MaxBytes: envInt64("AIGATE_OBJECT_MAX_BYTES", 20<<20)}
-	embedder := rag.HashEmbedder{}
+	embedder := rag.NewEmbedder(rag.EmbedderConfig{
+		BaseURL:    os.Getenv("AIGATE_EMBEDDING_BASE_URL"),
+		APIKey:     os.Getenv("AIGATE_EMBEDDING_API_KEY"),
+		Model:      envOr("AIGATE_EMBEDDING_MODEL", "text-embedding-3-small"),
+		Dimensions: int(envInt64("AIGATE_EMBEDDING_DIMENSIONS", 384)),
+	})
 	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), embedder)
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,

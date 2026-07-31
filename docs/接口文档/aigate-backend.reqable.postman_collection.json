@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AiGate 后端",
-    "description": "# AiGate 后端接口集合\n\n覆盖 Plan 02（身份/组织）、Plan 03（网关/密钥/配额）与 Plan 03b（审计/告警）。\n\n| 服务 | 地址 |\n|---|---|\n| 管理 API | `http://127.0.0.1:8080` |\n| 网关 | `http://127.0.0.1:8081` |\n| Worker | `go run ./cmd/worker`（投递 webhook） |\n| 上游阶跃 StepFun | `https://api.stepfun.com/step_plan/v1` |\n\n## 本地联调账号\n\n- 租户 ID：`11111111-1111-1111-1111-111111111111`\n- 部门 ID：`22222222-2222-2222-2222-222222222222`\n- 管理员：`admin@example.com` / `change-me`\n\n## 使用顺序建议\n\n1. 先调「登录」拿到 JWT，写入变量 `jwt`\n2. 配置渠道 / 模型单价 / 配额（三级齐全）\n3. 配置「告警策略」webhook（可选）\n4. 签发员工 API Key，把 `secret` 写入 `api_key_secret`\n5. 用网关「对话补全」或「Claude Messages」做真实调用\n6. 用「查询调用日志」「审计事件」「告警列表」核对结果\n7. 本地需同时运行 `cmd/worker` 才能投递 webhook\n\n## 注意\n\n- 未传 `max_tokens` 时，网关按 **256** output tokens 预占配额\n- Claude `/v1/messages` 必须传 `max_tokens`\n- 须配置齐租户+部门+员工三级配额，否则 429 `quota_not_configured`\n- `PUT /v1/alert-policy` 省略 `enabled` 时默认为 `true`\n- MVP 每租户同时仅一个 `active` 渠道；新建或启用会停用同租户其它渠道\n- 厂商密钥只通过「创建/更新渠道」写入，**不要**放进集合明文\n- 本账号可用模型示例：`step-3.5-flash`、`step-3.7-flash`",
+    "description": "# AiGate 后端接口集合\n\n覆盖 Plan 02（身份/组织）、Plan 03（网关/密钥/配额）、Plan 03b（审计/告警）与 Plan 04（项目知识库 RAG）。\n\n| 服务 | 地址 |\n|---|---|\n| 管理 API | `http://127.0.0.1:8080` |\n| 网关 | `http://127.0.0.1:8081` |\n| Worker | `go run ./cmd/worker`（webhook + 知识库切片） |\n| 上游阶跃 StepFun | `https://api.stepfun.com/step_plan/v1` |\n\n## 本地联调账号\n\n- 租户 ID：`11111111-1111-1111-1111-111111111111`\n- 部门 ID：`22222222-2222-2222-2222-222222222222`\n- 示例项目：`aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`\n- 管理员：`admin@example.com` / `change-me`\n\n## 使用顺序建议\n\n1. 先调「登录」拿到 JWT，写入变量 `jwt`\n2. 配置渠道 / 模型单价 / 配额（三级齐全）\n3. 配置「告警策略」webhook（可选）\n4. 签发员工 API Key，把 `secret` 写入 `api_key_secret`\n5. 用网关「对话补全」或「Claude Messages」做真实调用\n6. 用「查询调用日志」「审计事件」「告警列表」核对结果\n7. 知识库：创建 KB → 上传文档 → 等 worker → 检索；api/worker 需同 `AIGATE_OBJECT_STORAGE_PATH`\n8. 本地需同时运行 `cmd/worker` 才能投递 webhook / 处理知识库 job\n\n## 注意\n\n- 未传 `max_tokens` 时，网关按 **256** output tokens 预占配额\n- Claude `/v1/messages` 必须传 `max_tokens`\n- 须配置齐租户+部门+员工三级配额，否则 429 `quota_not_configured`\n- `PUT /v1/alert-policy` 省略 `enabled` 时默认为 `true`\n- MVP 每租户同时仅一个 `active` 渠道；新建或启用会停用同租户其它渠道\n- 厂商密钥只通过「创建/更新渠道」写入，**不要**放进集合明文\n- 本账号可用模型示例：`step-3.5-flash`、`step-3.7-flash`\n- 知识库默认 HashEmbedder；配置 `AIGATE_EMBEDDING_BASE_URL` 可切 OpenAI 兼容 embeddings（384 维）",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -43,6 +43,14 @@
     },
     {
       "key": "project_id",
+      "value": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    },
+    {
+      "key": "kb_id",
+      "value": ""
+    },
+    {
+      "key": "document_id",
       "value": ""
     },
     {
@@ -751,7 +759,106 @@
       ]
     },
     {
-      "name": "08 网关运行时",
+      "name": "08 项目知识库 RAG（Plan 04）",
+      "item": [
+        {
+          "name": "创建知识库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": "{{api_base}}/v1/projects/{{project_id}}/knowledge-bases",
+            "description": "## 创建知识库\n\n`POST /v1/projects/{projectID}/knowledge-bases`\n\n需要项目访问权（项目成员或租户 `platform_admin`）。将返回的 `id` 写入 `kb_id`。",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Demo KB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "上传 Markdown 文档",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/markdown"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": "{{api_base}}/v1/projects/{{project_id}}/knowledge-bases/{{kb_id}}/documents?filename=guide.md",
+            "description": "## 上传文档\n\n`POST .../documents?filename=`\n\n支持 Markdown / 纯文本 / PDF。原始文件写入 `AIGATE_OBJECT_STORAGE_PATH`，状态先为 `queued`，需运行 `cmd/worker`。将 `id` 写入 `document_id`。",
+            "body": {
+              "mode": "raw",
+              "raw": "# AiGate\n\nProject knowledge retrieval keeps citations isolated.\n"
+            }
+          }
+        },
+        {
+          "name": "查询文档状态",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": "{{api_base}}/v1/projects/{{project_id}}/documents/{{document_id}}",
+            "description": "## 查询文档状态\n\n轮询直到 `ready` 或 `failed`。`created_at`/`updated_at` 为真实时间戳。"
+          }
+        },
+        {
+          "name": "检索知识库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": "{{api_base}}/v1/projects/{{project_id}}/knowledge-bases/{{kb_id}}/search",
+            "description": "## 检索\n\n返回 `results[].content/score/citation`；`citation` 含 `document_id`、`span_start`、`span_end`。跨项目会 403。",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"citations isolated\",\n  \"limit\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "重试失败文档",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": "{{api_base}}/v1/projects/{{project_id}}/documents/{{document_id}}/retry",
+            "description": "## 重试\n\n仅当文档 `status=failed` 时返回 204；`ready` 文档会 404。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 网关运行时",
       "item": [
         {
           "name": "对话补全（OpenAI 兼容）",

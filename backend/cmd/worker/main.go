@@ -28,7 +28,13 @@ func main() {
 	defer store.Close()
 	alertService := alerts.NewService(alerts.NewPostgres(store), nil)
 	objects := storage.Local{Root: env("AIGATE_OBJECT_STORAGE_PATH", "./data/objects"), MaxBytes: envInt64("AIGATE_OBJECT_MAX_BYTES", 20<<20)}
-	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), rag.HashEmbedder{})
+	embedder := rag.NewEmbedder(rag.EmbedderConfig{
+		BaseURL:    os.Getenv("AIGATE_EMBEDDING_BASE_URL"),
+		APIKey:     os.Getenv("AIGATE_EMBEDDING_API_KEY"),
+		Model:      env("AIGATE_EMBEDDING_MODEL", "text-embedding-3-small"),
+		Dimensions: int(envInt64("AIGATE_EMBEDDING_DIMENSIONS", 384)),
+	})
+	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), embedder)
 	hostname, _ := os.Hostname()
 	runner := jobs.Runner{
 		Queue: jobs.NewPostgres(store), WorkerID: env("AIGATE_WORKER_ID", fmt.Sprintf("%s-%d", hostname, os.Getpid())), Lease: 30 * time.Second,
