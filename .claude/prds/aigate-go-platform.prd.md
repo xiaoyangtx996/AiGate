@@ -69,7 +69,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | 5 | MCP 资产治理 | 私有注册 + 公共市场启用；授权/计量/健康；调用入审计 | complete | `.claude/plans/05-mcp-assets.md` |
 | 6 | 项目 Agent 与 AiGate Bot | Agent 绑 KB+MCP；Bot 查权限内用量；Skill 扩展点预留 | complete | `.claude/plans/06-agents.md` |
 | 7a | 瘦控制台（Demo 0） | 登录、组织、密钥、配额、调用日志/导出、渠道凭证 | complete | `.claude/plans/07a-console-thin.md` |
-| 7b | 管理控制台完整 MVP | 项目/KB/MCP/Agent/看板/成本导出 | pending | `.claude/plans/07-admin-console.md` |
+| 7b | 管理控制台完整 MVP | 项目/KB/MCP/Agent/看板/成本导出 | complete | `.claude/plans/07-admin-console.md` |
 | 8 | Skill 活资产（后置） | 记忆/版本/优化钩子/计费事件 | pending | `.claude/plans/08-skill-assets.md` |
 | 9 | 部署与运维切片 | compose + migrate + readiness | pending | `.claude/plans/09-deploy-ops.md` |
 
@@ -106,5 +106,5 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Skill 过早投入 | Medium | Medium | 08 后置；06 仅预留扩展点 |
 
 ---
-*Status: READY — Milestones 1–3b and 7a complete; continue with Plan 04/05 `/goal`.*
+*Status: READY — Milestones through 07b complete; Plan 08 remains pending; continue with Plan 09 `/goal`.*
 *Legacy snapshot tag: `legacy-nuxt-aigate`.*

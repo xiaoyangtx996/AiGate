@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bell, Building2, ChevronDown, KeyRound, LockKeyhole, LogOut, ScrollText, ServerCog, ShieldCheck } from 'lucide-vue-next'
+import { BarChart3, Bell, Bot, Building2, ChevronDown, FileText, KeyRound, LockKeyhole, LogOut, Network, ScrollText, ServerCog, ShieldCheck, Users } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, type Menu, type SessionInfo } from '../lib/api'
@@ -10,10 +10,15 @@ const route = useRoute()
 const router = useRouter()
 const info = ref<SessionInfo | null>(null)
 const switching = ref(false)
-const icons = { organization: Building2, keys_quota: KeyRound, logs: ScrollText, alerts: Bell, channels: ServerCog }
+const icons = { organization: Building2, keys_quota: KeyRound, logs: ScrollText, alerts: Bell, channels: ServerCog, projects: Users, knowledge: FileText, mcp: Network, agents: Bot, usage: BarChart3, bot: Bot }
 const menus = computed(() => info.value?.menus || [])
 const tenant = computed(() => info.value?.tenant)
-const roleLabel = computed(() => info.value?.identity.platform ? '总公司管理员' : info.value?.identity.roles.includes('platform_admin') ? '租户管理员' : '租户用户')
+const roleLabel = computed(() => {
+  if (info.value?.identity.platform) return '总公司管理员'
+  const roles = info.value?.identity.roles || []
+  if (roles.includes('platform_admin')) return '租户管理员'
+  return [roles.includes('finance_auditor') ? '财务审计' : '', roles.includes('project_member') ? '项目成员' : ''].filter(Boolean).join(' + ') || '自定义角色'
+})
 
 async function loadSession() {
   try {

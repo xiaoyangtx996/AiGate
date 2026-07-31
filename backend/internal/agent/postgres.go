@@ -65,6 +65,34 @@ func (p *Postgres) Get(ctx context.Context, tenant, project, id string) (Agent, 
 	return a, err
 }
 
+func (p *Postgres) List(ctx context.Context, tenant, project string) ([]Agent, error) {
+	rows, err := p.db.Pool().Query(ctx, `SELECT id FROM project_agents WHERE tenant_id=$1 AND project_id=$2 AND active ORDER BY created_at,id`, tenant, project)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	items := make([]Agent, 0, len(ids))
+	for _, id := range ids {
+		item, err := p.Get(ctx, tenant, project, id)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
 func (p *Postgres) ids(ctx context.Context, sql string, args ...any) ([]string, error) {
 	rows, err := p.db.Pool().Query(ctx, sql, args...)
 	if err != nil {

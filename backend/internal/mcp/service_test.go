@@ -49,6 +49,10 @@ type repoStub struct {
 	alerted     bool
 }
 
+func (r *repoStub) ListProjectAssets(context.Context, string, string) ([]Asset, error) {
+	return nil, nil
+}
+
 func (r *repoStub) CreateAsset(_ context.Context, a Asset) error        { r.asset = a; return nil }
 func (r *repoStub) ListAssets(context.Context, string) ([]Asset, error) { return []Asset{r.asset}, nil }
 func (r *repoStub) GetAsset(context.Context, string, string) (Asset, error) {

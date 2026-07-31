@@ -3,13 +3,14 @@ import { Ban, Check, Copy, FlaskConical, KeyRound, Plus, RefreshCw, ShieldAlert,
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import EmptyState from '../components/EmptyState.vue'
 import UiModal from '../components/UiModal.vue'
-import { api, gatewaySmoke, type APIKey, type Organization, type User } from '../lib/api'
+import { api, gatewaySmoke, type APIKey, type Organization, type Project, type User } from '../lib/api'
 import { session } from '../lib/session'
 import { toast } from '../lib/toast'
 
 const keys = ref<APIKey[]>([])
 const organizations = ref<Organization[]>([])
 const users = ref<User[]>([])
+const projects = ref<Project[]>([])
 const loading = ref(true)
 const keyModal = ref(false)
 const secretModal = ref(false)
@@ -17,7 +18,7 @@ const issuedSecret = ref('')
 const saving = ref(false)
 const keyForm = reactive({ user_id: '', name: '', allowed: '' })
 const quotaForm = reactive({ scope: 'tenant', scope_id: '', limit_tokens: 10000 })
-const smoke = reactive({ apiKey: '', model: 'gpt-4o-mini', prompt: '用一句话确认网关可用。', loading: false, status: 0, traceID: '', message: '' })
+const smoke = reactive({ apiKey: '', projectID: '', model: 'gpt-4o-mini', prompt: '用一句话确认网关可用。', loading: false, status: 0, traceID: '', message: '' })
 const userMap = computed(() => Object.fromEntries(users.value.map((item) => [item.id, item])))
 const organizationMap = computed(() => Object.fromEntries(organizations.value.map((item) => [item.id, item.name])))
 const quotaTargets = computed(() => quotaForm.scope === 'organization' ? organizations.value : quotaForm.scope === 'user' ? users.value : [])
@@ -29,7 +30,7 @@ watch(() => quotaForm.scope, (scope) => {
 async function load() {
   loading.value = true
   try {
-    ;[keys.value, organizations.value, users.value] = await Promise.all([api.keys(), api.organizations(), api.users()])
+    ;[keys.value, organizations.value, users.value, projects.value] = await Promise.all([api.keys(), api.organizations(), api.users(), api.projectContexts()])
     if (!quotaForm.scope_id) quotaForm.scope_id = session.claims.tenant_id || ''
   } catch (error) {
     toast(error instanceof Error ? error.message : '密钥数据加载失败', 'error')
@@ -119,7 +120,7 @@ onMounted(load)
 
     <section class="smoke-panel">
       <div class="section-heading"><div><h2>网关验证</h2><span>OpenAI Chat Completions</span></div><FlaskConical :size="20" /></div>
-      <form class="smoke-grid" @submit.prevent="runSmoke"><label><span>员工 API Key</span><input v-model.trim="smoke.apiKey" required type="password" autocomplete="off" placeholder="ag_..." /></label><label><span>模型</span><input v-model.trim="smoke.model" required /></label><label class="smoke-grid__prompt"><span>测试消息</span><input v-model.trim="smoke.prompt" required /></label><button class="button button--secondary" :disabled="smoke.loading"><FlaskConical :size="16" />{{ smoke.loading ? '请求中' : '发起调用' }}</button></form>
+      <form class="smoke-grid" @submit.prevent="runSmoke"><label><span>员工 API Key</span><input v-model.trim="smoke.apiKey" required type="password" autocomplete="off" placeholder="ag_..." /></label><label><span>归因项目（可选）</span><select v-model="smoke.projectID"><option value="">未归因</option><option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option></select></label><label><span>模型</span><input v-model.trim="smoke.model" required /></label><label class="smoke-grid__prompt"><span>测试消息</span><input v-model.trim="smoke.prompt" required /></label><button class="button button--secondary" :disabled="smoke.loading"><FlaskConical :size="16" />{{ smoke.loading ? '请求中' : '发起调用' }}</button></form>
       <div v-if="smoke.status" class="smoke-result" :class="smoke.status >= 400 ? 'smoke-result--blocked' : 'smoke-result--ok'"><component :is="smoke.status >= 400 ? Ban : Check" :size="18" /><strong>HTTP {{ smoke.status }}</strong><span>{{ smoke.message }}</span><code v-if="smoke.traceID">{{ smoke.traceID }}</code></div>
     </section>
 

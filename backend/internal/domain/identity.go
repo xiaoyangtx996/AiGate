@@ -4,8 +4,9 @@ import "time"
 
 const (
 	// RolePlatformAdmin is retained for compatibility and represents a tenant administrator.
-	RolePlatformAdmin = "platform_admin"
-	RoleProjectMember = "project_member"
+	RolePlatformAdmin  = "platform_admin"
+	RoleProjectMember  = "project_member"
+	RoleFinanceAuditor = "finance_auditor"
 )
 
 type User struct {

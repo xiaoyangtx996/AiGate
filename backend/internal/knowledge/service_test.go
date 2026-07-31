@@ -35,6 +35,13 @@ type repoStub struct {
 	chunks []Chunk
 }
 
+func (r *repoStub) ListKnowledgeBases(context.Context, string, string) ([]KnowledgeBase, error) {
+	return nil, nil
+}
+func (r *repoStub) ListDocuments(context.Context, string, string, string) ([]Document, error) {
+	return nil, nil
+}
+
 func (r *repoStub) CreateKnowledgeBase(_ context.Context, k KnowledgeBase) error {
 	now := time.Now().UTC()
 	k.CreatedAt, k.UpdatedAt = now, now

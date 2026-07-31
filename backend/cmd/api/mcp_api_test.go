@@ -23,6 +23,10 @@ type mcpAPIRepo struct {
 	usages  int
 }
 
+func (r *mcpAPIRepo) ListProjectAssets(context.Context, string, string) ([]mcp.Asset, error) {
+	return nil, nil
+}
+
 func (r *mcpAPIRepo) CreateAsset(_ context.Context, a mcp.Asset) error { r.asset = a; return nil }
 func (r *mcpAPIRepo) ListAssets(context.Context, string) ([]mcp.Asset, error) {
 	return []mcp.Asset{r.asset}, nil

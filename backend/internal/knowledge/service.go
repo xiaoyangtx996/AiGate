@@ -59,13 +59,30 @@ type Access interface {
 type Repository interface {
 	CreateKnowledgeBase(context.Context, KnowledgeBase) error
 	GetKnowledgeBase(context.Context, string, string, string) (KnowledgeBase, error)
+	ListKnowledgeBases(context.Context, string, string) ([]KnowledgeBase, error)
 	CreateDocument(context.Context, Document) error
 	GetDocument(context.Context, string, string, string) (Document, error)
+	ListDocuments(context.Context, string, string, string) ([]Document, error)
 	MarkProcessing(context.Context, string, string, string) error
 	ReplaceChunksAndMarkReady(context.Context, Document, []Chunk) error
 	MarkFailed(context.Context, string, string, string, string) error
 	RequeueDocument(context.Context, string, string, string) error
 }
+
+func (s *Service) List(ctx context.Context, tenantID, projectID, userID string) ([]KnowledgeBase, error) {
+	if err := s.authorize(ctx, tenantID, projectID, userID); err != nil {
+		return nil, err
+	}
+	return s.repo.ListKnowledgeBases(ctx, tenantID, projectID)
+}
+
+func (s *Service) Documents(ctx context.Context, tenantID, projectID, kbID, userID string) ([]Document, error) {
+	if err := s.authorize(ctx, tenantID, projectID, userID); err != nil {
+		return nil, err
+	}
+	return s.repo.ListDocuments(ctx, tenantID, projectID, kbID)
+}
+
 type ObjectStore interface {
 	Put(context.Context, string, io.Reader) (int64, error)
 	Open(context.Context, string) (io.ReadCloser, error)

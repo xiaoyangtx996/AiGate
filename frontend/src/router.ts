@@ -7,6 +7,12 @@ import KeysQuotaView from './views/KeysQuotaView.vue'
 import LogsView from './views/LogsView.vue'
 import AlertsView from './views/AlertsView.vue'
 import ChannelsView from './views/ChannelsView.vue'
+import ProjectsView from './views/ProjectsView.vue'
+import KnowledgeView from './views/KnowledgeView.vue'
+import MCPView from './views/MCPView.vue'
+import AgentsView from './views/AgentsView.vue'
+import UsageView from './views/UsageView.vue'
+import BotView from './views/BotView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -21,6 +27,12 @@ export const router = createRouter({
         { path: 'logs', component: LogsView },
         { path: 'alerts', component: AlertsView },
         { path: 'channels', component: ChannelsView },
+        { path: 'projects', component: ProjectsView },
+        { path: 'knowledge', component: KnowledgeView },
+        { path: 'mcp', component: MCPView },
+        { path: 'agents', component: AgentsView },
+        { path: 'usage', component: UsageView },
+        { path: 'bot', component: BotView },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },

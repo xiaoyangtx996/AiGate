@@ -36,6 +36,22 @@ func (p *Postgres) ListAssets(ctx context.Context, tenant string) ([]Asset, erro
 	}
 	return items, rows.Err()
 }
+func (p *Postgres) ListProjectAssets(ctx context.Context, tenant, project string) ([]Asset, error) {
+	rows, err := p.db.Pool().Query(ctx, `SELECT a.id,a.tenant_id,a.name,a.source,COALESCE(a.marketplace_id,''),a.version,a.health_status,a.consecutive_failures,a.active FROM mcp_grants g JOIN mcp_assets a ON a.tenant_id=g.tenant_id AND a.id=g.mcp_asset_id WHERE g.tenant_id=$1 AND g.project_id=$2 AND g.agent_id='' AND a.active ORDER BY a.name,a.id`, tenant, project)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Asset{}
+	for rows.Next() {
+		var a Asset
+		if err := rows.Scan(&a.ID, &a.TenantID, &a.Name, &a.Source, &a.MarketplaceID, &a.Version, &a.HealthStatus, &a.ConsecutiveFailures, &a.Active); err != nil {
+			return nil, err
+		}
+		items = append(items, a)
+	}
+	return items, rows.Err()
+}
 func (p *Postgres) GetAsset(ctx context.Context, tenant, id string) (Asset, error) {
 	var a Asset
 	err := p.db.Pool().QueryRow(ctx, `SELECT id,tenant_id,name,source,COALESCE(marketplace_id,''),version,health_status,consecutive_failures,active,encrypted_endpoint,encrypted_credential FROM mcp_assets WHERE tenant_id=$1 AND id=$2 AND active`, tenant, id).Scan(&a.ID, &a.TenantID, &a.Name, &a.Source, &a.MarketplaceID, &a.Version, &a.HealthStatus, &a.ConsecutiveFailures, &a.Active, &a.EncryptedEndpoint, &a.EncryptedCredential)

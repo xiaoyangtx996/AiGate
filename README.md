@@ -25,6 +25,8 @@ psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v O
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000008_knowledge_pdf_embed.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000009_mcp_assets.up.sql
 psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000010_project_agents.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000011_finance_auditor_role.up.sql
+psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000012_api_logs_project.up.sql
 ```
 
 Bootstrap tenant administrator and login (JWT secret ≥ 32 bytes):
@@ -75,7 +77,9 @@ INSERT INTO organizations (id, tenant_id, name)
 VALUES ('ORGANIZATION_UUID', 'TENANT_UUID', 'IT');
 ```
 
-Tenant insert auto-creates `platform_admin` and `project_member` roles.
+Tenant insert auto-creates `platform_admin`, `project_member` and read-only
+`finance_auditor` roles. Tenant menu settings may disable their menu entries,
+but never expand the APIs granted by a role.
 
 ## Gateway / NewAPI sidecar
 
@@ -111,6 +115,10 @@ curl http://localhost:8081/v1/chat/completions \
 `AIGATE_GATEWAY_ADDR` defaults to `:8081`. `X-Forwarded-For` is used only when
 the direct peer belongs to `TRUSTED_PROXY_CIDRS`. The API and gateway processes
 must receive the same `AIGATE_CHANNEL_ENCRYPTION_KEY` value.
+
+The current channel console manages the NewAPI sidecar address, encrypted
+credential and one active channel per tenant. Advanced routing is deferred to
+Plan 09 or a later milestone.
 
 ## Audit, jobs and quota alerts
 
@@ -175,7 +183,38 @@ Demo 0 click path:
 
 ## Frontend
 
-See [`frontend/README.md`](frontend/README.md). The Demo 0 console is a standalone Vue 3 + Vite SPA and communicates with Go only over HTTP.
+Plan 07b Demo3 click path (API `:8080`, gateway `:8081`, worker and SPA `:5173`
+must all be running):
+
+1. Log in as `admin@example.com` / `change-me`. In **项目管理**, select a
+   department, create a project, then grant an employee as project member.
+2. Open the project's **知识库** link, create a KB, upload Markdown/text/PDF and
+   keep the page open until the document changes from `queued/processing` to `ready`.
+   Run a search and verify the result displays document/span citations.
+3. In **MCP 管理**, register a private MCP or install a marketplace entry. An
+   installed asset is only in the tenant catalog; click **授权当前项目** and
+   verify its health badge and granted state.
+4. In **Agent**, keep the same project context, select the KB and any MCP asset
+   already granted to that project, then create the Agent. Chat with an
+   employee Gateway API Key and verify citations are rendered. The key is held
+   only in component memory and is cleared after a successful send.
+5. Open **用量看板**. Administrators and finance auditors default to **全部项目**;
+   optionally filter by organization (which cascades the project dropdown) or one
+   project. Verify the combined LLM + MCP daily calls, input/output tokens,
+   split costs and quota utilization. Date inputs are UTC days: `from` is
+   `00:00:00Z` and `to` is the next day's exclusive `00:00:00Z`. **导出成本汇总**
+   uses the same filters. **调用日志** and its raw CSV include the attributed
+   project ID/name.
+6. A `project_member` session receives Projects/Knowledge/Agents menus and only
+   its membership-filtered project contexts. A `finance_auditor` receives
+   Usage/Logs. A user holding both roles receives the union of both menu sets;
+   `tenant_menu_settings` can only remove entries. Finance remains read-only.
+7. As an administrator, open **管理助手** and ask a read-only tenant usage
+   question. The Bot is not exposed to finance-only sessions.
+
+The backend remains authoritative for all project and role permissions.
+
+See [`frontend/README.md`](frontend/README.md). The Plan 07b console is a standalone Vue 3 + Vite SPA and communicates with Go only over HTTP.
 
 ## API docs
 

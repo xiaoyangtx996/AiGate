@@ -24,6 +24,22 @@ func (p *Postgres) GetKnowledgeBase(ctx context.Context, t, project, id string) 
 	err := p.db.Pool().QueryRow(ctx, `SELECT id,tenant_id,project_id,name,created_by,created_at,updated_at FROM knowledge_bases WHERE tenant_id=$1 AND project_id=$2 AND id=$3`, t, project, id).Scan(&k.ID, &k.TenantID, &k.ProjectID, &k.Name, &k.CreatedBy, &k.CreatedAt, &k.UpdatedAt)
 	return k, mapNotFound(err)
 }
+func (p *Postgres) ListKnowledgeBases(ctx context.Context, t, project string) ([]KnowledgeBase, error) {
+	rows, err := p.db.Pool().Query(ctx, `SELECT id,tenant_id,project_id,name,created_by,created_at,updated_at FROM knowledge_bases WHERE tenant_id=$1 AND project_id=$2 ORDER BY created_at,id`, t, project)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []KnowledgeBase{}
+	for rows.Next() {
+		var k KnowledgeBase
+		if err := rows.Scan(&k.ID, &k.TenantID, &k.ProjectID, &k.Name, &k.CreatedBy, &k.CreatedAt, &k.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, k)
+	}
+	return items, rows.Err()
+}
 func (p *Postgres) CreateDocument(ctx context.Context, d Document) error {
 	_, err := p.db.Pool().Exec(ctx, `INSERT INTO knowledge_documents(id,tenant_id,project_id,knowledge_base_id,filename,media_type,object_key,size_bytes,status,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'queued',$9)`, d.ID, d.TenantID, d.ProjectID, d.KnowledgeBaseID, d.Filename, d.MediaType, d.ObjectKey, d.SizeBytes, d.CreatedBy)
 	return err
@@ -32,6 +48,22 @@ func (p *Postgres) GetDocument(ctx context.Context, t, project, id string) (Docu
 	var d Document
 	err := p.db.Pool().QueryRow(ctx, `SELECT id,tenant_id,project_id,knowledge_base_id,filename,media_type,object_key,size_bytes,status,last_error,created_by,created_at,updated_at FROM knowledge_documents WHERE tenant_id=$1 AND project_id=$2 AND id=$3`, t, project, id).Scan(&d.ID, &d.TenantID, &d.ProjectID, &d.KnowledgeBaseID, &d.Filename, &d.MediaType, &d.ObjectKey, &d.SizeBytes, &d.Status, &d.LastError, &d.CreatedBy, &d.CreatedAt, &d.UpdatedAt)
 	return d, mapNotFound(err)
+}
+func (p *Postgres) ListDocuments(ctx context.Context, t, project, kb string) ([]Document, error) {
+	rows, err := p.db.Pool().Query(ctx, `SELECT id,tenant_id,project_id,knowledge_base_id,filename,media_type,object_key,size_bytes,status,last_error,created_by,created_at,updated_at FROM knowledge_documents WHERE tenant_id=$1 AND project_id=$2 AND knowledge_base_id=$3 ORDER BY created_at DESC,id`, t, project, kb)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Document{}
+	for rows.Next() {
+		var d Document
+		if err := rows.Scan(&d.ID, &d.TenantID, &d.ProjectID, &d.KnowledgeBaseID, &d.Filename, &d.MediaType, &d.ObjectKey, &d.SizeBytes, &d.Status, &d.LastError, &d.CreatedBy, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, d)
+	}
+	return items, rows.Err()
 }
 func (p *Postgres) MarkProcessing(ctx context.Context, t, project, id string) error {
 	return one(p.db.Pool().Exec(ctx, `UPDATE knowledge_documents SET status='processing',last_error='',updated_at=now() WHERE tenant_id=$1 AND project_id=$2 AND id=$3`, t, project, id))

@@ -16,7 +16,7 @@ type GatewayClient struct {
 	Client  *http.Client
 }
 
-func (g GatewayClient) Complete(ctx context.Context, key, model, system string, messages []Message) (string, string, error) {
+func (g GatewayClient) Complete(ctx context.Context, key, model, system, projectID string, messages []Message) (string, string, error) {
 	all := append([]Message{{Role: "system", Content: system}}, messages...)
 	body, err := json.Marshal(map[string]any{"model": model, "messages": all, "max_tokens": 512})
 	if err != nil {
@@ -28,6 +28,9 @@ func (g GatewayClient) Complete(ctx context.Context, key, model, system string, 
 	}
 	req.Header.Set("Authorization", "Bearer "+key)
 	req.Header.Set("Content-Type", "application/json")
+	if projectID = strings.TrimSpace(projectID); projectID != "" {
+		req.Header.Set("X-AiGate-Project-ID", projectID)
+	}
 	client := g.Client
 	if client == nil {
 		client = &http.Client{Timeout: 2 * time.Minute}

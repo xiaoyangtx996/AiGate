@@ -14,7 +14,7 @@ import (
 
 type pgGateway struct{}
 
-func (pgGateway) Complete(context.Context, string, string, string, []Message) (string, string, error) {
+func (pgGateway) Complete(context.Context, string, string, string, string, []Message) (string, string, error) {
 	return "cited answer [document=doc span=0:10]", "agent-trace", nil
 }
 

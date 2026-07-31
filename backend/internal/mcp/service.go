@@ -67,6 +67,7 @@ type Repository interface {
 	GetMarketplace(context.Context, string) (MarketplaceEntry, error)
 	Grant(context.Context, Grant) error
 	Authorized(context.Context, string, string, string, string) (bool, error)
+	ListProjectAssets(context.Context, string, string) ([]Asset, error)
 	WriteUsage(context.Context, Usage) error
 	// RecordHealth updates consecutive failure state. retry=true means the worker should fail the job so Claim/Fail retries can accumulate toward unhealthy.
 	RecordHealth(context.Context, string, string, bool, string, string) (alerted bool, retry bool, err error)
@@ -148,6 +149,16 @@ func (s *Service) Install(ctx context.Context, tenantID, entryID, name string) (
 }
 func (s *Service) List(ctx context.Context, tenant string) ([]Asset, error) {
 	return s.repo.ListAssets(ctx, tenant)
+}
+func (s *Service) ListProjectAssets(ctx context.Context, tenant, project, user string) ([]Asset, error) {
+	allowed, err := s.access.HasProjectAccess(ctx, tenant, project, user)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, ErrForbidden
+	}
+	return s.repo.ListProjectAssets(ctx, tenant, project)
 }
 func (s *Service) Marketplace(ctx context.Context) ([]MarketplaceEntry, error) {
 	return s.repo.ListMarketplace(ctx)

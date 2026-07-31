@@ -89,7 +89,7 @@ async function createRole() {
 }
 
 async function removeRole(role: Role) {
-  if (['platform_admin', 'project_member'].includes(role.code) || !window.confirm(`删除角色“${role.name}”？`)) return
+  if (['platform_admin', 'project_member', 'finance_auditor'].includes(role.code) || !window.confirm(`删除角色“${role.name}”？`)) return
   try { await api.deleteRole(role.id); toast('角色已删除', 'success'); await load() }
   catch (error) { toast(error instanceof Error ? error.message : '角色删除失败', 'error') }
 }
@@ -130,7 +130,7 @@ onMounted(load)
 
     <section class="section-block">
       <div class="section-heading"><div><h2>角色</h2><span>{{ roles.length }} 个租户角色</span></div><button class="button button--secondary" @click="roleModal = true"><Plus :size="16" />新建角色</button></div>
-      <div class="role-grid"><article v-for="role in roles" :key="role.id" class="role-card"><span class="summary-icon"><ShieldCheck :size="18" /></span><div><strong>{{ role.name }}</strong><code>{{ role.code }}</code><small>{{ role.description || '暂无描述' }}</small></div><button v-if="!['platform_admin','project_member'].includes(role.code)" class="icon-button icon-button--danger" title="删除角色" @click="removeRole(role)"><Trash2 :size="15" /></button></article></div>
+      <div class="role-grid"><article v-for="role in roles" :key="role.id" class="role-card"><span class="summary-icon"><ShieldCheck :size="18" /></span><div><strong>{{ role.name }}</strong><code>{{ role.code }}</code><small>{{ role.description || '暂无描述' }}</small></div><button v-if="!['platform_admin','project_member','finance_auditor'].includes(role.code)" class="icon-button icon-button--danger" title="删除角色" @click="removeRole(role)"><Trash2 :size="15" /></button></article></div>
     </section>
 
     <section class="section-block">

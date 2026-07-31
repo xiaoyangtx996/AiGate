@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/xiaoyangtx996/AiGate/internal/apikey"
 	"github.com/xiaoyangtx996/AiGate/internal/billing"
 	"github.com/xiaoyangtx996/AiGate/internal/channel"
@@ -39,11 +40,16 @@ type Logger interface {
 }
 
 type Log struct {
-	TraceID, TenantID, OrganizationID, UserID, APIKeyID, Model, ErrorCode string
-	InputTokens, OutputTokens, TotalTokens                                int64
-	CostMicros                                                            *int64
-	Estimated, Blocked                                                    bool
-	StatusCode                                                            int
+	TraceID, TenantID, OrganizationID, UserID, APIKeyID, ProjectID, Model, ErrorCode string
+	InputTokens, OutputTokens, TotalTokens                                           int64
+	CostMicros                                                                       *int64
+	Estimated, Blocked                                                               bool
+	StatusCode                                                                       int
+}
+
+// ProjectAccess validates optional X-AiGate-Project-ID attribution headers.
+type ProjectAccess interface {
+	HasProjectAccess(context.Context, string, string, string) (bool, error)
 }
 
 type LogRecord struct {
@@ -53,6 +59,8 @@ type LogRecord struct {
 	OrganizationID string    `json:"organization_id"`
 	UserID         string    `json:"user_id"`
 	APIKeyID       string    `json:"api_key_id,omitempty"`
+	ProjectID      string    `json:"project_id"`
+	ProjectName    string    `json:"project_name"`
 	Model          string    `json:"model"`
 	InputTokens    int64     `json:"input_tokens"`
 	OutputTokens   int64     `json:"output_tokens"`
@@ -79,6 +87,7 @@ type Handler struct {
 	Quota             Quota
 	Channels          ChannelResolver
 	Logs              Logger
+	Projects          ProjectAccess
 	Client            *http.Client
 	TrustedProxyCIDRs []string
 }
@@ -118,6 +127,15 @@ func (h *Handler) proxyOpenAI(w http.ResponseWriter, r *http.Request, claudeIn b
 		writeError(w, http.StatusUnauthorized, "invalid_api_key", err.Error())
 		return
 	}
+	projectID, projectError := h.authorizedProjectID(r.Context(), r, principal)
+	if projectError != "" {
+		status := http.StatusBadRequest
+		if projectError == "project_forbidden" {
+			status = http.StatusForbidden
+		}
+		writeError(w, status, projectError, "project attribution is invalid or forbidden")
+		return
+	}
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4<<20))
 	if err != nil {
 		writeError(w, 400, "invalid_request", "invalid request body")
@@ -146,7 +164,7 @@ func (h *Handler) proxyOpenAI(w http.ResponseWriter, r *http.Request, claudeIn b
 	}
 	route, err := h.Channels.Resolve(r.Context(), principal.TenantID, publicModelName)
 	if err != nil {
-		h.log(r.Context(), Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, Model: publicModelName, Estimated: true, StatusCode: 502, ErrorCode: "no_route"})
+		h.log(r.Context(), Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, ProjectID: projectID, Model: publicModelName, Estimated: true, StatusCode: 502, ErrorCode: "no_route"})
 		writeError(w, 502, "no_route", "no upstream route")
 		return
 	}
@@ -160,7 +178,7 @@ func (h *Handler) proxyOpenAI(w http.ResponseWriter, r *http.Request, claudeIn b
 			code = "quota_not_configured"
 			message = "tenant/organization/user quota must be configured"
 		}
-		entry := Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, Model: publicModelName, Estimated: true, Blocked: true, StatusCode: http.StatusTooManyRequests, ErrorCode: code}
+		entry := Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, ProjectID: projectID, Model: publicModelName, Estimated: true, Blocked: true, StatusCode: http.StatusTooManyRequests, ErrorCode: code}
 		if h.log(r.Context(), entry) != nil {
 			writeError(w, 500, "log_failed", "failed to record blocked request")
 			return
@@ -190,7 +208,7 @@ func (h *Handler) proxyOpenAI(w http.ResponseWriter, r *http.Request, claudeIn b
 	response, err := client.Do(upstreamReq)
 	if err != nil {
 		_ = h.Quota.Cancel(r.Context(), reservation)
-		h.log(r.Context(), Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, Model: publicModelName, Estimated: true, StatusCode: 502, ErrorCode: "upstream_error"})
+		h.log(r.Context(), Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, ProjectID: projectID, Model: publicModelName, Estimated: true, StatusCode: 502, ErrorCode: "upstream_error"})
 		writeError(w, 502, "upstream_error", "upstream request failed")
 		return
 	}
@@ -213,12 +231,12 @@ func (h *Handler) proxyOpenAI(w http.ResponseWriter, r *http.Request, claudeIn b
 	if err != nil {
 		// Upstream already ran; avoid turning a successful LLM call into a client retry storm.
 		// Leave reservation for later cleanup if settle failed; still return upstream body.
-		entry := Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, Model: publicModelName, InputTokens: input, OutputTokens: output, TotalTokens: total, Estimated: true, StatusCode: response.StatusCode, ErrorCode: "quota_settle_failed"}
+		entry := Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, ProjectID: projectID, Model: publicModelName, InputTokens: input, OutputTokens: output, TotalTokens: total, Estimated: true, StatusCode: response.StatusCode, ErrorCode: "quota_settle_failed"}
 		_ = h.log(r.Context(), entry)
 	} else {
 		cost := billing.Calculate(route.Price, input, output)
 		estimated := cost.Estimated || !usageOK
-		entry := Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, Model: publicModelName, InputTokens: input, OutputTokens: output, TotalTokens: total, CostMicros: cost.Micros, Estimated: estimated, StatusCode: response.StatusCode}
+		entry := Log{TraceID: traceID, TenantID: principal.TenantID, OrganizationID: principal.OrganizationID, UserID: principal.UserID, APIKeyID: principal.KeyID, ProjectID: projectID, Model: publicModelName, InputTokens: input, OutputTokens: output, TotalTokens: total, CostMicros: cost.Micros, Estimated: estimated, StatusCode: response.StatusCode}
 		if response.StatusCode >= 400 {
 			entry.ErrorCode = "upstream_error"
 		}
@@ -240,6 +258,25 @@ func (h *Handler) log(ctx context.Context, entry Log) error {
 		return errors.New("logger is required")
 	}
 	return h.Logs.Write(ctx, entry)
+}
+
+func (h *Handler) authorizedProjectID(ctx context.Context, r *http.Request, principal apikey.Principal) (string, string) {
+	projectID := strings.TrimSpace(r.Header.Get("X-AiGate-Project-ID"))
+	if projectID == "" {
+		return "", ""
+	}
+	var parsed pgtype.UUID
+	if err := parsed.Scan(projectID); err != nil || !parsed.Valid {
+		return "", "invalid_project_id"
+	}
+	if h.Projects == nil {
+		return "", "project_forbidden"
+	}
+	ok, err := h.Projects.HasProjectAccess(ctx, principal.TenantID, projectID, principal.UserID)
+	if err != nil || !ok {
+		return "", "project_forbidden"
+	}
+	return projectID, ""
 }
 
 func chatURL(base string) string {

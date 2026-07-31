@@ -16,15 +16,56 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/gateway"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
+	"github.com/xiaoyangtx996/AiGate/internal/usage"
 )
 
-type apiRepository struct{ users map[string]string }
+type apiRepository struct {
+	users         map[string]string
+	projectAccess bool
+}
 
 type auditRepository struct{ events []audit.Event }
 
 type menuRepository struct {
 	tenants  []auth.TenantOption
 	settings map[string]bool
+}
+
+type projectRepository struct {
+	items            []domain.Project
+	candidates       []domain.User
+	candidateProject string
+	allCalls         int
+	accessibleCalls  int
+	created          *domain.Project
+	createdBy        string
+	err              error
+}
+
+func (r *projectRepository) ListProjects(context.Context, string) ([]domain.Project, error) {
+	r.allCalls++
+	return r.items, r.err
+}
+func (r *projectRepository) CreateProject(_ context.Context, project domain.Project, createdBy string) error {
+	r.created, r.createdBy = &project, createdBy
+	return r.err
+}
+func (r *projectRepository) ListProjectMembers(context.Context, string, string) ([]domain.User, error) {
+	return nil, r.err
+}
+func (r *projectRepository) ListProjectMemberCandidates(_ context.Context, _ string, projectID string) ([]domain.User, error) {
+	r.candidateProject = projectID
+	return r.candidates, r.err
+}
+func (r *projectRepository) ListProjectMembersBatch(context.Context, string, string, bool) (map[string][]domain.User, error) {
+	return map[string][]domain.User{}, r.err
+}
+func (r *projectRepository) ListProjectMemberCandidatesBatch(context.Context, string, string, bool) (map[string][]domain.User, error) {
+	return map[string][]domain.User{}, r.err
+}
+func (r *projectRepository) ListAccessibleProjects(context.Context, string, string) ([]domain.Project, error) {
+	r.accessibleCalls++
+	return r.items, r.err
 }
 
 func (r *menuRepository) ListTenants(context.Context) ([]auth.TenantOption, error) {
@@ -44,6 +85,15 @@ func (r *menuRepository) SetMenuEnabled(_ context.Context, _ string, code string
 type fakeLogReader struct {
 	filter gateway.LogFilter
 	items  []gateway.LogRecord
+}
+type usageRepository struct {
+	filter usage.Filter
+	result usage.Summary
+}
+
+func (r *usageRepository) Summary(_ context.Context, filter usage.Filter) (usage.Summary, error) {
+	r.filter = filter
+	return r.result, nil
 }
 
 func (r *fakeLogReader) List(_ context.Context, filter gateway.LogFilter) ([]gateway.LogRecord, error) {
@@ -93,7 +143,7 @@ func (r *apiRepository) RevokeProject(context.Context, string, string, string) e
 	return nil
 }
 func (r *apiRepository) HasProjectAccess(context.Context, string, string, string) (bool, error) {
-	return false, nil
+	return r.projectAccess, nil
 }
 
 func testToken(t *testing.T, manager *auth.TokenManager, identity auth.Identity) string {
@@ -114,6 +164,170 @@ func TestMemberCannotCallAdminUserAPI(t *testing.T) {
 	app.handler().ServeHTTP(response, request)
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", response.Code)
+	}
+}
+
+func TestMemberCannotListOrCreateProjects(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	app := &api{tokens: manager, projects: &projectRepository{}}
+	for _, tc := range []struct {
+		method string
+		body   string
+	}{{http.MethodGet, ""}, {http.MethodPost, `{"name":"demo","organization_id":"org"}`}} {
+		request := httptest.NewRequest(tc.method, "/v1/projects", strings.NewReader(tc.body))
+		request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "user-a", Roles: []string{domain.RoleProjectMember}}))
+		response := httptest.NewRecorder()
+		app.handler().ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden {
+			t.Fatalf("%s status=%d body=%s", tc.method, response.Code, response.Body.String())
+		}
+	}
+}
+
+func TestProjectMemberCanOnlyListAccessibleProjectContexts(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	repo := &projectRepository{items: []domain.Project{{ID: "project-a", TenantID: "tenant-a", Name: "A"}}}
+	app := &api{tokens: manager, projects: repo}
+	request := httptest.NewRequest(http.MethodGet, "/v1/project-contexts", nil)
+	request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "member-a", Roles: []string{domain.RoleProjectMember}}))
+	response := httptest.NewRecorder()
+	app.handler().ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "project-a") {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestFinanceUsesAllProjectsOnlyForUsageScope(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	for _, tc := range []struct {
+		name, path string
+		roles      []string
+		all        int
+		accessible int
+	}{
+		{"finance usage", "/v1/project-contexts?scope=usage", []string{domain.RoleFinanceAuditor}, 1, 0},
+		{"dual role assets", "/v1/project-contexts", []string{domain.RoleFinanceAuditor, domain.RoleProjectMember}, 0, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &projectRepository{items: []domain.Project{{ID: "project-a"}}}
+			app := &api{tokens: manager, projects: repo}
+			request := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "user-a", Roles: tc.roles}))
+			response := httptest.NewRecorder()
+			app.handler().ServeHTTP(response, request)
+			if response.Code != http.StatusOK || repo.allCalls != tc.all || repo.accessibleCalls != tc.accessible {
+				t.Fatalf("status=%d all=%d accessible=%d", response.Code, repo.allCalls, repo.accessibleCalls)
+			}
+		})
+	}
+}
+
+func TestProjectMemberManagementRequiresProjectMembership(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	for _, tc := range []struct {
+		name    string
+		allowed bool
+		want    int
+	}{{"member", true, http.StatusOK}, {"outsider", false, http.StatusForbidden}} {
+		t.Run(tc.name, func(t *testing.T) {
+			app := &api{tokens: manager, rbac: rbac.NewService(&apiRepository{projectAccess: tc.allowed}), projects: &projectRepository{}}
+			request := httptest.NewRequest(http.MethodGet, "/v1/projects/project-a/members", nil)
+			request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "member-a", Roles: []string{domain.RoleProjectMember}}))
+			response := httptest.NewRecorder()
+			app.handler().ServeHTTP(response, request)
+			if response.Code != tc.want {
+				t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+			}
+		})
+	}
+}
+
+func TestProjectMemberCandidatesUseScopedProjectStore(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	repo := &projectRepository{candidates: []domain.User{{ID: "candidate-a", TenantID: "tenant-a"}}}
+	app := &api{tokens: manager, rbac: rbac.NewService(&apiRepository{projectAccess: true}), projects: repo}
+	request := httptest.NewRequest(http.MethodGet, "/v1/projects/project-a/member-candidates", nil)
+	request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "member-a", Roles: []string{domain.RoleProjectMember}}))
+	response := httptest.NewRecorder()
+	app.handler().ServeHTTP(response, request)
+	if response.Code != http.StatusOK || repo.candidateProject != "project-a" || !strings.Contains(response.Body.String(), "candidate-a") {
+		t.Fatalf("status=%d project=%s body=%s", response.Code, repo.candidateProject, response.Body.String())
+	}
+}
+
+func TestProjectMemberCandidatesBatchRequiresMembershipRole(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	app := &api{tokens: manager, projects: &projectRepository{}}
+	for _, tc := range []struct {
+		roles []string
+		want  int
+	}{
+		{[]string{domain.RoleFinanceAuditor}, http.StatusForbidden},
+		{[]string{domain.RoleProjectMember}, http.StatusOK},
+		{[]string{domain.RolePlatformAdmin}, http.StatusOK},
+	} {
+		request := httptest.NewRequest(http.MethodGet, "/v1/project-member-candidates", nil)
+		request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "u", Roles: tc.roles}))
+		response := httptest.NewRecorder()
+		app.handler().ServeHTTP(response, request)
+		if response.Code != tc.want {
+			t.Fatalf("roles=%v status=%d body=%s", tc.roles, response.Code, response.Body.String())
+		}
+		if tc.want == http.StatusOK && strings.TrimSpace(response.Body.String()) != "{}" {
+			t.Fatalf("roles=%v expected empty object body=%s", tc.roles, response.Body.String())
+		}
+	}
+}
+
+func TestFinanceCanReadUsageButCannotCreateProject(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	repo := &usageRepository{result: usage.Summary{Daily: []usage.Daily{{Day: "2026-07-31", Calls: 2, CostMicros: 3}}}}
+	app := &api{tokens: manager, usage: usage.NewService(repo), projects: &projectRepository{}}
+	token := testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "finance", Roles: []string{domain.RoleFinanceAuditor}})
+	for _, tc := range []struct {
+		method, path, body string
+		want               int
+	}{{http.MethodGet, "/v1/usage/summary?from=2026-07-01T00:00:00Z&to=2026-08-01T00:00:00Z", "", http.StatusOK}, {http.MethodGet, "/v1/usage/cost-rollup.csv?from=2026-07-01T00:00:00Z&to=2026-08-01T00:00:00Z", "", http.StatusOK}, {http.MethodPost, "/v1/projects", `{"name":"x","organization_id":"org"}`, http.StatusForbidden}, {http.MethodPost, "/v1/bot/chat", `{"question":"usage"}`, http.StatusForbidden}} {
+		request := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+		request.Header.Set("Authorization", "Bearer "+token)
+		response := httptest.NewRecorder()
+		app.handler().ServeHTTP(response, request)
+		if response.Code != tc.want {
+			t.Fatalf("%s %s status=%d body=%s", tc.method, tc.path, response.Code, response.Body.String())
+		}
+	}
+	if repo.filter.TenantID != "tenant-a" {
+		t.Fatalf("filter=%+v", repo.filter)
+	}
+}
+
+func TestCreateProjectValidationAndOrganizationNotFound(t *testing.T) {
+	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
+	token := testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "admin-a", Roles: []string{domain.RolePlatformAdmin}})
+	for _, tc := range []struct {
+		name string
+		body string
+		repo *projectRepository
+		want int
+	}{
+		{"missing name", `{"organization_id":"org"}`, &projectRepository{}, http.StatusBadRequest},
+		{"missing organization", `{"name":"demo"}`, &projectRepository{}, http.StatusBadRequest},
+		{"unknown organization", `{"name":"demo","organization_id":"missing"}`, &projectRepository{err: rbac.ErrNotFound}, http.StatusNotFound},
+		{"valid", `{"name":" demo ","organization_id":"org"}`, &projectRepository{}, http.StatusCreated},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			app := &api{tokens: manager, projects: tc.repo}
+			request := httptest.NewRequest(http.MethodPost, "/v1/projects", strings.NewReader(tc.body))
+			request.Header.Set("Authorization", "Bearer "+token)
+			response := httptest.NewRecorder()
+			app.handler().ServeHTTP(response, request)
+			if response.Code != tc.want {
+				t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+			}
+			if tc.want == http.StatusCreated && (tc.repo.created == nil || tc.repo.created.Name != "demo" || tc.repo.createdBy != "admin-a") {
+				t.Fatalf("created=%+v createdBy=%q", tc.repo.created, tc.repo.createdBy)
+			}
+		})
 	}
 }
 
@@ -220,16 +434,16 @@ func TestAuditCSVUsesAuthenticatedTenant(t *testing.T) {
 func TestAPILogCSVUsesTenantAndDateRange(t *testing.T) {
 	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
 	cost := int64(42)
-	reader := &fakeLogReader{items: []gateway.LogRecord{{TraceID: "trace,csv", Model: "demo", CostMicros: &cost, CreatedAt: time.Date(2026, 7, 30, 8, 0, 0, 0, time.UTC)}}}
+	reader := &fakeLogReader{items: []gateway.LogRecord{{TraceID: "trace,csv", ProjectID: "project-a", ProjectName: "Project A", Model: "demo", CostMicros: &cost, CreatedAt: time.Date(2026, 7, 30, 8, 0, 0, 0, time.UTC)}}}
 	app := &api{tokens: manager, logs: reader}
-	request := httptest.NewRequest(http.MethodGet, "/v1/api-logs.csv?from=2026-07-01T00:00:00Z&to=2026-07-31T23:59:59Z", nil)
+	request := httptest.NewRequest(http.MethodGet, "/v1/api-logs.csv?from=2026-07-01T00:00:00Z&to=2026-08-01T00:00:00Z", nil)
 	request.Header.Set("Authorization", "Bearer "+testToken(t, manager, auth.Identity{TenantID: "tenant-a", UserID: "admin", Roles: []string{domain.RolePlatformAdmin}}))
 	response := httptest.NewRecorder()
 	app.handler().ServeHTTP(response, request)
 	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "text/csv; charset=utf-8" {
 		t.Fatalf("status=%d content-type=%s body=%s", response.Code, response.Header().Get("Content-Type"), response.Body.String())
 	}
-	if reader.filter.TenantID != "tenant-a" || reader.filter.From == nil || reader.filter.To == nil || !strings.Contains(response.Body.String(), `"trace,csv"`) {
+	if reader.filter.TenantID != "tenant-a" || reader.filter.From == nil || reader.filter.To == nil || !reader.filter.To.Equal(time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)) || !strings.Contains(response.Body.String(), `"trace,csv"`) || !strings.Contains(response.Body.String(), "project-a,Project A") {
 		t.Fatalf("filter=%+v body=%s", reader.filter, response.Body.String())
 	}
 }

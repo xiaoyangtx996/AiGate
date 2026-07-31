@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ func TestGatewayCORSExposesTraceID(t *testing.T) {
 	request.Header.Set("Origin", "http://localhost:5173")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
-	if response.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" || response.Header().Get("Access-Control-Expose-Headers") != "X-Trace-ID" {
+	if response.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" || response.Header().Get("Access-Control-Expose-Headers") != "X-Trace-ID" || !strings.Contains(response.Header().Get("Access-Control-Allow-Headers"), "X-AiGate-Project-ID") {
 		t.Fatalf("headers=%v", response.Header())
 	}
 }

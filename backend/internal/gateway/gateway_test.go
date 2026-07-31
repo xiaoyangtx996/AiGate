@@ -45,6 +45,12 @@ func (f fakeChannels) Resolve(context.Context, string, string) (channel.Route, e
 
 type fakeLogs struct{ entries []Log }
 
+type fakeProjects struct{ allowed bool }
+
+func (f fakeProjects) HasProjectAccess(context.Context, string, string, string) (bool, error) {
+	return f.allowed, nil
+}
+
 func (l *fakeLogs) Write(_ context.Context, e Log) error {
 	l.entries = append(l.entries, e)
 	return nil
@@ -89,6 +95,30 @@ func TestExhaustedQuotaIsBlockedAndLogged(t *testing.T) {
 	h.ServeHTTP(w, r)
 	if w.Code != 429 || len(logs.entries) != 1 || !logs.entries[0].Blocked || logs.entries[0].ErrorCode != "quota_exhausted" {
 		t.Fatalf("status=%d logs=%+v", w.Code, logs.entries)
+	}
+}
+
+func TestExplicitProjectHeaderMustBeValidAndAuthorized(t *testing.T) {
+	for _, tc := range []struct {
+		name, project string
+		allowed       bool
+		status        int
+		code          string
+	}{
+		{"invalid", "not-a-uuid", true, http.StatusBadRequest, "invalid_project_id"},
+		{"forbidden", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", false, http.StatusForbidden, "project_forbidden"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := &Handler{Keys: fakeKeys{}, Quota: &fakeQuota{}, Channels: fakeChannels{"http://unused"}, Logs: &fakeLogs{}, Projects: fakeProjects{tc.allowed}}
+			r := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"public","messages":[]}`))
+			r.Header.Set("Authorization", "Bearer employee")
+			r.Header.Set("X-AiGate-Project-ID", tc.project)
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			if w.Code != tc.status || !strings.Contains(w.Body.String(), tc.code) {
+				t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+			}
+		})
 	}
 }
 

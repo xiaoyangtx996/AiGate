@@ -50,7 +50,7 @@ type Retriever interface {
 	Search(context.Context, string, string, string, string, string, int) ([]rag.Result, error)
 }
 type Gateway interface {
-	Complete(context.Context, string, string, string, []Message) (string, string, error)
+	Complete(context.Context, string, string, string, string, []Message) (string, string, error)
 }
 type MCPGranter interface {
 	Grant(context.Context, mcp.Grant) error
@@ -63,8 +63,21 @@ type Repository interface {
 	Create(context.Context, Agent) error
 	BindMCPAssets(context.Context, string, string, string, []string) error
 	Get(context.Context, string, string, string) (Agent, error)
+	List(context.Context, string, string) ([]Agent, error)
 	SaveConversation(context.Context, string, string, string, string, string, string, string, []Citation) (string, error)
 }
+
+func (s *Service) List(ctx context.Context, tenant, project, user string) ([]Agent, error) {
+	allowed, err := s.access.HasProjectAccess(ctx, tenant, project, user)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, ErrForbidden
+	}
+	return s.repo.List(ctx, tenant, project)
+}
+
 type Service struct {
 	repo      Repository
 	access    Access
@@ -158,7 +171,7 @@ func (s *Service) Chat(ctx context.Context, tenant, project, agentID, user, gate
 		}
 	}
 	system := a.SystemPrompt + "\nAnswer only from the supplied project context when relevant. Preserve citation markers in the answer.\nProject context:" + contextText.String()
-	answer, trace, err := s.gateway.Complete(ctx, gatewayKey, a.Model, system, []Message{{Role: "user", Content: question}})
+	answer, trace, err := s.gateway.Complete(ctx, gatewayKey, a.Model, system, project, []Message{{Role: "user", Content: question}})
 	if err != nil {
 		return ChatResult{}, err
 	}

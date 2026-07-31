@@ -28,7 +28,7 @@ func corsMiddleware(allowedOrigins []string, next http.Handler) http.Handler {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-AiGate-Project-ID")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Access-Control-Expose-Headers", "X-Trace-ID")
 		w.Header().Add("Vary", "Origin")

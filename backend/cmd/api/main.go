@@ -28,6 +28,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
 	"github.com/xiaoyangtx996/AiGate/internal/storage"
+	"github.com/xiaoyangtx996/AiGate/internal/usage"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -83,11 +84,13 @@ func main() {
 		audit:     audit.NewService(audit.NewPostgres(store)),
 		alerts:    alertService,
 		sessions:  store,
+		projects:  store,
 		knowledge: knowledgeService,
 		rag:       ragService,
 		mcp:       mcpService,
 		agents:    agentService,
 		bot:       bot.NewService(bot.NewPostgres(store)),
+		usage:     usage.NewService(usage.NewPostgres(store)),
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)

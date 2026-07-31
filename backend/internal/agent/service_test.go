@@ -24,6 +24,8 @@ type repoStub struct {
 	saved bool
 }
 
+func (r *repoStub) List(context.Context, string, string) ([]Agent, error) { return nil, nil }
+
 func (r *repoStub) Create(_ context.Context, a Agent) error { r.agent = a; return nil }
 func (r *repoStub) BindMCPAssets(_ context.Context, _, _, _ string, assets []string) error {
 	r.bound = append([]string{}, assets...)
@@ -42,10 +44,10 @@ func (retrieverStub) Search(context.Context, string, string, string, string, str
 	return []rag.Result{{Content: "AiGate uses project-scoped knowledge.", Citation: rag.Citation{DocumentID: "doc-1", SpanStart: 5, SpanEnd: 42}}}, nil
 }
 
-type gatewayStub struct{ system, key string }
+type gatewayStub struct{ system, key, project string }
 
-func (g *gatewayStub) Complete(_ context.Context, key, model, system string, m []Message) (string, string, error) {
-	g.key, g.system = key, system
+func (g *gatewayStub) Complete(_ context.Context, key, model, system, projectID string, m []Message) (string, string, error) {
+	g.key, g.system, g.project = key, system, projectID
 	return "Answer [document=doc-1 span=5:42]", "trace-1", nil
 }
 
@@ -105,7 +107,7 @@ func TestCitedRAGChatUsesGateway(t *testing.T) {
 	gateway := &gatewayStub{}
 	aud := &auditStub{}
 	result, err := NewService(repo, accessStub(true), retrieverStub{}, gateway, &mcpStub{}, aud).Chat(context.Background(), "t", "p", "a", "u", "employee-key", "What is AiGate?")
-	if err != nil || result.Citations[0].DocumentID != "doc-1" || result.GatewayTraceID != "trace-1" || !strings.Contains(gateway.system, "project-scoped knowledge") || gateway.key != "employee-key" || !repo.saved || len(aud.events) != 1 {
-		t.Fatalf("result=%+v system=%q err=%v", result, gateway.system, err)
+	if err != nil || result.Citations[0].DocumentID != "doc-1" || result.GatewayTraceID != "trace-1" || !strings.Contains(gateway.system, "project-scoped knowledge") || gateway.key != "employee-key" || gateway.project != "p" || !repo.saved || len(aud.events) != 1 {
+		t.Fatalf("result=%+v system=%q project=%q err=%v", result, gateway.system, gateway.project, err)
 	}
 }

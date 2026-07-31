@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/xiaoyangtx996/AiGate/internal/agent"
@@ -26,6 +27,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
+	"github.com/xiaoyangtx996/AiGate/internal/usage"
 )
 
 type api struct {
@@ -40,11 +42,13 @@ type api struct {
 	audit     *audit.Service
 	alerts    *alerts.Service
 	sessions  menuStore
+	projects  projectStore
 	knowledge *knowledge.Service
 	rag       *rag.Service
 	mcp       *mcp.Service
 	agents    *agent.Service
 	bot       *bot.Service
+	usage     *usage.Service
 }
 
 type logReader interface {
@@ -54,6 +58,16 @@ type logReader interface {
 type menuStore interface {
 	auth.MenuStore
 	SetMenuEnabled(context.Context, string, string, bool) error
+}
+
+type projectStore interface {
+	ListProjects(context.Context, string) ([]domain.Project, error)
+	CreateProject(context.Context, domain.Project, string) error
+	ListProjectMembers(context.Context, string, string) ([]domain.User, error)
+	ListProjectMemberCandidates(context.Context, string, string) ([]domain.User, error)
+	ListProjectMembersBatch(context.Context, string, string, bool) (map[string][]domain.User, error)
+	ListProjectMemberCandidatesBatch(context.Context, string, string, bool) (map[string][]domain.User, error)
+	ListAccessibleProjects(context.Context, string, string) ([]domain.Project, error)
 }
 
 func (a *api) handler() http.Handler {
@@ -77,14 +91,20 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("POST /v1/roles", a.admin(a.createRole))
 	protected.HandleFunc("PUT /v1/roles/{id}", a.admin(a.updateRole))
 	protected.HandleFunc("DELETE /v1/roles/{id}", a.admin(a.deleteRole))
-	protected.HandleFunc("GET /v1/organizations", a.admin(a.listOrganizations))
+	protected.HandleFunc("GET /v1/organizations", a.readUsage(a.listOrganizations))
 	protected.HandleFunc("POST /v1/organizations", a.admin(a.createOrganization))
 	protected.HandleFunc("PUT /v1/organizations/{id}", a.admin(a.updateOrganization))
 	protected.HandleFunc("DELETE /v1/organizations/{id}", a.admin(a.deleteOrganization))
-	protected.HandleFunc("PUT /v1/projects/{projectID}/members/{userID}", a.admin(a.grantProject))
-	protected.HandleFunc("DELETE /v1/projects/{projectID}/members/{userID}", a.admin(a.revokeProject))
+	protected.HandleFunc("PUT /v1/projects/{projectID}/members/{userID}", a.projectManager(a.grantProject))
+	protected.HandleFunc("DELETE /v1/projects/{projectID}/members/{userID}", a.projectManager(a.revokeProject))
+	protected.HandleFunc("GET /v1/projects/{projectID}/members", a.projectManager(a.listProjectMembers))
+	protected.HandleFunc("GET /v1/project-members", a.listProjectMembersBatch)
+	protected.HandleFunc("GET /v1/project-member-candidates", a.listProjectMemberCandidatesBatch)
+	protected.HandleFunc("GET /v1/projects/{projectID}/member-candidates", a.projectManager(a.listProjectMemberCandidates))
 	protected.HandleFunc("GET /v1/projects/{projectID}/access", a.projectAccess)
 	protected.HandleFunc("POST /v1/projects/{projectID}/knowledge-bases", a.createKnowledgeBase)
+	protected.HandleFunc("GET /v1/projects/{projectID}/knowledge-bases", a.listKnowledgeBases)
+	protected.HandleFunc("GET /v1/projects/{projectID}/knowledge-bases/{kbID}/documents", a.listKnowledgeDocuments)
 	protected.HandleFunc("POST /v1/projects/{projectID}/knowledge-bases/{kbID}/documents", a.uploadKnowledgeDocument)
 	protected.HandleFunc("GET /v1/projects/{projectID}/documents/{documentID}", a.knowledgeDocumentStatus)
 	protected.HandleFunc("POST /v1/projects/{projectID}/documents/{documentID}/retry", a.retryKnowledgeDocument)
@@ -94,10 +114,15 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("GET /v1/mcp/assets", a.admin(a.listMCPAssets))
 	protected.HandleFunc("POST /v1/mcp/assets", a.admin(a.registerMCPAsset))
 	protected.HandleFunc("PUT /v1/projects/{projectID}/mcp/{assetID}/grants", a.admin(a.grantMCPAsset))
+	protected.HandleFunc("GET /v1/projects/{projectID}/mcp/assets", a.listProjectMCPAssets)
 	protected.HandleFunc("POST /v1/projects/{projectID}/mcp/{assetID}/invoke", a.invokeMCPAsset)
 	protected.HandleFunc("POST /v1/projects/{projectID}/agents", a.createProjectAgent)
+	protected.HandleFunc("GET /v1/projects/{projectID}/agents", a.listProjectAgents)
 	protected.HandleFunc("POST /v1/projects/{projectID}/agents/{agentID}/chat", a.chatProjectAgent)
-	protected.HandleFunc("POST /v1/bot/chat", a.chatManagementBot)
+	protected.HandleFunc("GET /v1/projects", a.admin(a.listProjects))
+	protected.HandleFunc("POST /v1/projects", a.admin(a.createProject))
+	protected.HandleFunc("GET /v1/project-contexts", a.listProjectContexts)
+	protected.HandleFunc("POST /v1/bot/chat", a.admin(a.chatManagementBot))
 	protected.HandleFunc("GET /v1/api-keys", a.admin(a.listAPIKeys))
 	protected.HandleFunc("POST /v1/api-keys", a.admin(a.createAPIKey))
 	protected.HandleFunc("DELETE /v1/api-keys/{id}", a.admin(a.revokeAPIKey))
@@ -106,8 +131,10 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("POST /v1/channels", a.admin(a.createChannel))
 	protected.HandleFunc("PUT /v1/channels/{id}", a.admin(a.updateChannel))
 	protected.HandleFunc("PUT /v1/model-prices/{model}", a.admin(a.setModelPrice))
-	protected.HandleFunc("GET /v1/api-logs", a.admin(a.listAPILogs))
-	protected.HandleFunc("GET /v1/api-logs.csv", a.admin(a.exportAPILogs))
+	protected.HandleFunc("GET /v1/api-logs", a.readUsage(a.listAPILogs))
+	protected.HandleFunc("GET /v1/api-logs.csv", a.readUsage(a.exportAPILogs))
+	protected.HandleFunc("GET /v1/usage/summary", a.readUsage(a.usageSummary))
+	protected.HandleFunc("GET /v1/usage/cost-rollup.csv", a.readUsage(a.exportCostRollup))
 	protected.HandleFunc("GET /v1/audit-events", a.admin(a.listAuditEvents))
 	protected.HandleFunc("GET /v1/audit-events.csv", a.admin(a.exportAuditEvents))
 	protected.HandleFunc("GET /v1/alert-policy", a.admin(a.getAlertPolicy))
@@ -120,7 +147,46 @@ func (a *api) handler() http.Handler {
 func (a *api) admin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		identity, ok := auth.FromContext(r.Context())
-		if !ok || !identity.HasRole(domain.RolePlatformAdmin) {
+		if !ok || (!identity.Platform && !identity.HasRole(domain.RolePlatformAdmin)) {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		next(w, r)
+	}
+}
+
+func (a *api) readUsage(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		identity, ok := auth.FromContext(r.Context())
+		if !ok || (!identity.Platform && !identity.HasRole(domain.RolePlatformAdmin) && !identity.HasRole(domain.RoleFinanceAuditor)) {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		next(w, r)
+	}
+}
+
+func (a *api) projectManager(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		identity, ok := auth.FromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		if identity.Platform || identity.HasRole(domain.RolePlatformAdmin) {
+			next(w, r)
+			return
+		}
+		if !identity.HasRole(domain.RoleProjectMember) {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		allowed, err := a.rbac.CanAccessProject(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID)
+		if err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		if !allowed {
 			writeError(w, http.StatusForbidden, "forbidden")
 			return
 		}
@@ -138,6 +204,18 @@ func (a *api) createKnowledgeBase(w http.ResponseWriter, r *http.Request) {
 	}
 	kb, err := a.knowledge.Create(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID, input.Name)
 	respond(w, kb, err, http.StatusCreated)
+}
+
+func (a *api) listKnowledgeBases(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.knowledge.List(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) listKnowledgeDocuments(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.knowledge.Documents(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("kbID"), identity.UserID)
+	respond(w, items, err, http.StatusOK)
 }
 
 func (a *api) uploadKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
@@ -196,6 +274,11 @@ func (a *api) installMCPMarketplace(w http.ResponseWriter, r *http.Request) {
 func (a *api) listMCPAssets(w http.ResponseWriter, r *http.Request) {
 	identity, _ := auth.FromContext(r.Context())
 	items, err := a.mcp.List(r.Context(), identity.TenantID)
+	respond(w, items, err, http.StatusOK)
+}
+func (a *api) listProjectMCPAssets(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.mcp.ListProjectAssets(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID)
 	respond(w, items, err, http.StatusOK)
 }
 
@@ -271,6 +354,11 @@ func (a *api) createProjectAgent(w http.ResponseWriter, r *http.Request) {
 	created, err := a.agents.Create(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID, input)
 	respond(w, created, err, http.StatusCreated)
 }
+func (a *api) listProjectAgents(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.agents.List(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID)
+	respond(w, items, err, http.StatusOK)
+}
 func (a *api) chatProjectAgent(w http.ResponseWriter, r *http.Request) {
 	identity, _ := auth.FromContext(r.Context())
 	var input struct {
@@ -293,6 +381,142 @@ func (a *api) chatManagementBot(w http.ResponseWriter, r *http.Request) {
 	}
 	answer, err := a.bot.Ask(r.Context(), identity, input.Question)
 	respond(w, answer, err, http.StatusOK)
+}
+func (a *api) listProjects(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.projects.ListProjects(r.Context(), identity.TenantID)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) listProjectContexts(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	if identity.Platform || identity.HasRole(domain.RolePlatformAdmin) || identity.HasRole(domain.RoleFinanceAuditor) && r.URL.Query().Get("scope") == "usage" {
+		a.listProjects(w, r)
+		return
+	}
+	items, err := a.projects.ListAccessibleProjects(r.Context(), identity.TenantID, identity.UserID)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) usageSummary(w http.ResponseWriter, r *http.Request) {
+	filter, ok := parseUsageFilter(w, r)
+	if !ok {
+		return
+	}
+	result, err := a.usage.Summary(r.Context(), filter)
+	respond(w, result, err, http.StatusOK)
+}
+
+func (a *api) exportCostRollup(w http.ResponseWriter, r *http.Request) {
+	filter, ok := parseUsageFilter(w, r)
+	if !ok {
+		return
+	}
+	result, err := a.usage.Summary(r.Context(), filter)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="aigate-cost-rollup.csv"`)
+	w.WriteHeader(http.StatusOK)
+	writer := csv.NewWriter(w)
+	_ = writer.Write([]string{"day", "organization_id", "organization_name", "project_id", "project_name", "calls", "llm_calls", "mcp_calls", "input_tokens", "output_tokens", "cost_micros", "llm_cost_micros", "mcp_cost_micros", "estimated_calls"})
+	for _, item := range result.Daily {
+		_ = writer.Write([]string{item.Day, item.OrganizationID, item.OrganizationName, item.ProjectID, item.ProjectName, strconv.FormatInt(item.Calls, 10), strconv.FormatInt(item.LLMCalls, 10), strconv.FormatInt(item.MCPCalls, 10), strconv.FormatInt(item.InputTokens, 10), strconv.FormatInt(item.OutputTokens, 10), strconv.FormatInt(item.CostMicros, 10), strconv.FormatInt(item.LLMCostMicros, 10), strconv.FormatInt(item.MCPCostMicros, 10), strconv.FormatInt(item.EstimatedCalls, 10)})
+	}
+	writer.Flush()
+}
+
+func parseUsageFilter(w http.ResponseWriter, r *http.Request) (usage.Filter, bool) {
+	identity, _ := auth.FromContext(r.Context())
+	now := time.Now().UTC()
+	filter := usage.Filter{TenantID: identity.TenantID, OrganizationID: r.URL.Query().Get("organization_id"), ProjectID: r.URL.Query().Get("project_id"), From: now.AddDate(0, 0, -29).Truncate(24 * time.Hour), To: now.AddDate(0, 0, 1).Truncate(24 * time.Hour)}
+	for key, target := range map[string]*time.Time{"from": &filter.From, "to": &filter.To} {
+		if raw := r.URL.Query().Get(key); raw != "" {
+			parsed, err := time.Parse(time.RFC3339, raw)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, key+" must be RFC3339")
+				return usage.Filter{}, false
+			}
+			*target = parsed
+		}
+	}
+	if filter.To.Before(filter.From) {
+		writeError(w, http.StatusBadRequest, "from must not be after to")
+		return usage.Filter{}, false
+	}
+	return filter, true
+}
+
+func (a *api) createProject(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Name           string `json:"name"`
+		OrganizationID string `json:"organization_id"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	input.Name = strings.TrimSpace(input.Name)
+	input.OrganizationID = strings.TrimSpace(input.OrganizationID)
+	if input.Name == "" || input.OrganizationID == "" {
+		writeError(w, http.StatusBadRequest, "name and organization_id are required")
+		return
+	}
+	id, err := domain.NewID()
+	if err != nil {
+		respond(w, nil, err, http.StatusBadRequest)
+		return
+	}
+	p := domain.Project{ID: id, TenantID: identity.TenantID, OrganizationID: input.OrganizationID, Name: input.Name}
+	err = a.projects.CreateProject(r.Context(), p, identity.UserID)
+	respond(w, p, err, http.StatusCreated)
+}
+
+func (a *api) listProjectMembers(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.projects.ListProjectMembers(r.Context(), identity.TenantID, r.PathValue("projectID"))
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) listProjectMembersBatch(w http.ResponseWriter, r *http.Request) {
+	identity, ok := a.projectBatchCaller(w, r)
+	if !ok {
+		return
+	}
+	items, err := a.projects.ListProjectMembersBatch(r.Context(), identity.TenantID, identity.UserID, identity.Platform || identity.HasRole(domain.RolePlatformAdmin))
+	if items == nil {
+		items = map[string][]domain.User{}
+	}
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) listProjectMemberCandidates(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.projects.ListProjectMemberCandidates(r.Context(), identity.TenantID, r.PathValue("projectID"))
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) listProjectMemberCandidatesBatch(w http.ResponseWriter, r *http.Request) {
+	identity, ok := a.projectBatchCaller(w, r)
+	if !ok {
+		return
+	}
+	items, err := a.projects.ListProjectMemberCandidatesBatch(r.Context(), identity.TenantID, identity.UserID, identity.Platform || identity.HasRole(domain.RolePlatformAdmin))
+	if items == nil {
+		items = map[string][]domain.User{}
+	}
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) projectBatchCaller(w http.ResponseWriter, r *http.Request) (auth.Identity, bool) {
+	identity, ok := auth.FromContext(r.Context())
+	if !ok || (!identity.Platform && !identity.HasRole(domain.RolePlatformAdmin) && !identity.HasRole(domain.RoleProjectMember)) {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return auth.Identity{}, false
+	}
+	return identity, true
 }
 
 func (a *api) login(w http.ResponseWriter, r *http.Request) {
@@ -678,13 +902,13 @@ func (a *api) exportAPILogs(w http.ResponseWriter, r *http.Request) {
 	}
 	var output bytes.Buffer
 	writer := csv.NewWriter(&output)
-	_ = writer.Write([]string{"trace_id", "created_at", "user_id", "organization_id", "model", "input_tokens", "output_tokens", "total_tokens", "cost_micros", "estimated", "blocked", "status_code", "error_code"})
+	_ = writer.Write([]string{"trace_id", "created_at", "user_id", "organization_id", "project_id", "project_name", "model", "input_tokens", "output_tokens", "total_tokens", "cost_micros", "estimated", "blocked", "status_code", "error_code"})
 	for _, item := range logs {
 		cost := ""
 		if item.CostMicros != nil {
 			cost = strconv.FormatInt(*item.CostMicros, 10)
 		}
-		_ = writer.Write([]string{item.TraceID, item.CreatedAt.UTC().Format(time.RFC3339Nano), item.UserID, item.OrganizationID, item.Model, strconv.FormatInt(item.InputTokens, 10), strconv.FormatInt(item.OutputTokens, 10), strconv.FormatInt(item.TotalTokens, 10), cost, strconv.FormatBool(item.Estimated), strconv.FormatBool(item.Blocked), strconv.Itoa(item.StatusCode), item.ErrorCode})
+		_ = writer.Write([]string{item.TraceID, item.CreatedAt.UTC().Format(time.RFC3339Nano), item.UserID, item.OrganizationID, item.ProjectID, item.ProjectName, item.Model, strconv.FormatInt(item.InputTokens, 10), strconv.FormatInt(item.OutputTokens, 10), strconv.FormatInt(item.TotalTokens, 10), cost, strconv.FormatBool(item.Estimated), strconv.FormatBool(item.Blocked), strconv.Itoa(item.StatusCode), item.ErrorCode})
 	}
 	writer.Flush()
 	if err := writer.Error(); err != nil {

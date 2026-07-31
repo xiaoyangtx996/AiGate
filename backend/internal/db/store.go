@@ -251,14 +251,18 @@ func (s *Store) GrantProject(ctx context.Context, tenantID, projectID, userID st
 	tag, err := s.pool.Exec(ctx, `
 		INSERT INTO project_memberships (tenant_id, project_id, user_id)
 		SELECT $1, p.id, u.id FROM projects p JOIN users u ON u.tenant_id = p.tenant_id
-		WHERE p.tenant_id = $1 AND p.id = $2 AND u.id = $3
+		WHERE p.tenant_id = $1 AND p.id = $2 AND u.id = $3 AND u.organization_id = p.organization_id
 		ON CONFLICT DO NOTHING`, tenantID, projectID, userID)
 	if err != nil {
 		return mapError(err)
 	}
 	if tag.RowsAffected() == 0 {
 		var exists bool
-		if err := s.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM project_memberships WHERE tenant_id = $1 AND project_id = $2 AND user_id = $3)`, tenantID, projectID, userID).Scan(&exists); err != nil {
+		if err := s.pool.QueryRow(ctx, `SELECT EXISTS (
+			SELECT 1 FROM project_memberships pm
+			JOIN projects p ON p.tenant_id=pm.tenant_id AND p.id=pm.project_id
+			JOIN users u ON u.tenant_id=pm.tenant_id AND u.id=pm.user_id AND u.organization_id=p.organization_id
+			WHERE pm.tenant_id=$1 AND pm.project_id=$2 AND pm.user_id=$3)`, tenantID, projectID, userID).Scan(&exists); err != nil {
 			return err
 		}
 		if !exists {
@@ -349,6 +353,164 @@ func (s *Store) AttachUser(ctx context.Context, tenantID, organizationID, userID
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func (s *Store) ListProjects(ctx context.Context, tenantID string) ([]domain.Project, error) {
+	rows, err := s.pool.Query(ctx, `SELECT id,tenant_id,organization_id,name,created_at,updated_at FROM projects WHERE tenant_id=$1 ORDER BY name,id`, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []domain.Project{}
+	for rows.Next() {
+		var p domain.Project
+		if err := rows.Scan(&p.ID, &p.TenantID, &p.OrganizationID, &p.Name, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, p)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) ListAccessibleProjects(ctx context.Context, tenantID, userID string) ([]domain.Project, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT p.id,p.tenant_id,p.organization_id,p.name,p.created_at,p.updated_at
+		FROM projects p
+		JOIN project_memberships pm ON pm.tenant_id=p.tenant_id AND pm.project_id=p.id
+		WHERE p.tenant_id=$1 AND pm.user_id=$2
+		ORDER BY p.name,p.id`, tenantID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []domain.Project{}
+	for rows.Next() {
+		var p domain.Project
+		if err := rows.Scan(&p.ID, &p.TenantID, &p.OrganizationID, &p.Name, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, p)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) CreateProject(ctx context.Context, p domain.Project, createdBy string) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `
+		INSERT INTO projects(id,tenant_id,organization_id,name)
+		SELECT $1,$2,id,$4 FROM organizations WHERE tenant_id=$2 AND id=$3`,
+		p.ID, p.TenantID, p.OrganizationID, p.Name)
+	if err := requireOne(tag, err); err != nil {
+		return err
+	}
+	tag, err = tx.Exec(ctx, `
+		INSERT INTO project_memberships(tenant_id,project_id,user_id)
+		SELECT $1,$2,id FROM users WHERE tenant_id=$1 AND id=$3`,
+		p.TenantID, p.ID, createdBy)
+	if err := requireOne(tag, err); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func (s *Store) ListProjectMembers(ctx context.Context, tenantID, projectID string) ([]domain.User, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT u.id,u.tenant_id,u.organization_id,u.email,u.display_name,u.password_hash,u.active,u.created_at,u.updated_at
+		FROM project_memberships pm
+		JOIN users u ON u.tenant_id=pm.tenant_id AND u.id=pm.user_id
+		WHERE pm.tenant_id=$1 AND pm.project_id=$2
+		ORDER BY u.display_name,u.email,u.id`, tenantID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []domain.User{}
+	for rows.Next() {
+		item, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) ListProjectMemberCandidates(ctx context.Context, tenantID, projectID string) ([]domain.User, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT u.id,u.tenant_id,u.organization_id,u.email,u.display_name,u.password_hash,u.active,u.created_at,u.updated_at
+		FROM projects p
+		JOIN users u ON u.tenant_id=p.tenant_id AND u.organization_id=p.organization_id
+		LEFT JOIN project_memberships pm ON pm.tenant_id=p.tenant_id AND pm.project_id=p.id AND pm.user_id=u.id
+		WHERE p.tenant_id=$1 AND p.id=$2 AND u.active AND pm.user_id IS NULL
+		ORDER BY u.display_name,u.email,u.id`, tenantID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []domain.User{}
+	for rows.Next() {
+		item, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) ListProjectMembersBatch(ctx context.Context, tenantID, userID string, includeAll bool) (map[string][]domain.User, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT pm.project_id::text,u.id,u.tenant_id,u.organization_id,u.email,u.display_name,u.password_hash,u.active,u.created_at,u.updated_at
+		FROM project_memberships pm
+		JOIN users u ON u.tenant_id=pm.tenant_id AND u.id=pm.user_id
+		WHERE pm.tenant_id=$1 AND ($3 OR EXISTS (
+			SELECT 1 FROM project_memberships mine WHERE mine.tenant_id=pm.tenant_id AND mine.project_id=pm.project_id AND mine.user_id=$2
+		)) ORDER BY pm.project_id,u.display_name,u.email,u.id`, tenantID, userID, includeAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := map[string][]domain.User{}
+	for rows.Next() {
+		var projectID string
+		var user domain.User
+		if err := rows.Scan(&projectID, &user.ID, &user.TenantID, &user.OrganizationID, &user.Email, &user.DisplayName, &user.PasswordHash, &user.Active, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items[projectID] = append(items[projectID], user)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) ListProjectMemberCandidatesBatch(ctx context.Context, tenantID, userID string, includeAll bool) (map[string][]domain.User, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT p.id::text,u.id,u.tenant_id,u.organization_id,u.email,u.display_name,u.password_hash,u.active,u.created_at,u.updated_at
+		FROM projects p
+		JOIN users u ON u.tenant_id=p.tenant_id AND u.organization_id=p.organization_id AND u.active
+		LEFT JOIN project_memberships pm ON pm.tenant_id=p.tenant_id AND pm.project_id=p.id AND pm.user_id=u.id
+		WHERE p.tenant_id=$1 AND pm.user_id IS NULL AND ($3 OR EXISTS (
+			SELECT 1 FROM project_memberships mine WHERE mine.tenant_id=p.tenant_id AND mine.project_id=p.id AND mine.user_id=$2
+		))
+		ORDER BY p.id,u.display_name,u.email,u.id`, tenantID, userID, includeAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := map[string][]domain.User{}
+	for rows.Next() {
+		var projectID string
+		var user domain.User
+		if err := rows.Scan(&projectID, &user.ID, &user.TenantID, &user.OrganizationID, &user.Email, &user.DisplayName, &user.PasswordHash, &user.Active, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items[projectID] = append(items[projectID], user)
+	}
+	return items, rows.Err()
 }
 
 type scanner interface{ Scan(...any) error }
