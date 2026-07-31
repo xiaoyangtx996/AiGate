@@ -20,6 +20,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/gateway"
 	"github.com/xiaoyangtx996/AiGate/internal/jobs"
 	"github.com/xiaoyangtx996/AiGate/internal/knowledge"
+	"github.com/xiaoyangtx996/AiGate/internal/mcp"
 	"github.com/xiaoyangtx996/AiGate/internal/org"
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
@@ -67,6 +68,7 @@ func main() {
 		Dimensions: int(envInt64("AIGATE_EMBEDDING_DIMENSIONS", 384)),
 	})
 	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), embedder)
+	mcpService := mcp.NewService(mcp.NewPostgres(store), store, cipher, jobs.NewPostgres(store), audit.NewService(audit.NewPostgres(store)), nil)
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
 		rbac: rbacService, org: org.NewService(store),
@@ -79,6 +81,7 @@ func main() {
 		sessions:  store,
 		knowledge: knowledgeService,
 		rag:       rag.NewService(store, rag.NewPostgres(store), embedder),
+		mcp:       mcpService,
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	log.Printf("AiGate API listening on %s", addr)

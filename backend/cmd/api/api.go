@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/gateway"
 	"github.com/xiaoyangtx996/AiGate/internal/knowledge"
+	"github.com/xiaoyangtx996/AiGate/internal/mcp"
 	"github.com/xiaoyangtx996/AiGate/internal/org"
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
@@ -38,6 +40,7 @@ type api struct {
 	sessions  menuStore
 	knowledge *knowledge.Service
 	rag       *rag.Service
+	mcp       *mcp.Service
 }
 
 type logReader interface {
@@ -82,6 +85,12 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("GET /v1/projects/{projectID}/documents/{documentID}", a.knowledgeDocumentStatus)
 	protected.HandleFunc("POST /v1/projects/{projectID}/documents/{documentID}/retry", a.retryKnowledgeDocument)
 	protected.HandleFunc("POST /v1/projects/{projectID}/knowledge-bases/{kbID}/search", a.searchKnowledgeBase)
+	protected.HandleFunc("GET /v1/mcp/marketplace", a.admin(a.listMCPMarketplace))
+	protected.HandleFunc("POST /v1/mcp/marketplace/{entryID}/install", a.admin(a.installMCPMarketplace))
+	protected.HandleFunc("GET /v1/mcp/assets", a.admin(a.listMCPAssets))
+	protected.HandleFunc("POST /v1/mcp/assets", a.admin(a.registerMCPAsset))
+	protected.HandleFunc("PUT /v1/projects/{projectID}/mcp/{assetID}/grants", a.admin(a.grantMCPAsset))
+	protected.HandleFunc("POST /v1/projects/{projectID}/mcp/{assetID}/invoke", a.invokeMCPAsset)
 	protected.HandleFunc("GET /v1/api-keys", a.admin(a.listAPIKeys))
 	protected.HandleFunc("POST /v1/api-keys", a.admin(a.createAPIKey))
 	protected.HandleFunc("DELETE /v1/api-keys/{id}", a.admin(a.revokeAPIKey))
@@ -158,6 +167,92 @@ func (a *api) searchKnowledgeBase(w http.ResponseWriter, r *http.Request) {
 	}
 	results, err := a.rag.Search(r.Context(), identity.TenantID, r.PathValue("projectID"), r.PathValue("kbID"), identity.UserID, input.Query, input.Limit)
 	respond(w, map[string]any{"results": results}, err, http.StatusOK)
+}
+
+func (a *api) listMCPMarketplace(w http.ResponseWriter, r *http.Request) {
+	items, err := a.mcp.Marketplace(r.Context())
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) installMCPMarketplace(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Name string `json:"name"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	asset, err := a.mcp.Install(r.Context(), identity.TenantID, r.PathValue("entryID"), input.Name)
+	respond(w, asset, err, http.StatusCreated)
+}
+
+func (a *api) listMCPAssets(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.mcp.List(r.Context(), identity.TenantID)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) registerMCPAsset(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Name       string `json:"name"`
+		Endpoint   string `json:"endpoint"`
+		Credential string `json:"credential"`
+		Version    string `json:"version"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	asset, err := a.mcp.Register(r.Context(), identity.TenantID, input.Name, input.Endpoint, input.Credential, input.Version)
+	respond(w, asset, err, http.StatusCreated)
+}
+
+func (a *api) grantMCPAsset(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		AgentID string `json:"agent_id"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	err := a.mcp.Grant(r.Context(), mcp.Grant{TenantID: identity.TenantID, AssetID: r.PathValue("assetID"), ProjectID: r.PathValue("projectID"), AgentID: input.AgentID, GrantedBy: identity.UserID})
+	respondEmpty(w, err)
+}
+
+func (a *api) invokeMCPAsset(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4<<20))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid body")
+		return
+	}
+	var envelope struct {
+		Method string `json:"method"`
+		Params struct {
+			Name string `json:"name"`
+		} `json:"params"`
+	}
+	if json.Unmarshal(body, &envelope) != nil || envelope.Method != "tools/call" || envelope.Params.Name == "" {
+		writeError(w, http.StatusBadRequest, "MCP tools/call with params.name is required")
+		return
+	}
+	result, err := a.mcp.Invoke(r.Context(), mcp.Invocation{TenantID: identity.TenantID, ProjectID: r.PathValue("projectID"), AssetID: r.PathValue("assetID"), AgentID: r.URL.Query().Get("agent_id"), UserID: identity.UserID, ToolName: envelope.Params.Name, Body: body})
+	if errors.Is(err, mcp.ErrForbidden) {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	if errors.Is(err, mcp.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "MCP upstream failed")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Trace-ID", result.TraceID)
+	w.WriteHeader(result.StatusCode)
+	_, _ = w.Write(result.Body)
 }
 
 func (a *api) login(w http.ResponseWriter, r *http.Request) {
@@ -678,6 +773,10 @@ func respond(w http.ResponseWriter, value any, err error, status int) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
+	if errors.Is(err, mcp.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -691,7 +790,7 @@ func respondEmpty(w http.ResponseWriter, err error) {
 			writeError(w, http.StatusForbidden, "forbidden")
 			return
 		}
-		if errors.Is(err, knowledge.ErrNotFound) {
+		if errors.Is(err, knowledge.ErrNotFound) || errors.Is(err, mcp.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not found")
 			return
 		}
@@ -702,7 +801,7 @@ func respondEmpty(w http.ResponseWriter, err error) {
 }
 
 func writeServiceError(w http.ResponseWriter, err error) {
-	if errors.Is(err, rbac.ErrNotFound) || errors.Is(err, channel.ErrNotFound) || errors.Is(err, apikey.ErrNotFound) {
+	if errors.Is(err, rbac.ErrNotFound) || errors.Is(err, channel.ErrNotFound) || errors.Is(err, apikey.ErrNotFound) || errors.Is(err, mcp.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
