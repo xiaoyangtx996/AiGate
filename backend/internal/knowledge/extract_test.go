@@ -1,6 +1,9 @@
 package knowledge
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -22,5 +25,19 @@ func TestExtractPlainTextMarkdownPassthrough(t *testing.T) {
 func TestAllowedMediaTypes(t *testing.T) {
 	if !allowedMediaType("application/pdf") || mediaTypeFor("a.pdf") != "application/pdf" {
 		t.Fatal("pdf media type missing")
+	}
+}
+
+func TestExtractDemo3SamplePDF(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "testdata", "samples", "demo3-citation.pdf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := extractPlainText("application/pdf", raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "AIGATE-PDF-0803") {
+		t.Fatalf("missing citation marker: %q", out)
 	}
 }

@@ -38,6 +38,7 @@ type ChatResult struct {
 	Answer         string     `json:"answer"`
 	Citations      []Citation `json:"citations"`
 	GatewayTraceID string     `json:"gateway_trace_id"`
+	MCPCalls       int        `json:"mcp_calls,omitempty"`
 }
 type Message struct {
 	Role    string `json:"role"`
@@ -55,6 +56,7 @@ type Gateway interface {
 type MCPGranter interface {
 	Grant(context.Context, mcp.Grant) error
 	Authorized(context.Context, string, string, string, string) (bool, error)
+	Invoke(context.Context, mcp.Invocation) (mcp.InvokeResult, error)
 }
 type Auditor interface {
 	Append(context.Context, audit.Event) error
@@ -170,6 +172,36 @@ func (s *Service) Chat(ctx context.Context, tenant, project, agentID, user, gate
 			fmt.Fprintf(&contextText, "\n[document=%s span=%d:%d]\n%s\n", item.Citation.DocumentID, item.Citation.SpanStart, item.Citation.SpanEnd, item.Content)
 		}
 	}
+	mcpCalls := 0
+	for _, assetID := range a.MCPAssetIDs {
+		body, err := json.Marshal(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  "tools/call",
+			"params": map[string]any{
+				"name":      "assistant_context",
+				"arguments": map[string]string{"question": question},
+			},
+		})
+		if err != nil {
+			return ChatResult{}, err
+		}
+		result, invErr := s.mcp.Invoke(ctx, mcp.Invocation{
+			TenantID:  tenant,
+			ProjectID: project,
+			AgentID:   agentID,
+			UserID:    user,
+			AssetID:   assetID,
+			ToolName:  "assistant_context",
+			Body:      body,
+		})
+		mcpCalls++
+		if invErr != nil {
+			fmt.Fprintf(&contextText, "\n[mcp=%s error=%v]\n", assetID, invErr)
+			continue
+		}
+		fmt.Fprintf(&contextText, "\n[mcp=%s status=%d]\n%s\n", assetID, result.StatusCode, truncateRunes(string(result.Body), 4000))
+	}
 	system := a.SystemPrompt + "\nAnswer only from the supplied project context when relevant. Preserve citation markers in the answer.\nProject context:" + contextText.String()
 	answer, trace, err := s.gateway.Complete(ctx, gatewayKey, a.Model, system, project, []Message{{Role: "user", Content: question}})
 	if err != nil {
@@ -179,11 +211,11 @@ func (s *Service) Chat(ctx context.Context, tenant, project, agentID, user, gate
 	if err != nil {
 		return ChatResult{}, err
 	}
-	metadata, _ := json.Marshal(map[string]any{"project_id": project, "conversation_id": conversation, "gateway_trace_id": trace, "citation_count": len(citations)})
+	metadata, _ := json.Marshal(map[string]any{"project_id": project, "conversation_id": conversation, "gateway_trace_id": trace, "citation_count": len(citations), "mcp_calls": mcpCalls})
 	if err := s.audit.Append(ctx, audit.Event{TenantID: tenant, TraceID: trace, EventType: "agent.chat", ActorUserID: user, ResourceType: "project_agent", ResourceID: agentID, Outcome: "success", Metadata: metadata}); err != nil {
 		return ChatResult{}, err
 	}
-	return ChatResult{ConversationID: conversation, Answer: answer, Citations: citations, GatewayTraceID: trace}, nil
+	return ChatResult{ConversationID: conversation, Answer: answer, Citations: citations, GatewayTraceID: trace, MCPCalls: mcpCalls}, nil
 }
 
 func uniqueNonEmpty(values []string) []string {
@@ -201,4 +233,15 @@ func uniqueNonEmpty(values []string) []string {
 		out = append(out, value)
 	}
 	return out
+}
+
+func truncateRunes(s string, max int) string {
+	if max <= 0 || len(s) <= max {
+		return s
+	}
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max]) + "…"
 }

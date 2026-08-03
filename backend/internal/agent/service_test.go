@@ -54,6 +54,7 @@ func (g *gatewayStub) Complete(_ context.Context, key, model, system, projectID 
 type mcpStub struct {
 	projectGranted map[string]bool
 	grants         []mcp.Grant
+	invokes        []mcp.Invocation
 }
 
 func (m *mcpStub) Grant(_ context.Context, g mcp.Grant) error {
@@ -62,12 +63,17 @@ func (m *mcpStub) Grant(_ context.Context, g mcp.Grant) error {
 }
 func (m *mcpStub) Authorized(_ context.Context, _, asset, _, agent string) (bool, error) {
 	if agent != "" {
-		return false, nil
+		// Agent-scoped invoke path: allow after create grant in unit tests.
+		return true, nil
 	}
 	if m.projectGranted == nil {
 		return true, nil
 	}
 	return m.projectGranted[asset], nil
+}
+func (m *mcpStub) Invoke(_ context.Context, in mcp.Invocation) (mcp.InvokeResult, error) {
+	m.invokes = append(m.invokes, in)
+	return mcp.InvokeResult{StatusCode: 200, Body: []byte(`{"result":{"content":[{"type":"text","text":"mcp-context"}]}}`), TraceID: "mcp-trace"}, nil
 }
 
 type auditStub struct{ events []audit.Event }
@@ -109,5 +115,18 @@ func TestCitedRAGChatUsesGateway(t *testing.T) {
 	result, err := NewService(repo, accessStub(true), retrieverStub{}, gateway, &mcpStub{}, aud).Chat(context.Background(), "t", "p", "a", "u", "employee-key", "What is AiGate?")
 	if err != nil || result.Citations[0].DocumentID != "doc-1" || result.GatewayTraceID != "trace-1" || !strings.Contains(gateway.system, "project-scoped knowledge") || gateway.key != "employee-key" || gateway.project != "p" || !repo.saved || len(aud.events) != 1 {
 		t.Fatalf("result=%+v system=%q project=%q err=%v", result, gateway.system, gateway.project, err)
+	}
+}
+
+func TestChatInvokesBoundMCPBeforeGateway(t *testing.T) {
+	repo := &repoStub{agent: Agent{ID: "a", Model: "public-model", KnowledgeBaseIDs: []string{"kb"}, MCPAssetIDs: []string{"mcp-1"}}}
+	gateway := &gatewayStub{}
+	m := &mcpStub{}
+	result, err := NewService(repo, accessStub(true), retrieverStub{}, gateway, m, &auditStub{}).Chat(context.Background(), "t", "p", "a", "u", "employee-key", "What is AiGate?")
+	if err != nil || result.MCPCalls != 1 || len(m.invokes) != 1 || m.invokes[0].AssetID != "mcp-1" || m.invokes[0].AgentID != "a" || m.invokes[0].ToolName != "assistant_context" {
+		t.Fatalf("result=%+v invokes=%+v err=%v", result, m.invokes, err)
+	}
+	if !strings.Contains(gateway.system, "mcp-context") || !strings.Contains(gateway.system, "[mcp=mcp-1 status=200]") {
+		t.Fatalf("system missing mcp context: %q", gateway.system)
 	}
 }

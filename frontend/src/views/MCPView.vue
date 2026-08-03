@@ -103,7 +103,7 @@ onMounted(async () => {
       <div>
         <span class="eyebrow">企业资产</span>
         <h1>MCP 管理</h1>
-        <p>安装到租户目录不代表项目可调用，必须显式授权。</p>
+        <p>安装到租户目录不代表项目可调用，必须显式授权。市场条目「MCP Everything」指向本地 <code>127.0.0.1:18100</code>，验收前先 <code>go run ./cmd/devmcp</code>；未启动时健康状态为 unhealthy 属预期。</p>
       </div>
       <button class="icon-button" title="刷新" @click="load"><RefreshCw :size="18" /></button>
     </header>
@@ -131,7 +131,7 @@ onMounted(async () => {
         <div class="section-heading">
           <div>
             <h2>公共市场</h2>
-            <span>安装后进入租户目录</span>
+            <span>安装后进入租户目录；本地需先启动 devmcp</span>
           </div>
         </div>
         <div class="compact-list">

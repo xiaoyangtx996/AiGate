@@ -17,19 +17,11 @@ AiGate/
 
 ```bash
 cd backend
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000001_tenant_organization_project.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000002_tenant_rbac.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000003_gateway_quota.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000004_audit_jobs_alerts.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000005_multitenant_session.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000006_tenant_active.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000007_project_knowledge.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000008_knowledge_pdf_embed.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000009_mcp_assets.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000010_project_agents.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000011_finance_auditor_role.up.sql
-psql "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/000012_api_logs_project.up.sql
+# Apply pending SQL migrations (creates schema_migrations; auto-baselines existing DBs)
+go run ./cmd/migrate up
 ```
+
+Optional: `go run ./cmd/migrate baseline` marks every current `*.up.sql` as applied without executing (for DBs that were migrated by hand before `schema_migrations` existed).
 
 Bootstrap tenant administrator and login (JWT secret ≥ 32 bytes):
 
@@ -190,15 +182,23 @@ must all be running locally):
 
 1. Log in as `admin@example.com` / `change-me`. In **项目管理**, select a
    department, create a project, then grant an employee as project member.
-2. Open the project's **知识库** link, create a KB, upload Markdown/text/PDF and
-   keep the page open until the document changes from `queued/processing` to `ready`.
-   Run a search and verify the result displays document/span citations.
-3. In **MCP 管理**, register a private MCP or install a marketplace entry. An
-   installed asset is only in the tenant catalog; click **授权当前项目** and
-   verify its health badge and granted state.
+2. Open the project's **知识库** link, create a KB, upload Markdown/text and
+   optionally the sample PDF at `backend/testdata/samples/demo3-citation.pdf`.
+   Keep the page open until the document changes from `queued/processing` to
+   `ready`. Run a search and verify the result displays document/span citations.
+3. Start the local MCP stub (`cd backend && go run ./cmd/devmcp`, listens on
+   `:18100`). In **MCP 管理**, install marketplace **MCP Everything** (or
+   register a private MCP pointing at `http://127.0.0.1:18100`). An installed
+   asset is only in the tenant catalog; click **授权当前项目** and verify the
+   health badge becomes `healthy` while `devmcp` is running, plus granted state.
+   If an older marketplace install still points at an invalid host, remove it and
+   reinstall after migration `000013`.
 4. In **Agent**, keep the same project context, select the KB and any MCP asset
    already granted to that project, then create the Agent. Chat with an
-   employee Gateway API Key and verify citations are rendered. The key is held
+   employee Gateway API Key and verify citations are rendered. Bound MCP assets
+   are invoked during chat (`assistant_context`) so `mcp_usage_logs` and the
+   usage board update; MCP failures are soft-failed into context and do not
+   block the LLM answer. The key is held
    only in component memory and is cleared after a successful send. Before the
    first call, configure tenant, department and that employee's three quota
    accounts, and ensure the Agent model has a price/model mapping on the active

@@ -30,7 +30,7 @@ func TestPostgresSummaryCannotCrossTenant(t *testing.T) {
 		_, _ = store.Pool().Exec(ctx, `INSERT INTO organizations(id,tenant_id,name) VALUES($1,$2,'d')`, x.o, x.t)
 		_, _ = store.Pool().Exec(ctx, `INSERT INTO users(id,tenant_id,organization_id,email,display_name,password_hash) VALUES($1,$2,$3,$4,'u','x')`, x.u, x.t, x.o, x.u+"@test")
 	}
-	usage, err := NewPostgres(store).Summarize(ctx, t1, "")
+	usage, err := NewPostgres(store).Summarize(ctx, t1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

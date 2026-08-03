@@ -1450,7 +1450,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"question\": \"本月用量和成本是多少？\"}"
+              "raw": "{\"question\": \"今天全部项目的 LLM 与 MCP 用量和成本是多少？\"}"
             },
             "description": "仅 platform_admin 可调用的只读租户用量问答；不接受 tenant/org 越权参数，不执行配置写入，也不出现在 finance_auditor 菜单。"
           }

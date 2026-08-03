@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"time"
 
 	"github.com/xiaoyangtx996/AiGate/internal/db"
 )
@@ -16,12 +17,29 @@ func (p *Postgres) UserOrganization(ctx context.Context, tenant, user string) (s
 	return id, err
 }
 
-func (p *Postgres) Summarize(ctx context.Context, tenant, organization string) (Usage, error) {
+func (p *Postgres) Summarize(ctx context.Context, tenant, organization string, from, to *time.Time) (Usage, error) {
 	var u Usage
-	err := p.db.Pool().QueryRow(ctx, `SELECT count(*),COALESCE(sum(input_tokens),0),COALESCE(sum(output_tokens),0),COALESCE(sum(cost_micros),0) FROM api_logs WHERE tenant_id=$1 AND ($2='' OR organization_id=$2::uuid)`, tenant, organization).Scan(&u.LLMCalls, &u.InputTokens, &u.OutputTokens, &u.CostMicros)
+	err := p.db.Pool().QueryRow(ctx, `
+		SELECT count(*),COALESCE(sum(input_tokens),0),COALESCE(sum(output_tokens),0),COALESCE(sum(cost_micros),0)
+		FROM api_logs
+		WHERE tenant_id=$1
+		  AND ($2='' OR organization_id=$2::uuid)
+		  AND ($3::timestamptz IS NULL OR created_at >= $3)
+		  AND ($4::timestamptz IS NULL OR created_at < $4)`,
+		tenant, organization, from, to,
+	).Scan(&u.LLMCalls, &u.InputTokens, &u.OutputTokens, &u.CostMicros)
 	if err != nil {
 		return Usage{}, err
 	}
-	err = p.db.Pool().QueryRow(ctx, `SELECT count(*) FROM mcp_usage_logs ml JOIN users u ON u.tenant_id=ml.tenant_id AND u.id=ml.user_id WHERE ml.tenant_id=$1 AND ($2='' OR u.organization_id=$2::uuid)`, tenant, organization).Scan(&u.MCPCalls)
+	err = p.db.Pool().QueryRow(ctx, `
+		SELECT count(*)
+		FROM mcp_usage_logs ml
+		JOIN users u ON u.tenant_id=ml.tenant_id AND u.id=ml.user_id
+		WHERE ml.tenant_id=$1
+		  AND ($2='' OR u.organization_id=$2::uuid)
+		  AND ($3::timestamptz IS NULL OR ml.created_at >= $3)
+		  AND ($4::timestamptz IS NULL OR ml.created_at < $4)`,
+		tenant, organization, from, to,
+	).Scan(&u.MCPCalls)
 	return u, err
 }

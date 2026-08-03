@@ -30,6 +30,9 @@ func (pgMCP) Grant(context.Context, mcp.Grant) error { return nil }
 func (pgMCP) Authorized(context.Context, string, string, string, string) (bool, error) {
 	return true, nil
 }
+func (pgMCP) Invoke(context.Context, mcp.Invocation) (mcp.InvokeResult, error) {
+	return mcp.InvokeResult{StatusCode: 200, Body: []byte(`{"ok":true}`), TraceID: "mcp"}, nil
+}
 func TestPostgresCitedConversationPersistence(t *testing.T) {
 	dsn := os.Getenv("AIGATE_TEST_DATABASE_URL")
 	if dsn == "" {

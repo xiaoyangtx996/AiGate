@@ -5,12 +5,16 @@ Go API 与数据迁移（对应仓库里的「后端」一侧）。
 ```bash
 go build ./...
 go test ./...
+go run ./cmd/migrate up
 go run ./cmd/api
 go run ./cmd/gateway
 go run ./cmd/worker
+# Optional local marketplace stub for Demo3 MCP health + agent invoke:
+go run ./cmd/devmcp
 ```
 
-Migrations live in `migrations/`. Schema comments (`COMMENT ON`) are mandatory for every business table and column.
+Migrations live in `migrations/`. Prefer `go run ./cmd/migrate up` over hand-running each file.
+Schema comments (`COMMENT ON`) are mandatory for every business table and column.
 
 `000005_multitenant_session` separates headquarters platform operators from
 tenant users. Tenant context is inferred at login; only platform operators can
@@ -23,6 +27,10 @@ in the repository root README.
 `cmd/worker` processes PostgreSQL-backed jobs. Plan 03b registers quota alert
 webhook delivery with retries and dead-letter status; no Redis service is
 required.
+
+`cmd/devmcp` is a local marketplace stub on `127.0.0.1:18100` (`GET /health`,
+`POST /`). Migration `000013` points the seeded **MCP Everything** entry at this
+address so Demo3 health checks can become `healthy` while the stub is running.
 
 `cmd/api` and `cmd/gateway` accept comma-separated browser origins through
 `AIGATE_CORS_ALLOWED_ORIGINS`. The local default permits Vite on ports at
