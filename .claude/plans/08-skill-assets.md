@@ -1,5 +1,7 @@
 # Plan 08 — Skill 活资产（后置）
 
+Status: complete
+
 PRD: `.claude/prds/aigate-go-platform.prd.md` · Milestone 8  
 Outcome: Skill 可沉淀调用记忆并支持版本；预留计费事件  
 Depends: Plan 07b（完整控制台后）

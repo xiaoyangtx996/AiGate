@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/xiaoyangtx996/AiGate/internal/db"
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
+	"github.com/xiaoyangtx996/AiGate/internal/skill"
 )
 
 type Postgres struct{ db *db.Store }
@@ -46,6 +47,15 @@ func (p *Postgres) BindMCPAssets(ctx context.Context, tenant, project, agentID s
 	return nil
 }
 
+func (p *Postgres) BindSkills(ctx context.Context, tenant, project, agentID string, bindings []skill.Binding) error {
+	for _, binding := range bindings {
+		if _, err := p.db.Pool().Exec(ctx, `INSERT INTO agent_skill_bindings(tenant_id,project_id,agent_id,skill_id,skill_version_id) VALUES($1,$2,$3,$4,$5)`, tenant, project, agentID, binding.SkillID, binding.VersionID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (p *Postgres) Get(ctx context.Context, tenant, project, id string) (Agent, error) {
 	var a Agent
 	var hook []byte
@@ -62,6 +72,10 @@ func (p *Postgres) Get(ctx context.Context, tenant, project, id string) (Agent, 
 		return Agent{}, err
 	}
 	a.MCPAssetIDs, err = p.ids(ctx, `SELECT mcp_asset_id FROM agent_mcp_bindings WHERE tenant_id=$1 AND project_id=$2 AND agent_id=$3 ORDER BY mcp_asset_id`, tenant, project, id)
+	if err != nil {
+		return Agent{}, err
+	}
+	a.SkillIDs, err = p.ids(ctx, `SELECT skill_id FROM agent_skill_bindings WHERE tenant_id=$1 AND project_id=$2 AND agent_id=$3 ORDER BY skill_id`, tenant, project, id)
 	return a, err
 }
 

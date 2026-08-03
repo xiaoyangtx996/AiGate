@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Bell, Bot, Building2, ChevronDown, FileText, KeyRound, LockKeyhole, LogOut, Network, ScrollText, ServerCog, ShieldCheck, Users } from 'lucide-vue-next'
+import { BarChart3, Bell, Bot, Building2, ChevronDown, FileText, KeyRound, LockKeyhole, LogOut, Network, ScrollText, ServerCog, ShieldCheck, Sparkles, Users } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, type Menu, type SessionInfo } from '../lib/api'
@@ -10,7 +10,7 @@ const route = useRoute()
 const router = useRouter()
 const info = ref<SessionInfo | null>(null)
 const switching = ref(false)
-const icons = { organization: Building2, keys_quota: KeyRound, logs: ScrollText, alerts: Bell, channels: ServerCog, projects: Users, knowledge: FileText, mcp: Network, agents: Bot, usage: BarChart3, bot: Bot }
+const icons = { organization: Building2, keys_quota: KeyRound, logs: ScrollText, alerts: Bell, channels: ServerCog, projects: Users, knowledge: FileText, mcp: Network, skills: Sparkles, agents: Bot, usage: BarChart3, bot: Bot }
 const menus = computed(() => info.value?.menus || [])
 const tenant = computed(() => info.value?.tenant)
 const roleLabel = computed(() => {

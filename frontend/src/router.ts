@@ -13,6 +13,7 @@ import MCPView from './views/MCPView.vue'
 import AgentsView from './views/AgentsView.vue'
 import UsageView from './views/UsageView.vue'
 import BotView from './views/BotView.vue'
+import SkillsView from './views/SkillsView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -30,6 +31,7 @@ export const router = createRouter({
         { path: 'projects', component: ProjectsView },
         { path: 'knowledge', component: KnowledgeView },
         { path: 'mcp', component: MCPView },
+        { path: 'skills', component: SkillsView },
         { path: 'agents', component: AgentsView },
         { path: 'usage', component: UsageView },
         { path: 'bot', component: BotView },

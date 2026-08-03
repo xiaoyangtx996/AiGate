@@ -30,6 +30,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
+	"github.com/xiaoyangtx996/AiGate/internal/skill"
 	"github.com/xiaoyangtx996/AiGate/internal/storage"
 	"github.com/xiaoyangtx996/AiGate/internal/usage"
 	"golang.org/x/crypto/bcrypt"
@@ -78,7 +79,8 @@ func main() {
 	knowledgeService := knowledge.NewService(knowledge.NewPostgres(store), store, objects, jobs.NewPostgres(store), embedder)
 	mcpService := mcp.NewService(mcp.NewPostgres(store), store, cipher, jobs.NewPostgres(store), audit.NewService(audit.NewPostgres(store)), nil)
 	ragService := rag.NewService(store, rag.NewPostgres(store), embedder)
-	agentService := agent.NewService(agent.NewPostgres(store), store, ragService, agent.GatewayClient{BaseURL: envOr("AIGATE_GATEWAY_BASE_URL", "http://127.0.0.1:8081")}, mcpService, audit.NewService(audit.NewPostgres(store)))
+	skillService := skill.NewService(skill.NewPostgres(store), store, jobs.NewPostgres(store))
+	agentService := agent.NewService(agent.NewPostgres(store), store, ragService, agent.GatewayClient{BaseURL: envOr("AIGATE_GATEWAY_BASE_URL", "http://127.0.0.1:8081")}, mcpService, audit.NewService(audit.NewPostgres(store)), skillService)
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
 		ready: store.Pool().Ping,
@@ -97,6 +99,7 @@ func main() {
 		agents:    agentService,
 		bot:       bot.NewService(bot.NewPostgres(store)),
 		usage:     usage.NewService(usage.NewPostgres(store)),
+		skills:    skillService,
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
 	origins := envOr("AIGATE_CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")

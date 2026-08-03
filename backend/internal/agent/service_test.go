@@ -10,6 +10,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/audit"
 	"github.com/xiaoyangtx996/AiGate/internal/mcp"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
+	"github.com/xiaoyangtx996/AiGate/internal/skill"
 )
 
 type accessStub bool
@@ -30,6 +31,9 @@ func (r *repoStub) Create(_ context.Context, a Agent) error { r.agent = a; retur
 func (r *repoStub) BindMCPAssets(_ context.Context, _, _, _ string, assets []string) error {
 	r.bound = append([]string{}, assets...)
 	r.agent.MCPAssetIDs = append([]string{}, assets...)
+	return nil
+}
+func (r *repoStub) BindSkills(context.Context, string, string, string, []skill.Binding) error {
 	return nil
 }
 func (r *repoStub) Get(context.Context, string, string, string) (Agent, error) { return r.agent, nil }
@@ -83,6 +87,37 @@ func (a *auditStub) Append(_ context.Context, e audit.Event) error {
 	return nil
 }
 
+type skillRepoStub struct {
+	bindings []skill.Binding
+	memory   skill.Memory
+	usage    skill.Usage
+}
+
+func (s *skillRepoStub) Create(context.Context, skill.Skill, string) (skill.Skill, error) {
+	return skill.Skill{}, nil
+}
+func (s *skillRepoStub) CreateVersion(context.Context, string, string, skill.Version, string, bool) (skill.Version, error) {
+	return skill.Version{}, nil
+}
+func (s *skillRepoStub) List(context.Context, string) ([]skill.Skill, error)         { return nil, nil }
+func (s *skillRepoStub) Grant(context.Context, string, string, string, string) error { return nil }
+func (s *skillRepoStub) ListProject(context.Context, string, string) ([]skill.Skill, error) {
+	return nil, nil
+}
+func (s *skillRepoStub) ResolveBindings(context.Context, string, string, []string) ([]skill.Binding, error) {
+	return s.bindings, nil
+}
+func (s *skillRepoStub) AgentBindings(context.Context, string, string, string) ([]skill.Binding, error) {
+	return s.bindings, nil
+}
+func (s *skillRepoStub) AppendInvocation(_ context.Context, memory skill.Memory, usage skill.Usage, _ int) error {
+	s.memory, s.usage = memory, usage
+	return nil
+}
+func (s *skillRepoStub) ListMemory(context.Context, string, string, int) ([]skill.Memory, error) {
+	return nil, nil
+}
+
 func TestCreateBindsKBMCPAndReservesSkills(t *testing.T) {
 	repo := &repoStub{}
 	m := &mcpStub{projectGranted: map[string]bool{"mcp": true}}
@@ -128,5 +163,16 @@ func TestChatInvokesBoundMCPBeforeGateway(t *testing.T) {
 	}
 	if !strings.Contains(gateway.system, "mcp-context") || !strings.Contains(gateway.system, "[mcp=mcp-1 status=200]") {
 		t.Fatalf("system missing mcp context: %q", gateway.system)
+	}
+}
+
+func TestChatInvokesPinnedSkillAndWritesUsage(t *testing.T) {
+	repo := &repoStub{agent: Agent{ID: "a", Model: "model", SkillIDs: []string{"skill-1"}}}
+	skillRepo := &skillRepoStub{bindings: []skill.Binding{{SkillID: "skill-1", VersionID: "version-1", Version: 2, Instructions: "Answer concisely"}}}
+	skills := skill.NewService(skillRepo, accessStub(true), nil)
+	gateway := &gatewayStub{}
+	result, err := NewService(repo, accessStub(true), retrieverStub{}, gateway, &mcpStub{}, &auditStub{}, skills).Chat(context.Background(), "t", "p", "a", "u", "key", "question")
+	if err != nil || result.GatewayTraceID != "trace-1" || !strings.Contains(gateway.system, "[skill=skill-1 version=2]") || skillRepo.memory.SkillID != "skill-1" || skillRepo.usage.SkillID != "skill-1" || skillRepo.usage.VersionID != "version-1" {
+		t.Fatalf("result=%+v system=%q memory=%+v usage=%+v err=%v", result, gateway.system, skillRepo.memory, skillRepo.usage, err)
 	}
 }

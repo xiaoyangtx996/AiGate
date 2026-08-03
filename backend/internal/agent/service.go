@@ -11,6 +11,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/domain"
 	"github.com/xiaoyangtx996/AiGate/internal/mcp"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
+	"github.com/xiaoyangtx996/AiGate/internal/skill"
 )
 
 var (
@@ -64,6 +65,7 @@ type Auditor interface {
 type Repository interface {
 	Create(context.Context, Agent) error
 	BindMCPAssets(context.Context, string, string, string, []string) error
+	BindSkills(context.Context, string, string, string, []skill.Binding) error
 	Get(context.Context, string, string, string) (Agent, error)
 	List(context.Context, string, string) ([]Agent, error)
 	SaveConversation(context.Context, string, string, string, string, string, string, string, []Citation) (string, error)
@@ -87,10 +89,15 @@ type Service struct {
 	gateway   Gateway
 	mcp       MCPGranter
 	audit     Auditor
+	skills    *skill.Service
 }
 
-func NewService(repo Repository, access Access, retriever Retriever, gateway Gateway, mcpGranter MCPGranter, auditor Auditor) *Service {
-	return &Service{repo: repo, access: access, retriever: retriever, gateway: gateway, mcp: mcpGranter, audit: auditor}
+func NewService(repo Repository, access Access, retriever Retriever, gateway Gateway, mcpGranter MCPGranter, auditor Auditor, skills ...*skill.Service) *Service {
+	var skillService *skill.Service
+	if len(skills) > 0 {
+		skillService = skills[0]
+	}
+	return &Service{repo: repo, access: access, retriever: retriever, gateway: gateway, mcp: mcpGranter, audit: auditor, skills: skillService}
 }
 
 func (s *Service) Create(ctx context.Context, tenant, project, user string, input Agent) (Agent, error) {
@@ -112,8 +119,15 @@ func (s *Service) Create(ctx context.Context, tenant, project, user string, inpu
 	}
 	mcpIDs := uniqueNonEmpty(input.MCPAssetIDs)
 	kbIDs := uniqueNonEmpty(input.KnowledgeBaseIDs)
-	if input.SkillIDs == nil {
-		input.SkillIDs = []string{}
+	input.SkillIDs = uniqueNonEmpty(input.SkillIDs)
+	bindings := []skill.Binding{}
+	if len(input.SkillIDs) > 0 {
+		if s.skills != nil {
+			bindings, err = s.skills.ResolveBindings(ctx, tenant, project, input.SkillIDs)
+			if err != nil {
+				return Agent{}, err
+			}
+		}
 	}
 	if len(input.SkillHook) == 0 {
 		input.SkillHook = json.RawMessage(`{}`)
@@ -139,6 +153,9 @@ func (s *Service) Create(ctx context.Context, tenant, project, user string, inpu
 	if err := s.repo.BindMCPAssets(ctx, tenant, project, id, mcpIDs); err != nil {
 		return Agent{}, err
 	}
+	if err := s.repo.BindSkills(ctx, tenant, project, id, bindings); err != nil {
+		return Agent{}, err
+	}
 	input.MCPAssetIDs = mcpIDs
 	return input, nil
 }
@@ -162,6 +179,16 @@ func (s *Service) Chat(ctx context.Context, tenant, project, agentID, user, gate
 	}
 	citations := []Citation{}
 	var contextText strings.Builder
+	skillBindings := []skill.Binding{}
+	if s.skills != nil && len(a.SkillIDs) > 0 {
+		skillBindings, err = s.skills.AgentBindings(ctx, tenant, project, agentID)
+		if err != nil {
+			return ChatResult{}, err
+		}
+		for _, binding := range skillBindings {
+			fmt.Fprintf(&contextText, "\n[skill=%s version=%d]\n%s\n", binding.SkillID, binding.Version, binding.Instructions)
+		}
+	}
 	for _, kb := range a.KnowledgeBaseIDs {
 		items, err := s.retriever.Search(ctx, tenant, project, kb, user, question, 3)
 		if err != nil {
@@ -214,6 +241,11 @@ func (s *Service) Chat(ctx context.Context, tenant, project, agentID, user, gate
 	metadata, _ := json.Marshal(map[string]any{"project_id": project, "conversation_id": conversation, "gateway_trace_id": trace, "citation_count": len(citations), "mcp_calls": mcpCalls})
 	if err := s.audit.Append(ctx, audit.Event{TenantID: tenant, TraceID: trace, EventType: "agent.chat", ActorUserID: user, ResourceType: "project_agent", ResourceID: agentID, Outcome: "success", Metadata: metadata}); err != nil {
 		return ChatResult{}, err
+	}
+	for _, binding := range skillBindings {
+		if err := s.skills.RecordInvocation(ctx, skill.Memory{TenantID: tenant, ProjectID: project, AgentID: agentID, SkillID: binding.SkillID, VersionID: binding.VersionID, UserID: user, Input: question, Output: answer, TraceID: trace}, skill.Usage{TenantID: tenant, ProjectID: project, AgentID: agentID, SkillID: binding.SkillID, VersionID: binding.VersionID, UserID: user, TraceID: trace}); err != nil {
+			return ChatResult{}, err
+		}
 	}
 	return ChatResult{ConversationID: conversation, Answer: answer, Citations: citations, GatewayTraceID: trace, MCPCalls: mcpCalls}, nil
 }

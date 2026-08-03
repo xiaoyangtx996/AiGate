@@ -31,6 +31,7 @@ var adminMenus = []Menu{
 	{Code: "projects", Label: "项目管理", Path: "/projects"},
 	{Code: "knowledge", Label: "知识库", Path: "/knowledge"},
 	{Code: "mcp", Label: "MCP 资产", Path: "/mcp"},
+	{Code: "skills", Label: "Skill 资产", Path: "/skills"},
 	{Code: "agents", Label: "项目 Agent", Path: "/agents"},
 	{Code: "usage", Label: "用量看板", Path: "/usage"},
 	{Code: "bot", Label: "管理助手", Path: "/bot"},

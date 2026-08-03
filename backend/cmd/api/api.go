@@ -27,6 +27,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/quota"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
 	"github.com/xiaoyangtx996/AiGate/internal/rbac"
+	"github.com/xiaoyangtx996/AiGate/internal/skill"
 	"github.com/xiaoyangtx996/AiGate/internal/usage"
 )
 
@@ -50,6 +51,7 @@ type api struct {
 	agents    *agent.Service
 	bot       *bot.Service
 	usage     *usage.Service
+	skills    *skill.Service
 }
 
 type logReader interface {
@@ -124,6 +126,13 @@ func (a *api) handler() http.Handler {
 	protected.HandleFunc("PUT /v1/projects/{projectID}/mcp/{assetID}/grants", a.admin(a.grantMCPAsset))
 	protected.HandleFunc("GET /v1/projects/{projectID}/mcp/assets", a.listProjectMCPAssets)
 	protected.HandleFunc("POST /v1/projects/{projectID}/mcp/{assetID}/invoke", a.invokeMCPAsset)
+	protected.HandleFunc("GET /v1/skills", a.admin(a.listSkills))
+	protected.HandleFunc("POST /v1/skills", a.admin(a.createSkill))
+	protected.HandleFunc("POST /v1/skills/{skillID}/versions", a.admin(a.createSkillVersion))
+	protected.HandleFunc("PUT /v1/projects/{projectID}/skills/{skillID}/grants", a.admin(a.grantSkill))
+	protected.HandleFunc("GET /v1/projects/{projectID}/skills", a.listProjectSkills)
+	protected.HandleFunc("GET /v1/skills/{skillID}/memories", a.admin(a.listSkillMemories))
+	protected.HandleFunc("POST /v1/skills/{skillID}/optimize", a.admin(a.optimizeSkill))
 	protected.HandleFunc("POST /v1/projects/{projectID}/agents", a.createProjectAgent)
 	protected.HandleFunc("GET /v1/projects/{projectID}/agents", a.listProjectAgents)
 	protected.HandleFunc("POST /v1/projects/{projectID}/agents/{agentID}/chat", a.chatProjectAgent)
@@ -361,6 +370,66 @@ func (a *api) createProjectAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	created, err := a.agents.Create(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID, input)
 	respond(w, created, err, http.StatusCreated)
+}
+
+func (a *api) listSkills(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.skills.List(r.Context(), identity.TenantID)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) createSkill(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Name         string          `json:"name"`
+		Description  string          `json:"description"`
+		Instructions string          `json:"instructions"`
+		Hook         json.RawMessage `json:"hook"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	created, err := a.skills.Create(r.Context(), identity.TenantID, identity.UserID, input.Name, input.Description, input.Instructions, input.Hook)
+	respond(w, created, err, http.StatusCreated)
+}
+
+func (a *api) createSkillVersion(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	var input struct {
+		Instructions string          `json:"instructions"`
+		Hook         json.RawMessage `json:"hook"`
+		Activate     bool            `json:"activate"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	created, err := a.skills.CreateVersion(r.Context(), identity.TenantID, r.PathValue("skillID"), identity.UserID, input.Instructions, input.Hook, input.Activate)
+	respond(w, created, err, http.StatusCreated)
+}
+
+func (a *api) grantSkill(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	err := a.skills.Grant(r.Context(), identity.TenantID, r.PathValue("skillID"), r.PathValue("projectID"), identity.UserID)
+	respondEmpty(w, err)
+}
+
+func (a *api) listProjectSkills(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	items, err := a.skills.ListProject(r.Context(), identity.TenantID, r.PathValue("projectID"), identity.UserID)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) listSkillMemories(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	items, err := a.skills.Memory(r.Context(), identity.TenantID, r.PathValue("skillID"), limit)
+	respond(w, items, err, http.StatusOK)
+}
+
+func (a *api) optimizeSkill(w http.ResponseWriter, r *http.Request) {
+	identity, _ := auth.FromContext(r.Context())
+	err := a.skills.EnqueueOptimization(r.Context(), identity.TenantID, r.PathValue("skillID"), identity.UserID)
+	respond(w, map[string]string{"status": "queued"}, err, http.StatusAccepted)
 }
 func (a *api) listProjectAgents(w http.ResponseWriter, r *http.Request) {
 	identity, _ := auth.FromContext(r.Context())

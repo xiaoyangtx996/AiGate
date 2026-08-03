@@ -4,7 +4,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
 import ProjectSwitcher from '../components/ProjectSwitcher.vue'
-import { api, type Citation, type KnowledgeBase, type MCPAsset, type ProjectAgent } from '../lib/api'
+import { api, type Citation, type KnowledgeBase, type MCPAsset, type ProjectAgent, type SkillAsset } from '../lib/api'
 import { useProjectContext } from '../lib/project-context'
 import { toast } from '../lib/toast'
 
@@ -13,6 +13,7 @@ const router = useRouter()
 const context = useProjectContext()
 const bases = ref<KnowledgeBase[]>([])
 const assets = ref<MCPAsset[]>([])
+const skills = ref<SkillAsset[]>([])
 const agents = ref<ProjectAgent[]>([])
 const selectedAgentID = ref('')
 const loading = ref(true)
@@ -40,9 +41,10 @@ async function loadProject() {
     return
   }
   try {
-    ;[bases.value, assets.value, agents.value] = await Promise.all([
+    ;[bases.value, assets.value, skills.value, agents.value] = await Promise.all([
       api.knowledgeBases(context.selectedID.value),
       api.projectMCPAssets(context.selectedID.value),
+      api.projectSkills(context.selectedID.value),
       api.agents(context.selectedID.value),
     ])
     selectedAgentID.value = agents.value.some((item) => item.id === selectedAgentID.value)
@@ -132,7 +134,7 @@ onUnmounted(() => {
           <div class="section-heading">
             <div>
               <h2>创建 Agent</h2>
-              <span>Skill 仅预留绑定，不执行 runtime</span>
+              <span>Skill 固定绑定当前激活版本，对话写入有界记忆和用量事件</span>
             </div>
           </div>
           <label><span>名称</span><input v-model.trim="form.name" required /></label>
@@ -145,6 +147,14 @@ onUnmounted(() => {
               <span>{{ base.name }}</span>
             </label>
             <small v-if="!bases.length">当前项目暂无知识库</small>
+          </fieldset>
+          <fieldset>
+            <legend>已授权 Skill</legend>
+            <label v-for="skill in skills" :key="skill.id" class="check-row">
+              <input v-model="form.skill_ids" type="checkbox" :value="skill.id" />
+              <span>{{ skill.name }} · v{{ skill.version }}</span>
+            </label>
+            <small v-if="!skills.length">当前项目暂无已授权 Skill</small>
           </fieldset>
           <fieldset>
             <legend>已授权 MCP</legend>

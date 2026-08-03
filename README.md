@@ -204,18 +204,23 @@ must all be running locally):
    accounts, and ensure the Agent model has a price/model mapping on the active
    channel; otherwise the gateway correctly returns `quota_not_configured` or
    `no_route`.
-5. Open **用量看板**. Administrators and finance auditors default to **全部项目**;
+5. Open **Skill 管理**, create a Skill, explicitly grant it to the current
+   project, then return to **Agent** and bind it. Existing Agents keep their
+   pinned version when a newer version is activated. Chat writes bounded Skill
+   memory and a usage event containing `skill_id`; **优化 stub** only queues a
+   worker job and never edits active or pinned versions.
+6. Open **用量看板**. Administrators and finance auditors default to **全部项目**;
    optionally filter by organization (which cascades the project dropdown) or one
    project. Verify the combined LLM + MCP daily calls, input/output tokens,
    split costs and quota utilization. Date inputs are UTC days: `from` is
    `00:00:00Z` and `to` is the next day's exclusive `00:00:00Z`. **导出成本汇总**
    uses the same filters. **调用日志** and its raw CSV include the attributed
    project ID/name.
-6. A `project_member` session receives Projects/Knowledge/Agents menus and only
+7. A `project_member` session receives Projects/Knowledge/Agents menus and only
    its membership-filtered project contexts. A `finance_auditor` receives
    Usage/Logs. A user holding both roles receives the union of both menu sets;
    `tenant_menu_settings` can only remove entries. Finance remains read-only.
-7. As an administrator, open **管理助手** and ask a read-only tenant usage
+8. As an administrator, open **管理助手** and ask a read-only tenant usage
    question. The Bot is not exposed to finance-only sessions.
 
 The backend remains authoritative for all project and role permissions.

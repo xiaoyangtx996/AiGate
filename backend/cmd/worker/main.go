@@ -20,6 +20,7 @@ import (
 	"github.com/xiaoyangtx996/AiGate/internal/knowledge"
 	"github.com/xiaoyangtx996/AiGate/internal/mcp"
 	"github.com/xiaoyangtx996/AiGate/internal/rag"
+	"github.com/xiaoyangtx996/AiGate/internal/skill"
 	"github.com/xiaoyangtx996/AiGate/internal/storage"
 )
 
@@ -49,10 +50,11 @@ func main() {
 		log.Fatal(err)
 	}
 	mcpService := mcp.NewService(mcp.NewPostgres(store), store, cipher, jobs.NewPostgres(store), audit.NewService(audit.NewPostgres(store)), nil)
+	skillService := skill.NewService(skill.NewPostgres(store), store, jobs.NewPostgres(store))
 	hostname, _ := os.Hostname()
 	runner := jobs.Runner{
 		Queue: jobs.NewPostgres(store), WorkerID: env("AIGATE_WORKER_ID", fmt.Sprintf("%s-%d", hostname, os.Getpid())), Lease: 30 * time.Second,
-		Handlers: map[string]jobs.Handler{"alert.webhook": alertService.WebhookHandler, knowledge.ProcessJobType: knowledgeService.Handler, mcp.HealthJobType: mcpService.HealthHandler},
+		Handlers: map[string]jobs.Handler{"alert.webhook": alertService.WebhookHandler, knowledge.ProcessJobType: knowledgeService.Handler, mcp.HealthJobType: mcpService.HealthHandler, skill.OptimizationJobType: skillService.OptimizationHandler},
 	}
 	log.Printf("AiGate worker started as %s", runner.WorkerID)
 	if err := runner.Run(ctx, time.Second); err != nil && !errors.Is(err, context.Canceled) {
