@@ -53,10 +53,6 @@ frontend/   # Vue3 SPA only
 3. Respect Depends column; `04` and `05` may run in parallel after `03`/`03b`.
 4. After success, mark the matching milestone `Status` in the PRD to `complete`.
 
-## Completeness audit
-
-See [`.claude/plan/plan-completeness-audit.md`](../plan/plan-completeness-audit.md) (**ARCHIVED** — remediations applied; do not treat old matrix as current).
-
 ## Restore legacy code
 
 ```bash
