@@ -55,7 +55,7 @@ onMounted(load)
 
 <template>
   <div class="page">
-    <header class="page-header"><div><span class="eyebrow">上游连接</span><h1>渠道凭证</h1><p>维护 NewAPI sidecar 地址与加密凭证；高级路由策略延后至 Plan 09 或后续里程碑。</p></div><div class="header-actions"><button class="icon-button" title="刷新" @click="load"><RefreshCw :size="18" /></button><button class="button button--primary" @click="create"><Plus :size="16" />添加渠道</button></div></header>
+    <header class="page-header"><div><span class="eyebrow">上游连接</span><h1>渠道凭证</h1><p>维护 NewAPI sidecar 地址与加密凭证；高级路由策略属于 post-MVP 后续能力。</p></div><div class="header-actions"><button class="icon-button" title="刷新" @click="load"><RefreshCw :size="18" /></button><button class="button button--primary" @click="create"><Plus :size="16" />添加渠道</button></div></header>
     <section class="section-block">
       <div class="section-heading"><div><h2>上游渠道</h2><span>{{ channels.length }} 个配置</span></div></div>
       <div v-if="channels.length" class="channel-grid"><article v-for="item in channels" :key="item.id" class="channel-card"><header><span class="list-card__icon"><ServerCog :size="19" /></span><span class="status" :class="item.active ? 'status--success' : 'status--muted'">{{ item.active ? '启用' : '停用' }}</span></header><div><h3>{{ item.name }}</h3><code>{{ item.base_url }}</code></div><footer><span><KeyRound :size="15" />凭证已加密保存</span><button class="icon-button" title="编辑渠道" @click="edit(item)"><Pencil :size="16" /></button></footer></article></div>

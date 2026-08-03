@@ -199,7 +199,11 @@ must all be running locally):
 4. In **Agent**, keep the same project context, select the KB and any MCP asset
    already granted to that project, then create the Agent. Chat with an
    employee Gateway API Key and verify citations are rendered. The key is held
-   only in component memory and is cleared after a successful send.
+   only in component memory and is cleared after a successful send. Before the
+   first call, configure tenant, department and that employee's three quota
+   accounts, and ensure the Agent model has a price/model mapping on the active
+   channel; otherwise the gateway correctly returns `quota_not_configured` or
+   `no_route`.
 5. Open **用量看板**. Administrators and finance auditors default to **全部项目**;
    optionally filter by organization (which cascades the project dropdown) or one
    project. Verify the combined LLM + MCP daily calls, input/output tokens,
