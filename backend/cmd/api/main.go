@@ -38,6 +38,8 @@ import (
 const defaultDSN = "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable"
 
 func main() {
+	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	ctx := context.Background()
 	dsn := envOr("AIGATE_DATABASE_URL", defaultDSN)
 	store, err := db.Open(ctx, dsn)
@@ -105,8 +107,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
-	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	<-runCtx.Done()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
