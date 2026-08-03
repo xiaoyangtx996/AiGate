@@ -76,7 +76,8 @@ func main() {
 	agentService := agent.NewService(agent.NewPostgres(store), store, ragService, agent.GatewayClient{BaseURL: envOr("AIGATE_GATEWAY_BASE_URL", "http://127.0.0.1:8081")}, mcpService, audit.NewService(audit.NewPostgres(store)))
 	app := &api{
 		auth: auth.NewService(store, tokens), tokens: tokens,
-		rbac: rbacService, org: org.NewService(store),
+		ready: store.Pool().Ping,
+		rbac:  rbacService, org: org.NewService(store),
 		keys:      apikey.NewService(apikey.NewPostgres(store)),
 		quota:     quota.NewService(quota.NewPostgres(store), alertService),
 		channels:  channel.NewService(channel.NewPostgres(store), cipher),

@@ -33,6 +33,7 @@ import (
 type api struct {
 	auth      *auth.Service
 	tokens    *auth.TokenManager
+	ready     func(context.Context) error
 	rbac      *rbac.Service
 	org       *org.Service
 	keys      *apikey.Service
@@ -74,6 +75,13 @@ func (a *api) handler() http.Handler {
 	root := http.NewServeMux()
 	root.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	root.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		if a.ready == nil || a.ready(r.Context()) != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "unavailable"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
 	root.HandleFunc("POST /v1/auth/login", a.login)
 

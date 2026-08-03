@@ -71,7 +71,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | 7a | 瘦控制台（Demo 0） | 登录、组织、密钥、配额、调用日志/导出、渠道凭证 | complete | `.claude/plans/07a-console-thin.md` |
 | 7b | 管理控制台完整 MVP | 项目/KB/MCP/Agent/看板/成本导出 | complete | `.claude/plans/07-admin-console.md` |
 | 8 | Skill 活资产（后置） | 记忆/版本/优化钩子/计费事件 | pending | `.claude/plans/08-skill-assets.md` |
-| 9 | 部署与运维切片 | compose + migrate + readiness | pending | `.claude/plans/09-deploy-ops.md` |
+| 9 | 部署与运维切片 | compose + migrate + readiness | complete | `.claude/plans/09-deploy-ops.md` |
 
 ### Demo 切片
 
@@ -106,5 +106,5 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Skill 过早投入 | Medium | Medium | 08 后置；06 仅预留扩展点 |
 
 ---
-*Status: READY — Milestones through 07b complete; Plan 08 remains pending; continue with Plan 09 `/goal`.*
+*Status: MVP READY — Milestones through 07b and Plan 09 complete; Plan 08 remains post-MVP, with deployment maintenance continuing as needed.*
 *Legacy snapshot tag: `legacy-nuxt-aigate`.*

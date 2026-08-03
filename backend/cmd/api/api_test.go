@@ -155,6 +155,35 @@ func testToken(t *testing.T, manager *auth.TokenManager, identity auth.Identity)
 	return token
 }
 
+func TestHealthAndReadiness(t *testing.T) {
+	databaseError := errors.New("database unavailable")
+	tests := []struct {
+		name       string
+		path       string
+		ready      func(context.Context) error
+		wantStatus int
+		wantBody   string
+	}{
+		{name: "health remains available", path: "/healthz", wantStatus: http.StatusOK, wantBody: `{"status":"ok"}`},
+		{name: "database ready", path: "/readyz", ready: func(context.Context) error { return nil }, wantStatus: http.StatusOK, wantBody: `{"status":"ready"}`},
+		{name: "database unavailable", path: "/readyz", ready: func(context.Context) error { return databaseError }, wantStatus: http.StatusServiceUnavailable, wantBody: `{"status":"unavailable"}`},
+		{name: "readiness check missing", path: "/readyz", wantStatus: http.StatusServiceUnavailable, wantBody: `{"status":"unavailable"}`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			(&api{ready: test.ready}).handler().ServeHTTP(response, httptest.NewRequest(http.MethodGet, test.path, nil))
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d", response.Code, test.wantStatus)
+			}
+			if strings.TrimSpace(response.Body.String()) != test.wantBody {
+				t.Fatalf("body = %q, want %q", strings.TrimSpace(response.Body.String()), test.wantBody)
+			}
+		})
+	}
+}
+
 func TestMemberCannotCallAdminUserAPI(t *testing.T) {
 	manager, _ := auth.NewTokenManager("01234567890123456789012345678901")
 	app := &api{tokens: manager, rbac: rbac.NewService(&apiRepository{})}

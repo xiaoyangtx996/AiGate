@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/xiaoyangtx996/AiGate/internal/alerts"
@@ -23,7 +24,7 @@ import (
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	store, err := db.Open(ctx, env("AIGATE_DATABASE_URL", "postgresql://postgres:password@localhost:5432/AiGate?sslmode=disable"))
 	if err != nil {

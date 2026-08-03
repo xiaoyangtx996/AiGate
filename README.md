@@ -11,6 +11,50 @@ AiGate/
 
 前后端分离：后端只提供 REST/SSE；前端独立构建部署，不耦合 Go template / Nuxt / SSR。
 
+## Docker Compose 试点部署（Demo 3）
+
+Demo 3 由 Plan 07b 管理控制台与 Plan 09 部署切片共同组成。Compose 会分别运行带 pgvector 的 PostgreSQL、迁移任务、bootstrap 任务、API、gateway、worker 和 nginx 静态 SPA；前端不嵌入 Go 进程。
+
+先复制环境文件，并替换所有 `REPLACE_*` 值。`AIGATE_CHANNEL_ENCRYPTION_KEY` 必须是 Base64 编码的 32 字节密钥，`AIGATE_JWT_SECRET` 至少 32 字节。`.env` 已被 Git 忽略。
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+# 编辑 .env 后启动；首次启动会自动迁移并创建试点租户/部门/管理员
+docker compose up -d --build
+.\scripts\smoke.ps1
+
+# 手动重跑幂等迁移/bootstrap
+.\scripts\migrate.ps1
+
+# 停止；加 -v 会永久删除数据库与对象存储卷
+docker compose down
+```
+
+```bash
+# Linux / macOS bash
+cp .env.example .env
+# 编辑 .env 后启动
+docker compose up -d --build
+./scripts/smoke.sh
+
+# 手动重跑幂等迁移/bootstrap
+./scripts/migrate.sh
+
+docker compose down
+```
+
+服务地址：管理台 `http://localhost:5173`，API `http://localhost:8080`，gateway `http://localhost:8081`，PostgreSQL 默认映射 `localhost:5432`。API 的 `/healthz` 检查进程存活，`/readyz` 检查数据库连接；smoke 同时检查 API、gateway 与前端。
+
+`VITE_API_BASE_URL` 和 `VITE_GATEWAY_BASE_URL` 在构建前端镜像时写入 SPA，值必须是浏览器可访问地址，而不是 Compose 内的服务名。修改这两个变量后需执行 `docker compose build frontend && docker compose up -d frontend`。API、gateway、worker 必须共享数据库和渠道加密密钥，API 与 worker 共享对象存储卷。
+
+迁移由一次性 `migrate` 服务按 `backend/migrations/*.up.sql` 顺序从空库执行，`bootstrap` 随后幂等创建 `.env` 指定的租户与部门，API 再创建管理员。查看状态和日志：
+
+```bash
+docker compose ps
+docker compose logs migrate bootstrap api gateway worker frontend
+```
+
 ## Backend
 
 ```bash
@@ -117,8 +161,8 @@ the direct peer belongs to `TRUSTED_PROXY_CIDRS`. The API and gateway processes
 must receive the same `AIGATE_CHANNEL_ENCRYPTION_KEY` value.
 
 The current channel console manages the NewAPI sidecar address, encrypted
-credential and one active channel per tenant. Advanced routing is deferred to
-Plan 09 or a later milestone.
+credential and one active channel per tenant. Advanced routing remains a
+post-MVP capability.
 
 ## Audit, jobs and quota alerts
 
