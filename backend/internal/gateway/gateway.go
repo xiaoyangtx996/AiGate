@@ -88,16 +88,26 @@ type Handler struct {
 	Channels          ChannelResolver
 	Logs              Logger
 	Projects          ProjectAccess
+	Ready             func(context.Context) error
 	Client            *http.Client
 	TrustedProxyCIDRs []string
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
-	case r.Method == http.MethodGet && (r.URL.Path == "/healthz" || r.URL.Path == "/readyz"):
+	case r.Method == http.MethodGet && r.URL.Path == "/healthz":
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	case r.Method == http.MethodGet && r.URL.Path == "/readyz":
+		w.Header().Set("Content-Type", "application/json")
+		if h.Ready == nil || h.Ready(r.Context()) != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"status":"unavailable"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ready"}`))
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/chat/completions":
 		h.handleChatCompletions(w, r)
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/messages":

@@ -3,7 +3,7 @@ name: aigate
 x-backend-environment: &backend-environment
   AIGATE_DATABASE_URL: ${AIGATE_DATABASE_URL:?set AIGATE_DATABASE_URL in .env}
   AIGATE_CHANNEL_ENCRYPTION_KEY: ${AIGATE_CHANNEL_ENCRYPTION_KEY:?set AIGATE_CHANNEL_ENCRYPTION_KEY in .env}
-  AIGATE_CORS_ALLOWED_ORIGINS: ${AIGATE_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+  AIGATE_CORS_ALLOWED_ORIGINS: ${AIGATE_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
 
 x-backend-service: &backend-service
   build:

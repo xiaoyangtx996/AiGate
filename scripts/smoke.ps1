@@ -7,5 +7,6 @@ $frontendURL = if ($env:AIGATE_SMOKE_FRONTEND_URL) { $env:AIGATE_SMOKE_FRONTEND_
 Invoke-RestMethod "$apiURL/healthz" | Out-Null
 Invoke-RestMethod "$apiURL/readyz" | Out-Null
 Invoke-RestMethod "$gatewayURL/healthz" | Out-Null
+Invoke-RestMethod "$gatewayURL/readyz" | Out-Null
 Invoke-RestMethod "$frontendURL/healthz" | Out-Null
 Write-Host 'AiGate compose smoke passed.'

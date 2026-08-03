@@ -241,3 +241,32 @@ func TestClaudeMessagesCompatibility(t *testing.T) {
 		t.Fatalf("claude response shape=%+v", out)
 	}
 }
+
+func TestHealthAndReadiness(t *testing.T) {
+	h := &Handler{}
+	health := httptest.NewRecorder()
+	h.ServeHTTP(health, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if health.Code != http.StatusOK || !strings.Contains(health.Body.String(), `"status":"ok"`) {
+		t.Fatalf("health status=%d body=%s", health.Code, health.Body.String())
+	}
+
+	missing := httptest.NewRecorder()
+	h.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	if missing.Code != http.StatusServiceUnavailable || !strings.Contains(missing.Body.String(), `"status":"unavailable"`) {
+		t.Fatalf("missing ready status=%d body=%s", missing.Code, missing.Body.String())
+	}
+
+	h.Ready = func(context.Context) error { return errors.New("db down") }
+	down := httptest.NewRecorder()
+	h.ServeHTTP(down, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	if down.Code != http.StatusServiceUnavailable {
+		t.Fatalf("down ready status=%d", down.Code)
+	}
+
+	h.Ready = func(context.Context) error { return nil }
+	ok := httptest.NewRecorder()
+	h.ServeHTTP(ok, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	if ok.Code != http.StatusOK || !strings.Contains(ok.Body.String(), `"status":"ready"`) {
+		t.Fatalf("ready status=%d body=%s", ok.Code, ok.Body.String())
+	}
+}

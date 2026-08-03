@@ -44,7 +44,7 @@ docker compose up -d --build
 docker compose down
 ```
 
-服务地址：管理台 `http://localhost:5173`，API `http://localhost:8080`，gateway `http://localhost:8081`，PostgreSQL 默认映射 `localhost:5432`。API 的 `/healthz` 检查进程存活，`/readyz` 检查数据库连接；smoke 同时检查 API、gateway 与前端。
+服务地址：管理台 `http://localhost:5173`，API `http://localhost:8080`，gateway `http://localhost:8081`，PostgreSQL 默认映射 `localhost:5432`。API 与 gateway 的 `/healthz` 检查进程存活，`/readyz` 检查数据库连接；smoke 同时检查 API、gateway（含 `/readyz`）与前端。API/gateway/worker 均支持 `SIGTERM` 优雅退出。
 
 `VITE_API_BASE_URL` 和 `VITE_GATEWAY_BASE_URL` 在构建前端镜像时写入 SPA，值必须是浏览器可访问地址，而不是 Compose 内的服务名。修改这两个变量后需执行 `docker compose build frontend && docker compose up -d frontend`。API、gateway、worker 必须共享数据库和渠道加密密钥，API 与 worker 共享对象存储卷。
 

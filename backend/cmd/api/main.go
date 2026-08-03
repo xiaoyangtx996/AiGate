@@ -7,8 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/xiaoyangtx996/AiGate/internal/agent"
 	"github.com/xiaoyangtx996/AiGate/internal/alerts"
@@ -94,9 +97,22 @@ func main() {
 		usage:     usage.NewService(usage.NewPostgres(store)),
 	}
 	addr := envOr("AIGATE_HTTP_ADDR", ":8080")
-	log.Printf("AiGate API listening on %s", addr)
 	origins := envOr("AIGATE_CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
-	log.Fatal(http.ListenAndServe(addr, corsMiddleware(strings.Split(origins, ","), app.handler())))
+	server := &http.Server{Addr: addr, Handler: corsMiddleware(strings.Split(origins, ","), app.handler())}
+	log.Printf("AiGate API listening on %s", addr)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
+	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	<-runCtx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatal(err)
+	}
 }
 
 type platformOperatorStore interface {

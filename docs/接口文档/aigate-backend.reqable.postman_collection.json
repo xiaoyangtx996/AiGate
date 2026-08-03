@@ -1118,6 +1118,24 @@
       "name": "09 网关运行时",
       "item": [
         {
+          "name": "网关健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_base}}/healthz",
+            "description": "## 网关存活检查\n\n`GET /healthz`\n\n网关进程存活探测。成功返回 `{\"status\":\"ok\"}`。"
+          }
+        },
+        {
+          "name": "网关就绪检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_base}}/readyz",
+            "description": "## 网关就绪检查\n\n`GET /readyz`\n\n数据库可连接时返回 `200 {\"status\":\"ready\"}`；不可连接时返回 `503 {\"status\":\"unavailable\"}`。"
+          }
+        },
+        {
           "name": "对话补全（OpenAI 兼容）",
           "request": {
             "method": "POST",
