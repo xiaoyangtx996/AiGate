@@ -1,8 +1,9 @@
 # Plan 09 — 部署与运维切片
 
 PRD: `.claude/prds/aigate-go-platform.prd.md` · Milestone 9  
-Outcome: compose + migrate + readiness 可起试点环境  
-Depends: Plan 03（可与 04/05/07a 并行推进）
+Outcome: 试点可部署环境（方式待定）  
+Depends: Plan 03（可与 04/05/07a 并行推进）  
+**Status: deferred** — 仓库已移除 Docker Compose / Dockerfile 等容器制品；当前只保证本地开发运行。部署实现等用户指定方式后再做，勿在未要求时恢复 Docker 文件。
 
 ```yaml
 /goal

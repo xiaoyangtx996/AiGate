@@ -37,7 +37,7 @@ frontend/   # Vue3 SPA only
 | 7a | [07a-console-thin.md](./07a-console-thin.md) | Ship thin Vue admin console for Demo0 key quota and logs | 03 (+03b) |
 | 7b | [07-admin-console.md](./07-admin-console.md) | Build full admin console MVP for projects KB MCP agents | 06 + 07a |
 | 8 | [08-skill-assets.md](./08-skill-assets.md) | Evolve skills into versioned memorable billable assets | 07b |
-| 9 | [09-deploy-ops.md](./09-deploy-ops.md) | Add docker compose migrate and readiness for pilot deploy | 03 |
+| 9 | [09-deploy-ops.md](./09-deploy-ops.md) | Deploy/ops slice（**deferred**：仓库不维护 Docker；方式待定） | 03 |
 
 ## Demo path
 

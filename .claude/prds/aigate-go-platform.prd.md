@@ -46,7 +46,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 - 项目 Agent + 管理 Bot 最小对话
 - **前后端分离**：Go 提供 HTTP API；Vue3 SPA 控制台仅消费 API（禁止再做成 Nuxt/SSR 全栈）
 - 瘦控制台（Demo 0）→ 完整管理台（Demo 3）
-- 基础 docker compose 部署（api / worker / web 分服务）
+- 基础部署（api / worker / web 分服务；**方式待开发结束后指定**，当前不维护 Docker 制品）
 
 **Out of scope（MVP）**
 
@@ -71,7 +71,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | 7a | 瘦控制台（Demo 0） | 登录、组织、密钥、配额、调用日志/导出、渠道凭证 | complete | `.claude/plans/07a-console-thin.md` |
 | 7b | 管理控制台完整 MVP | 项目/KB/MCP/Agent/看板/成本导出 | complete | `.claude/plans/07-admin-console.md` |
 | 8 | Skill 活资产（后置） | 记忆/版本/优化钩子/计费事件 | pending | `.claude/plans/08-skill-assets.md` |
-| 9 | 部署与运维切片 | compose + migrate + readiness | complete | `.claude/plans/09-deploy-ops.md` |
+| 9 | 部署与运维切片 | 部署方式待开发结束后指定；当前不维护 Docker 制品 | pending | `.claude/plans/09-deploy-ops.md` |
 
 ### Demo 切片
 
@@ -80,7 +80,7 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Demo 0 | 03 + 03b + 07a | IT 发 Key、设配额、超限拦截、看日志/告警 |
 | Demo 1 | 04 | 项目上传文档并可检索 |
 | Demo 2 | 04 + 05 + 06 | MCP 授权 + Agent 引用回答（含 RAG） |
-| Demo 3 | 07b + 09 | 完整控制台 + 可部署试点环境 |
+| Demo 3 | 07b | 完整管理控制台（本地开发验证）；容器化部署后置 |
 
 ## Decisions（原 Open Questions，已拍板）
 
@@ -106,5 +106,5 @@ We'll know we're right when **内部试点中：组织配额可守恒分配且�
 | Skill 过早投入 | Medium | Medium | 08 后置；06 仅预留扩展点 |
 
 ---
-*Status: MVP READY — Milestones through 07b and Plan 09 complete; Plan 08 remains post-MVP, with deployment maintenance continuing as needed.*
+*Status: READY — Milestones through 07b complete; Plan 09 deploy deferred (no Docker artifacts in repo; local-dev first); Plan 08 remains post-MVP.*
 *Legacy snapshot tag: `legacy-nuxt-aigate`.*

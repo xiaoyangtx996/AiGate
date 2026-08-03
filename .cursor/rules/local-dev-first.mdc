@@ -1,27 +1,26 @@
 ---
-description: AiGate 当前阶段以本地开发与浏览器验证为准，暂不要求 Docker 实跑
+description: AiGate 当前阶段以本地开发与浏览器验证为准，不维护 Docker 制品
 alwaysApply: true
 ---
 
 # 验证优先级（当前阶段）
 
-现阶段 **不考虑 Docker Compose 实跑 / 容器联调**。部署方式由用户在开发结束后另行指定；未要求时不要把「能否 `docker compose up`」当作验收阻塞项。
+现阶段 **不维护、不验收 Docker Compose / Dockerfile**。仓库内不应新增容器化部署文件；部署方式由用户在开发结束后另行指定。
 
 ## 必须优先保证
 
-1. **本地开发可运行**：本机 Postgres、`go run` api/gateway/worker、`npm run dev` 前端可按 README 启动
+1. **本地开发可运行**：本机 Postgres（pgvector）、`go run` api/gateway/worker、`npm run dev` 前端可按 README 启动
 2. **浏览器测试无误**：控制台关键路径可在浏览器点通（登录、项目、KB、MCP、Agent、用量等）
 3. **功能完整无误**：业务行为、权限、数据归因与接口约定正确；`go test` / `go vet` / `npm run build` 保持绿
-4. **整理流程无误**：迁移顺序、冒烟脚本逻辑、文档与 Demo 点击路径自洽（可写清步骤，不必本机跑容器）
+4. **整理流程无误**：迁移顺序、README 本地启动步骤、Demo 点击路径自洽
 
 ## 明确不要做
 
-- 不要因「本机无 Docker」判定 Plan 部署未完成或强行安装/催促 Docker
+- 不要新增或恢复 `docker-compose.yml`、`Dockerfile`、`.dockerignore`、compose 专用脚本
+- 不要因「未跑 Docker」判定交付未完成
 - 不要把生产级容器 hardening、K8s、云部署当作当前默认任务
-- 不要用 Docker 实跑替代本地进程 + 浏览器验收
 
 ## 交付与检查时怎么说
 
-- 代码/文档/脚本齐备即可说明「制品就绪」
-- 容器实跑标为 **后续部署阶段**（用户指定方式后再做）
-- 复查重点写：本地启动、浏览器路径、测试/构建、功能与流程正确性
+- 验收重点：本地启动、浏览器路径、测试/构建、功能与流程正确性
+- 容器化部署标为 **后续阶段**（用户指定方式后再做）
